@@ -206,6 +206,7 @@ public static class L10n
             ["help.action.pan.space"]  = "Pan canvas",
             ["help.action.pan.right"]  = "Pan canvas",
             ["help.action.zoom"]       = "Zoom in / out",
+            ["help.action.scroll"]     = "Scroll (Shift = sideways)",
             ["help.action.doubleclick"]= "Double-click",
 
             // Menu
@@ -214,6 +215,7 @@ public static class L10n
             ["menu.file.templates"]  = "_Templates...",
             ["menu.file.cloud"]      = "_Cloud Services...",
             ["menu.file.open"]       = "_Open...",
+            ["menu.file.import.excalidraw"] = "_Import from Excalidraw...",
             ["menu.file.save"]       = "_Save...",
             ["menu.file.export"]     = "_Export PNG...",
             ["menu.file.export.excalidraw"] = "Export to _Excalidraw...",
@@ -229,6 +231,7 @@ public static class L10n
             ["menu.edit.duplicate"]  = "_Duplicate",
             ["menu.edit.delete"]     = "De_lete",
             ["menu.edit.selectall"]  = "Select _All",
+            ["menu.edit.insertimage"]= "Insert _Image...",
             ["menu.view"]            = "_View",
             ["menu.view.zoomin"]     = "Zoom _In",
             ["menu.view.zoomout"]    = "Zoom _Out",
@@ -316,8 +319,8 @@ public static class L10n
             ["manual.layers.p"] = "When shapes overlap, use Front and Back in the Inspector (or the Edit menu) to control which one sits on top.",
 
             ["manual.view.h"]       = "Panning and zooming",
-            ["manual.view.b.pan"]   = "Pan: drag an empty area of the canvas, hold Space and drag, or right-click and drag.",
-            ["manual.view.b.zoom"]  = "Zoom: scroll the mouse wheel, or use the zoom buttons in the top bar.",
+            ["manual.view.b.pan"]   = "Pan / scroll: the mouse wheel scrolls vertically (Shift for sideways), or drag an empty area, hold Space and drag, right-click and drag, or use the scrollbars.",
+            ["manual.view.b.zoom"]  = "Zoom: hold Ctrl and scroll the mouse wheel, or use the zoom buttons in the top bar.",
             ["manual.view.b.reset"] = "Reset zoom returns the view to 100%.",
 
             ["manual.templates.h"] = "Templates",
@@ -504,6 +507,7 @@ public static class L10n
             ["help.action.pan.space"]  = "Desplazar lienzo",
             ["help.action.pan.right"]  = "Desplazar lienzo",
             ["help.action.zoom"]       = "Acercar / alejar",
+            ["help.action.scroll"]     = "Desplazar (Mayús = lateral)",
             ["help.action.doubleclick"]= "Doble clic",
 
             // Menu
@@ -512,6 +516,7 @@ public static class L10n
             ["menu.file.templates"]  = "_Plantillas...",
             ["menu.file.cloud"]      = "Servicios en la _nube...",
             ["menu.file.open"]       = "_Abrir...",
+            ["menu.file.import.excalidraw"] = "_Importar de Excalidraw...",
             ["menu.file.save"]       = "_Guardar...",
             ["menu.file.export"]     = "E_xportar PNG...",
             ["menu.file.export.excalidraw"] = "Exportar a _Excalidraw...",
@@ -527,6 +532,7 @@ public static class L10n
             ["menu.edit.duplicate"]  = "_Duplicar",
             ["menu.edit.delete"]     = "E_liminar",
             ["menu.edit.selectall"]  = "Seleccionar _todo",
+            ["menu.edit.insertimage"]= "Insertar _imagen...",
             ["menu.view"]            = "_Vista",
             ["menu.view.zoomin"]     = "_Acercar",
             ["menu.view.zoomout"]    = "Ale_jar",
@@ -614,8 +620,8 @@ public static class L10n
             ["manual.layers.p"] = "Cuando las formas se superponen, usa Frente y Atrás en el Inspector (o el menú Edición) para controlar cuál queda encima.",
 
             ["manual.view.h"]       = "Desplazar y hacer zoom",
-            ["manual.view.b.pan"]   = "Desplazar: arrastra un área vacía del lienzo, mantén Espacio y arrastra, o haz clic derecho y arrastra.",
-            ["manual.view.b.zoom"]  = "Zoom: gira la rueda del ratón o usa los botones de zoom de la barra superior.",
+            ["manual.view.b.pan"]   = "Desplazar: la rueda del ratón desplaza verticalmente (Mayús para lateral), o arrastra un área vacía, mantén Espacio y arrastra, haz clic derecho y arrastra, o usa las barras de desplazamiento.",
+            ["manual.view.b.zoom"]  = "Zoom: mantén Ctrl y gira la rueda del ratón, o usa los botones de zoom de la barra superior.",
             ["manual.view.b.reset"] = "Restablecer zoom devuelve la vista al 100%.",
 
             ["manual.templates.h"] = "Plantillas",

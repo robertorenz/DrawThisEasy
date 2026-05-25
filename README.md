@@ -31,6 +31,8 @@ When you need to whiteboard *"how do the clients, load balancer, app servers, qu
 - **Undo / Redo** (`Ctrl+Z` / `Ctrl+Y`).
 - **Save / Load** as JSON; **Open** supports selecting **several files at once** (each opens in its own tab); **Export** as PNG (2× resolution).
 - **Export to other tools** (File menu) — **Excalidraw** (`.excalidraw`), **draw.io / diagrams.net** (`.drawio`), and **Mermaid** (`.mmd`) so diagrams open in the editors you already use.
+- **Import from Excalidraw** (File → Import from Excalidraw, or just File → Open) — opens `.excalidraw` scenes as diagrams, mapping shapes, labels, **images**, and bound arrows into connections. Select several files to import them as separate tabs.
+- **Images** — insert a raster image (Edit → Insert Image) or import one from Excalidraw. Images are stored inline (base64) in the `.ptd.json`, so saved files stay self-contained.
 - **Unsaved-changes guard** — closing the app with pending edits prompts you to **Save**, **Don't save**, or **Cancel**; the title bar shows a `•` whenever there are unsaved changes.
 - **Modal dialogs** instead of system message boxes — clean, on-brand prompts.
 - **Bilingual UI** — English / Español, switchable live (no restart) from the Language menu or one-click EN/ES toggle in the top bar.
@@ -56,8 +58,9 @@ When you need to whiteboard *"how do the clients, load balancer, app servers, qu
 | `T`            | Text           | `Ctrl+S`        | Save            |
 |                |                | `Ctrl+E`        | Export PNG      |
 
+**Scroll:** mouse wheel (`Shift`+wheel for horizontal), or the scrollbars.
 **Pan:** hold `Space` and drag, right-click and drag, or just drag any empty area.
-**Zoom:** mouse wheel.
+**Zoom:** `Ctrl`+mouse wheel, or the zoom buttons.
 **Marquee select:** hold `Shift` and drag empty area.
 **Help:** `F1` opens the user manual; `?` opens the keyboard-shortcut reference.
 

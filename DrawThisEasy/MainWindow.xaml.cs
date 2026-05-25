@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using Microsoft.Win32;
 using DrawThisEasy.Controls;
@@ -63,6 +64,7 @@ public partial class MainWindow : Window
         BuildAddTabButton();
         NewDocument();      // first document — wires events, activates, syncs chrome
 
+        CanvasHost.SizeChanged += (s, e) => UpdateScrollBars();
         ApplyLanguage();
     }
 
@@ -113,6 +115,7 @@ public partial class MainWindow : Window
         c.ZoomChanged          += (s, e)    => { if (ReferenceEquals(s, _active.Canvas)) UpdateZoomLabel(); };
         c.ModelDirty           += (s, e)    => { if (s is DiagramCanvas dc) MarkDirtyFor(dc); };
         c.ContextMenuRequested += (s, pt)   => { if (ReferenceEquals(s, _active.Canvas)) ShowShapeContextMenu(pt); };
+        c.ViewChanged          += (s, e)    => { if (_active != null && ReferenceEquals(s, _active.Canvas)) UpdateScrollBars(); };
     }
 
     private void ActivateDocument(DocTab tab)
@@ -131,6 +134,7 @@ public partial class MainWindow : Window
         UpdateInspectorVisibility();
         UpdateZoomLabel();
         UpdateWindowTitle();
+        UpdateScrollBars();
         tab.Canvas.Focus();
     }
 
@@ -209,6 +213,50 @@ public partial class MainWindow : Window
     {
         var name = _active?.Title ?? "DrawThisEasy";
         Title = (_active?.Dirty == true ? "• " : "") + name + " — DrawThisEasy";
+    }
+
+    // ===== Scrollbars =====
+
+    private void VScroll_Scroll(object sender, ScrollEventArgs e)
+    {
+        if (_active == null) return;
+        var (x, _) = Diagram.GetScrollOffsetWorld();
+        Diagram.ScrollViewTo(x, VScroll.Value);
+    }
+
+    private void HScroll_Scroll(object sender, ScrollEventArgs e)
+    {
+        if (_active == null) return;
+        var (_, y) = Diagram.GetScrollOffsetWorld();
+        Diagram.ScrollViewTo(HScroll.Value, y);
+    }
+
+    private void UpdateScrollBars()
+    {
+        if (_active == null) return;
+        var vp = Diagram.GetViewportWorldSize();
+        if (vp.Width <= 0 || vp.Height <= 0) return;
+
+        var ext = Diagram.GetContentExtentWorld();
+        var (tlX, tlY) = Diagram.GetScrollOffsetWorld();
+
+        // Keep the current view inside the scrollable range.
+        double left = Math.Min(ext.Left, tlX), top = Math.Min(ext.Top, tlY);
+        double right = Math.Max(ext.Right, tlX + vp.Width), bottom = Math.Max(ext.Bottom, tlY + vp.Height);
+
+        SetBar(VScroll, top, bottom, vp.Height, tlY);
+        SetBar(HScroll, left, right, vp.Width, tlX);
+    }
+
+    private static void SetBar(ScrollBar bar, double min, double max, double viewport, double value)
+    {
+        bar.Minimum = min;
+        bar.Maximum = Math.Max(min, max - viewport);
+        bar.ViewportSize = viewport;
+        bar.LargeChange = viewport * 0.9;
+        bar.SmallChange = 40;
+        bar.Value = Math.Min(Math.Max(value, bar.Minimum), bar.Maximum);
+        bar.Visibility = (max - min) > viewport + 1 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     // ===== Palette =====
@@ -928,7 +976,7 @@ public partial class MainWindow : Window
     {
         var dlg = new OpenFileDialog
         {
-            Filter = "DrawThisEasy JSON (*.ptd.json;*.json)|*.ptd.json;*.json|All files (*.*)|*.*",
+            Filter = "Diagrams (*.ptd.json;*.json;*.excalidraw)|*.ptd.json;*.json;*.excalidraw|All files (*.*)|*.*",
             Title = "Open diagram",
             Multiselect = true   // pick several files; each opens in its own tab
         };
@@ -939,7 +987,11 @@ public partial class MainWindow : Window
         {
             try
             {
-                var model = Persistence.Load(file);
+                var text = File.ReadAllText(file);
+                // Open also accepts Excalidraw scenes — by extension or by content.
+                var model = IsExcalidraw(file, text)
+                    ? DiagramImport.FromExcalidraw(text)
+                    : Persistence.Load(file);
                 NewDocument(model, IOPath.GetFileNameWithoutExtension(file));
             }
             catch (Exception ex)
@@ -950,6 +1002,90 @@ public partial class MainWindow : Window
 
         if (errors.Count > 0)
             ModalWindow.Info(this, L10n.T("modal.openfail.title"), string.Join("\n", errors));
+    }
+
+    private static bool IsExcalidraw(string path, string content)
+    {
+        if (IOPath.GetExtension(path).Equals(".excalidraw", StringComparison.OrdinalIgnoreCase))
+            return true;
+        // Detect an Excalidraw scene saved as .json by its type marker.
+        return content.Contains("\"type\"", StringComparison.Ordinal)
+            && content.Contains("\"excalidraw\"", StringComparison.Ordinal);
+    }
+
+    private void BtnImportExcalidraw_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new OpenFileDialog
+        {
+            Filter = "Excalidraw (*.excalidraw;*.json)|*.excalidraw;*.json|All files (*.*)|*.*",
+            Title = L10n.T("menu.file.import.excalidraw"),
+            Multiselect = true
+        };
+        if (dlg.ShowDialog(this) != true) return;
+
+        var errors = new List<string>();
+        foreach (var file in dlg.FileNames)
+        {
+            try
+            {
+                var model = DiagramImport.FromExcalidraw(File.ReadAllText(file));
+                NewDocument(model, IOPath.GetFileNameWithoutExtension(file));
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"{IOPath.GetFileName(file)}: {ex.Message}");
+            }
+        }
+
+        if (errors.Count > 0)
+            ModalWindow.Info(this, L10n.T("modal.openfail.title"), string.Join("\n", errors));
+    }
+
+    private void BtnInsertImage_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new OpenFileDialog
+        {
+            Filter = "Images (*.png;*.jpg;*.jpeg;*.gif;*.bmp)|*.png;*.jpg;*.jpeg;*.gif;*.bmp|All files (*.*)|*.*",
+            Title = L10n.T("menu.edit.insertimage")
+        };
+        if (dlg.ShowDialog(this) != true) return;
+        try
+        {
+            var bytes = File.ReadAllBytes(dlg.FileName);
+            var ext = IOPath.GetExtension(dlg.FileName).TrimStart('.').ToLowerInvariant();
+            var mime = ext switch
+            {
+                "jpg" or "jpeg" => "image/jpeg",
+                "gif" => "image/gif",
+                "bmp" => "image/bmp",
+                _ => "image/png"
+            };
+            var dataUrl = $"data:{mime};base64,{Convert.ToBase64String(bytes)}";
+
+            // Use the image's pixel size, scaled down to a sensible default.
+            double w = 200, h = 150;
+            try
+            {
+                var bmp = new BitmapImage();
+                using (var ms = new MemoryStream(bytes))
+                {
+                    bmp.BeginInit(); bmp.CacheOption = BitmapCacheOption.OnLoad; bmp.StreamSource = ms; bmp.EndInit();
+                }
+                if (bmp.PixelWidth > 0 && bmp.PixelHeight > 0)
+                {
+                    double scale = Math.Min(1.0, 320.0 / Math.Max(bmp.PixelWidth, bmp.PixelHeight));
+                    w = Math.Max(24, bmp.PixelWidth * scale);
+                    h = Math.Max(24, bmp.PixelHeight * scale);
+                }
+            }
+            catch { /* keep the default size */ }
+
+            Diagram.AddImage(dataUrl, w, h);
+        }
+        catch (Exception ex)
+        {
+            ModalWindow.Info(this, L10n.T("modal.openfail.title"), ex.Message);
+        }
     }
 
     private void BtnSave_Click(object sender, RoutedEventArgs e) => SaveDiagram();
@@ -1094,6 +1230,7 @@ public partial class MainWindow : Window
         MnuFileTemplates.Header  = L10n.T("menu.file.templates");
         MnuFileCloud.Header      = L10n.T("menu.file.cloud");
         MnuFileOpen.Header       = L10n.T("menu.file.open");
+        MnuFileImportExcalidraw.Header = L10n.T("menu.file.import.excalidraw");
         MnuFileSave.Header       = L10n.T("menu.file.save");
         MnuFileExport.Header     = L10n.T("menu.file.export");
         MnuFileExportExcalidraw.Header = L10n.T("menu.file.export.excalidraw");
@@ -1110,6 +1247,7 @@ public partial class MainWindow : Window
         MnuEditDup.Header        = L10n.T("menu.edit.duplicate");
         MnuEditDelete.Header     = L10n.T("menu.edit.delete");
         MnuEditSelectAll.Header  = L10n.T("menu.edit.selectall");
+        MnuEditInsertImage.Header = L10n.T("menu.edit.insertimage");
 
         MnuView.Header           = L10n.T("menu.view");
         MnuViewZoomIn.Header     = L10n.T("menu.view.zoomin");
@@ -1252,7 +1390,7 @@ public partial class MainWindow : Window
             var c = new ShapeNode
             {
                 Kind = s.Kind, X = s.X, Y = s.Y, Width = s.Width, Height = s.Height,
-                Label = s.Label, Fill = s.Fill, Stroke = s.Stroke, Stencil = s.Stencil, ZIndex = s.ZIndex
+                Label = s.Label, Fill = s.Fill, Stroke = s.Stroke, Stencil = s.Stencil, Image = s.Image, ZIndex = s.ZIndex
             };
             idMap[s.Id] = c.Id;
             clone.Shapes.Add(c);

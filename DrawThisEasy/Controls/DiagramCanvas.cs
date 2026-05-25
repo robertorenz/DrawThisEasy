@@ -68,6 +68,8 @@ public class DiagramCanvas : Canvas
     public event EventHandler? ModelDirty;
     // Raised when the user right-clicks a shape (without dragging). Arg = screen position.
     public event EventHandler<Point>? ContextMenuRequested;
+    // Raised whenever the pan/zoom transform changes (so scrollbars can refresh).
+    public event EventHandler? ViewChanged;
 
     // ---- Public API ----
     public DiagramModel Model => _model;
@@ -230,6 +232,28 @@ public class DiagramCanvas : Canvas
         return node;
     }
 
+    /// Drops an image (data URL) at the current viewport center, at the given size.
+    public ShapeNode AddImage(string dataUrl, double w, double h)
+    {
+        Snapshot();
+        var center = (ActualWidth > 0 && ActualHeight > 0)
+            ? ScreenToWorld(new Point(ActualWidth / 2, ActualHeight / 2))
+            : new Point(0, 0);
+        var node = new ShapeNode
+        {
+            Kind = ShapeKind.Image,
+            Image = dataUrl,
+            X = center.X - w / 2, Y = center.Y - h / 2,
+            Width = w, Height = h,
+            Label = "",
+            ZIndex = _nextZ++
+        };
+        _model.Shapes.Add(node);
+        AddShapeVisual(node);
+        SelectOnly(node.Id);
+        return node;
+    }
+
     private static (double, double) DefaultSize(ShapeKind k) => k switch
     {
         ShapeKind.Ellipse       => (140, 70),
@@ -243,6 +267,7 @@ public class DiagramCanvas : Canvas
         ShapeKind.Note          => (130, 100),
         ShapeKind.Text          => (120, 30),
         ShapeKind.ServiceTile   => (120, 96),
+        ShapeKind.Image         => (160, 120),
         _                       => (140, 70)
     };
 
@@ -622,6 +647,7 @@ public class DiagramCanvas : Canvas
             m.OffsetY += dy;
             _worldTransform.Matrix = m;
             UpdateGridOffset();
+            ViewChanged?.Invoke(this, EventArgs.Empty);
             return;
         }
 
@@ -800,16 +826,33 @@ public class DiagramCanvas : Canvas
 
     private void OnMouseWheel(object sender, MouseWheelEventArgs e)
     {
-        var screen = e.GetPosition(this);
-        var oldZoom = _worldTransform.Matrix.M11;
-        var factor = e.Delta > 0 ? 1.12 : 1 / 1.12;
-        var newZoom = Math.Max(0.2, Math.Min(4.0, oldZoom * factor));
-        var scale = newZoom / oldZoom;
+        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+        {
+            // Ctrl + wheel = zoom toward the cursor.
+            var screen = e.GetPosition(this);
+            var oldZoom = _worldTransform.Matrix.M11;
+            var factor = e.Delta > 0 ? 1.12 : 1 / 1.12;
+            var newZoom = Math.Max(0.2, Math.Min(4.0, oldZoom * factor));
+            var scale = newZoom / oldZoom;
+            var mz = _worldTransform.Matrix;
+            mz.ScaleAt(scale, scale, screen.X, screen.Y);
+            _worldTransform.Matrix = mz;
+            UpdateGridOffset();
+            ZoomChanged?.Invoke(this, EventArgs.Empty);
+            ViewChanged?.Invoke(this, EventArgs.Empty);
+            e.Handled = true;
+            return;
+        }
+
+        // Plain wheel scrolls vertically; Shift + wheel scrolls horizontally.
         var m = _worldTransform.Matrix;
-        m.ScaleAt(scale, scale, screen.X, screen.Y);
+        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+            m.OffsetX += e.Delta;
+        else
+            m.OffsetY += e.Delta;
         _worldTransform.Matrix = m;
         UpdateGridOffset();
-        ZoomChanged?.Invoke(this, EventArgs.Empty);
+        ViewChanged?.Invoke(this, EventArgs.Empty);
         e.Handled = true;
     }
 
@@ -914,6 +957,7 @@ public class DiagramCanvas : Canvas
                 Width = s.Width, Height = s.Height,
                 Label = s.Label, Fill = s.Fill, Stroke = s.Stroke,
                 Stencil = s.Stencil,
+                Image = s.Image,
                 ZIndex = _nextZ++
             };
             _model.Shapes.Add(copy);
@@ -945,6 +989,7 @@ public class DiagramCanvas : Canvas
                 X = s.X, Y = s.Y, Width = s.Width, Height = s.Height,
                 Label = s.Label, Fill = s.Fill, Stroke = s.Stroke,
                 Stencil = s.Stencil,
+                Image = s.Image,
                 ZIndex = s.ZIndex
             });
         }
@@ -1032,6 +1077,7 @@ public class DiagramCanvas : Canvas
                 Width = s.Width, Height = s.Height,
                 Label = s.Label, Fill = s.Fill, Stroke = s.Stroke,
                 Stencil = s.Stencil,
+                Image = s.Image,
                 ZIndex = _nextZ++
             };
             idMap[s.Id] = copy.Id;
@@ -1279,6 +1325,7 @@ public class DiagramCanvas : Canvas
         _worldTransform.Matrix = m;
         UpdateGridOffset();
         ZoomChanged?.Invoke(this, EventArgs.Empty);
+        ViewChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public void ResetView()
@@ -1286,6 +1333,45 @@ public class DiagramCanvas : Canvas
         _worldTransform.Matrix = Matrix.Identity;
         UpdateGridOffset();
         ZoomChanged?.Invoke(this, EventArgs.Empty);
+        ViewChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    // ---- Scrollbar support ----
+
+    public (double X, double Y) GetScrollOffsetWorld()
+    {
+        var p = ScreenToWorld(new Point(0, 0));
+        return (p.X, p.Y);
+    }
+
+    public Size GetViewportWorldSize()
+    {
+        var z = Zoom;
+        return z <= 0 ? new Size(0, 0) : new Size(ActualWidth / z, ActualHeight / z);
+    }
+
+    public Rect GetContentExtentWorld()
+    {
+        if (_model.Shapes.Count == 0) return new Rect(-200, -200, 400, 400);
+        double minX = double.MaxValue, minY = double.MaxValue, maxX = double.MinValue, maxY = double.MinValue;
+        foreach (var s in _model.Shapes)
+        {
+            minX = Math.Min(minX, s.X); minY = Math.Min(minY, s.Y);
+            maxX = Math.Max(maxX, s.X + s.Width); maxY = Math.Max(maxY, s.Y + s.Height);
+        }
+        const double pad = 200;
+        return new Rect(minX - pad, minY - pad, (maxX - minX) + pad * 2, (maxY - minY) + pad * 2);
+    }
+
+    public void ScrollViewTo(double worldX, double worldY)
+    {
+        var m = _worldTransform.Matrix;
+        var s = m.M11;
+        m.OffsetX = -worldX * s;
+        m.OffsetY = -worldY * s;
+        _worldTransform.Matrix = m;
+        UpdateGridOffset();
+        ViewChanged?.Invoke(this, EventArgs.Empty);
     }
 
     // ---- Grid pattern ----
@@ -1358,7 +1444,7 @@ public class ShapeVisual
 
         var fill = (Brush)new BrushConverter().ConvertFromString(Node.Fill)!;
         var stroke = (Brush)new BrushConverter().ConvertFromString(Node.Stroke)!;
-        var (body, styled) = ShapeFactory.BuildBody(Node.Kind, Node.Width, Node.Height, fill, stroke, Node.Stencil);
+        var (body, styled) = ShapeFactory.BuildBody(Node.Kind, Node.Width, Node.Height, fill, stroke, Node.Stencil, Node.Image);
         _body = body;
         _styledParts = styled;
         Element.Children.Add(body);
