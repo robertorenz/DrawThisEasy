@@ -26,7 +26,7 @@ When you need to whiteboard *"how do the clients, load balancer, app servers, qu
 - **Right-click context menu** on any shape — a polished popup to edit text, apply fill / stroke swatches (or pick a custom color), reorder layers, duplicate, copy, and delete. Right-drag empty space still pans.
 - **Copy / Cut / Paste** (`Ctrl+C` / `Ctrl+X` / `Ctrl+V`) via the system clipboard, with connection edges preserved. Works between two open DrawThisEasy instances.
 - **Templates** — Org chart, Web architecture, Client-server, Microservices, Data pipeline, Blank.
-- **Cloud service objects** (File → Cloud Services) — a gallery of **AWS**, **Azure**, and **Google Cloud** services (compute, functions, storage, databases, containers, messaging, networking, analytics, monitoring) drawn as provider-tinted badge tiles. *Generic, original glyphs — not the providers' trademarked icons.*
+- **Cloud service objects** — a gallery of **AWS**, **Azure**, and **Google Cloud** services (compute, functions, storage, databases, containers, messaging, networking, analytics, monitoring) drawn as provider-tinted badge tiles. *Generic, original glyphs — not the providers' trademarked icons.* Open it from the **Cloud** button in the toolbar, the per-provider buttons in the left **Cloud** palette group, or File → Cloud Services. A **Templates** button is in the toolbar too.
 - **Undo / Redo** (`Ctrl+Z` / `Ctrl+Y`).
 - **Save / Load** as JSON; **Export** as PNG (2× resolution).
 - **Export to other tools** (File menu) — **Excalidraw** (`.excalidraw`), **draw.io / diagrams.net** (`.drawio`), and **Mermaid** (`.mmd`) so diagrams open in the editors you already use.

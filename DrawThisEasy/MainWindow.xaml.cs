@@ -27,6 +27,9 @@ public partial class MainWindow : Window
     private readonly Dictionary<TextBlock, string>    _toolLabelTb  = new(); // palette TextBlock -> label key
     private readonly List<(TextBlock TextBlock, string Key)> _groupLabels = new();
     private TextBlock? _paletteHint;
+    // Toolbar action buttons that open the Templates / Cloud galleries (re-translated live).
+    private Button? _tmplStripBtn, _cloudStripBtn;
+    private TextBlock? _tmplStripLabel, _cloudStripLabel;
 
     public MainWindow()
     {
@@ -85,6 +88,8 @@ public partial class MainWindow : Window
             new ToolDef(ToolMode.AddText,     "tool.text",     "tip.text"),
         });
 
+        AddCloudGroup();
+
         _paletteHint = new TextBlock
         {
             Text = L10n.T("palette.hint"),
@@ -113,6 +118,45 @@ public partial class MainWindow : Window
             Background = new SolidColorBrush(Color.FromArgb(20, 255, 255, 255)),
             Height = 1, Margin = new Thickness(0, 8, 0, 6)
         });
+    }
+
+    // Cloud section in the palette: per-provider quick buttons that open the gallery filtered to that provider.
+    private void AddCloudGroup()
+    {
+        var label = new TextBlock { Text = L10n.T("group.cloud").ToUpper(), Style = (Style)FindResource("GroupLabel") };
+        _groupLabels.Add((label, "group.cloud"));
+        PaletteStack.Children.Add(label);
+
+        AddCloudProviderButton(Stencils.Aws,   Stencils.AwsColor);
+        AddCloudProviderButton(Stencils.Azure, Stencils.AzureColor);
+        AddCloudProviderButton(Stencils.Gcp,   Stencils.GcpColor);
+
+        PaletteStack.Children.Add(new Border
+        {
+            Background = new SolidColorBrush(Color.FromArgb(20, 255, 255, 255)),
+            Height = 1, Margin = new Thickness(0, 8, 0, 6)
+        });
+    }
+
+    private void AddCloudProviderButton(string provider, string colorHex)
+    {
+        var content = new StackPanel { Orientation = Orientation.Horizontal };
+        content.Children.Add(new Border
+        {
+            Width = 18, Height = 18, CornerRadius = new CornerRadius(4),
+            Background = (Brush)new BrushConverter().ConvertFromString(colorHex)!,
+            Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center
+        });
+        content.Children.Add(new TextBlock { Text = provider, VerticalAlignment = VerticalAlignment.Center });
+
+        var btn = new Button
+        {
+            Style = (Style)FindResource("PaletteActionButton"),
+            Content = content,
+            ToolTip = L10n.T("topbar.cloud.tip")
+        };
+        btn.Click += (s, e) => OpenCloudGallery(provider);
+        PaletteStack.Children.Add(btn);
     }
 
     private void AddToolButton(ToolDef def)
@@ -175,6 +219,67 @@ public partial class MainWindow : Window
             foreach (var mode in groups[g]) ToolStrip.Children.Add(BuildStripButton(mode));
             if (g < groups.Length - 1) ToolStrip.Children.Add(BuildStripSeparator());
         }
+
+        // Labeled action buttons that open the Templates and Cloud Services galleries.
+        ToolStrip.Children.Add(BuildStripSeparator());
+        var (tBtn, tLbl) = MakeStripAction(BuildTemplatesIcon(), L10n.T("topbar.templates"), "topbar.templates.tip",
+            (s, e) => BtnTemplates_Click(s, e));
+        _tmplStripBtn = tBtn; _tmplStripLabel = tLbl;
+        ToolStrip.Children.Add(tBtn);
+
+        var (cBtn, cLbl) = MakeStripAction(BuildCloudIcon(), L10n.T("topbar.cloud"), "topbar.cloud.tip",
+            (s, e) => OpenCloudGallery());
+        _cloudStripBtn = cBtn; _cloudStripLabel = cLbl;
+        ToolStrip.Children.Add(cBtn);
+    }
+
+    private (Button Button, TextBlock Label) MakeStripAction(UIElement icon, string label, string tipKey, RoutedEventHandler onClick)
+    {
+        var lbl = new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center, FontSize = 13 };
+        var content = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        content.Children.Add(new Border { Child = icon, Width = 18, Height = 18, Margin = new Thickness(0, 0, 7, 0), VerticalAlignment = VerticalAlignment.Center });
+        content.Children.Add(lbl);
+        var btn = new Button
+        {
+            Style = (Style)FindResource("IconButton"),
+            Content = content,
+            ToolTip = L10n.T(tipKey),
+            Padding = new Thickness(10, 0, 10, 0),
+            Margin = new Thickness(1, 0, 1, 0)
+        };
+        btn.Click += onClick;
+        return (btn, lbl);
+    }
+
+    private UIElement BuildTemplatesIcon()
+    {
+        var brush = (Brush)FindResource("TextMutedBrush");
+        var c = new Canvas { Width = 18, Height = 18 };
+        void Sq(double x, double y)
+        {
+            var r = new System.Windows.Shapes.Rectangle { Width = 7, Height = 7, RadiusX = 1.5, RadiusY = 1.5, Fill = brush };
+            Canvas.SetLeft(r, x); Canvas.SetTop(r, y); c.Children.Add(r);
+        }
+        Sq(1, 1); Sq(10, 1); Sq(1, 10); Sq(10, 10);
+        return c;
+    }
+
+    private UIElement BuildCloudIcon()
+    {
+        var brush = (Brush)FindResource("TextMutedBrush");
+        double sx = 18 / 100.0, sy = 12 / 60.0;
+        Point P(double x, double y) => new Point(x * sx, y * sy + 3);
+        var fig = new PathFigure { StartPoint = P(20, 55), IsClosed = true, IsFilled = true };
+        fig.Segments.Add(new BezierSegment(P(5, 55),   P(0, 40),  P(12, 32), true));
+        fig.Segments.Add(new BezierSegment(P(5, 18),   P(22, 12), P(32, 20), true));
+        fig.Segments.Add(new BezierSegment(P(35, 5),   P(60, 3),  P(68, 18), true));
+        fig.Segments.Add(new BezierSegment(P(82, 10),  P(96, 22), P(88, 36), true));
+        fig.Segments.Add(new BezierSegment(P(100, 42), P(92, 58), P(78, 55), true));
+        fig.Segments.Add(new BezierSegment(P(70, 62),  P(30, 62), P(20, 55), true));
+        var geom = new PathGeometry(); geom.Figures.Add(fig);
+        var c = new Canvas { Width = 18, Height = 18 };
+        c.Children.Add(new System.Windows.Shapes.Path { Fill = brush, Data = geom });
+        return c;
     }
 
     private ToggleButton BuildStripButton(ToolMode mode)
@@ -591,9 +696,11 @@ public partial class MainWindow : Window
         }
     }
 
-    private void BtnCloud_Click(object sender, RoutedEventArgs e)
+    private void BtnCloud_Click(object sender, RoutedEventArgs e) => OpenCloudGallery();
+
+    private void OpenCloudGallery(string? provider = null)
     {
-        var dlg = new CloudServiceGalleryWindow { Owner = this };
+        var dlg = new CloudServiceGalleryWindow(provider) { Owner = this };
         if (dlg.ShowDialog() == true && dlg.SelectedStencil is { } def)
             Diagram.AddServiceTile(def.Id, def.Name, def.Color);
     }
@@ -802,6 +909,12 @@ public partial class MainWindow : Window
         BtnLang.Content = L10n.CurrentCode;
         BtnLang.ToolTip = L10n.T("topbar.lang.tip");
         BtnHelp.ToolTip = L10n.T("topbar.help.tip");
+
+        // Toolbar action buttons (Templates + Cloud galleries)
+        if (_tmplStripLabel != null) _tmplStripLabel.Text = L10n.T("topbar.templates");
+        if (_cloudStripLabel != null) _cloudStripLabel.Text = L10n.T("topbar.cloud");
+        if (_tmplStripBtn != null) _tmplStripBtn.ToolTip = L10n.T("topbar.templates.tip");
+        if (_cloudStripBtn != null) _cloudStripBtn.ToolTip = L10n.T("topbar.cloud.tip");
 
         // Palette group labels
         foreach (var (tb, key) in _groupLabels)

@@ -44,6 +44,9 @@ public static class L10n
             // Top bar
             ["topbar.new"]       = "New",
             ["topbar.templates"] = "Templates",
+            ["topbar.cloud"]     = "Cloud",
+            ["topbar.templates.tip"] = "Browse templates",
+            ["topbar.cloud.tip"]     = "Cloud services",
             ["topbar.open"]      = "Open",
             ["topbar.save"]      = "Save",
             ["topbar.export"]    = "Export",
@@ -57,6 +60,7 @@ public static class L10n
             ["group.tools"] = "Tools",
             ["group.shapes"] = "Shapes",
             ["group.infra"] = "Infrastructure",
+            ["group.cloud"] = "Cloud",
 
             // Tool labels (palette text)
             ["tool.select"]    = "Select",
@@ -327,6 +331,9 @@ public static class L10n
             // Top bar
             ["topbar.new"]       = "Nuevo",
             ["topbar.templates"] = "Plantillas",
+            ["topbar.cloud"]     = "Nube",
+            ["topbar.templates.tip"] = "Explorar plantillas",
+            ["topbar.cloud.tip"]     = "Servicios en la nube",
             ["topbar.open"]      = "Abrir",
             ["topbar.save"]      = "Guardar",
             ["topbar.export"]    = "Exportar",
@@ -340,6 +347,7 @@ public static class L10n
             ["group.tools"]  = "Herramientas",
             ["group.shapes"] = "Formas",
             ["group.infra"]  = "Infraestructura",
+            ["group.cloud"]  = "Nube",
 
             // Tool labels
             ["tool.select"]    = "Seleccionar",
