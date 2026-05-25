@@ -19,6 +19,12 @@ public static class Templates
         new("client-server", "template.clientserver",  "template.clientserver.desc",  BuildClientServer()),
         new("microservices", "template.microservices", "template.microservices.desc", BuildMicroservices()),
         new("data-pipeline", "template.datapipeline",  "template.datapipeline.desc",  BuildDataPipeline()),
+        new("rest-api",      "template.restapi",       "template.restapi.desc",       BuildRestApi()),
+        new("serverless",    "template.serverless",    "template.serverless.desc",    BuildServerlessAws()),
+        new("three-tier",    "template.threetier",     "template.threetier.desc",     BuildThreeTier()),
+        new("kubernetes",    "template.kubernetes",    "template.kubernetes.desc",    BuildKubernetes()),
+        new("cicd",          "template.cicd",          "template.cicd.desc",          BuildCicd()),
+        new("event-driven",  "template.eventdriven",   "template.eventdriven.desc",   BuildEventDriven()),
     };
 
     private static ShapeNode N(ShapeKind k, double x, double y, double w, double h, string label, string? fill = null)
@@ -26,6 +32,18 @@ public static class Templates
         var n = new ShapeNode { Kind = k, X = x, Y = y, Width = w, Height = h, Label = label };
         if (fill != null) n.Fill = fill;
         return n;
+    }
+
+    // A cloud service tile node, sized and colored from the stencil catalog.
+    private static ShapeNode Svc(string stencilId, double x, double y)
+    {
+        var d = Stencils.Find(stencilId)!;
+        return new ShapeNode
+        {
+            Kind = ShapeKind.ServiceTile, Stencil = stencilId,
+            X = x, Y = y, Width = 120, Height = 96,
+            Label = d.Name, Fill = "#FFFFFF", Stroke = d.Color
+        };
     }
 
     private static DiagramModel BuildOrgChart()
@@ -120,6 +138,100 @@ public static class Templates
         Link(m, src1, ing); Link(m, src2, ing); Link(m, src3, ing);
         Link(m, ing, proc); Link(m, proc, wh);
         Link(m, wh, dash); Link(m, wh, ml);
+        Z(m);
+        return m;
+    }
+
+    private static DiagramModel BuildRestApi()
+    {
+        var m = new DiagramModel { Title = "REST API" };
+        var client = N(ShapeKind.Person,   40, 190, 90, 110, "Client");
+        var gw     = N(ShapeKind.Hexagon,  200, 200, 160, 80, "API Gateway", "#FEF3C7");
+        var api1   = N(ShapeKind.Server,   430, 70,  110, 130, "API Server 1", "#DBEAFE");
+        var api2   = N(ShapeKind.Server,   430, 250, 110, 130, "API Server 2", "#DBEAFE");
+        var cache  = N(ShapeKind.Cylinder, 620, 80,  120, 90,  "Redis Cache", "#FFE4E6");
+        var db     = N(ShapeKind.Cylinder, 620, 250, 130, 100, "Database", "#CCFBF1");
+        m.Shapes.AddRange(new[] { client, gw, api1, api2, cache, db });
+        Link(m, client, gw);
+        Link(m, gw, api1); Link(m, gw, api2);
+        Link(m, api1, cache); Link(m, api2, cache);
+        Link(m, api1, db); Link(m, api2, db);
+        Z(m);
+        return m;
+    }
+
+    private static DiagramModel BuildServerlessAws()
+    {
+        var m = new DiagramModel { Title = "Serverless (AWS)" };
+        var user = N(ShapeKind.Person, 30, 190, 90, 110, "User");
+        var cf   = Svc("aws-cloudfront", 180, 185);
+        var gw   = Svc("aws-apigw",      350, 185);
+        var fn   = Svc("aws-lambda",     520, 185);
+        var ddb  = Svc("aws-dynamodb",   700, 90);
+        var s3   = Svc("aws-s3",         700, 290);
+        m.Shapes.AddRange(new[] { user, cf, gw, fn, ddb, s3 });
+        Link(m, user, cf); Link(m, cf, gw); Link(m, gw, fn);
+        Link(m, fn, ddb); Link(m, fn, s3);
+        Z(m);
+        return m;
+    }
+
+    private static DiagramModel BuildThreeTier()
+    {
+        var m = new DiagramModel { Title = "Three-tier web app" };
+        var browser = N(ShapeKind.Rounded,  60, 195, 150, 70,  "Browser", "#DBEAFE");
+        var web     = N(ShapeKind.Server,   280, 165, 110, 130, "Web Server", "#FEF3C7");
+        var app     = N(ShapeKind.Server,   470, 165, 110, 130, "App Server", "#DBEAFE");
+        var db      = N(ShapeKind.Cylinder, 660, 175, 130, 100, "Database", "#CCFBF1");
+        m.Shapes.AddRange(new[] { browser, web, app, db });
+        Link(m, browser, web); Link(m, web, app); Link(m, app, db);
+        Z(m);
+        return m;
+    }
+
+    private static DiagramModel BuildKubernetes()
+    {
+        var m = new DiagramModel { Title = "Kubernetes cluster" };
+        var ingress = N(ShapeKind.Hexagon,  60, 200, 150, 70, "Ingress", "#FEF3C7");
+        var svc1    = N(ShapeKind.Rounded,  280, 80,  160, 60, "auth deployment", "#DBEAFE");
+        var svc2    = N(ShapeKind.Rounded,  280, 195, 160, 60, "orders deployment", "#DBEAFE");
+        var svc3    = N(ShapeKind.Rounded,  280, 310, 160, 60, "catalog deployment", "#DBEAFE");
+        var db      = N(ShapeKind.Cylinder, 520, 195, 130, 100, "Database", "#CCFBF1");
+        m.Shapes.AddRange(new[] { ingress, svc1, svc2, svc3, db });
+        Link(m, ingress, svc1); Link(m, ingress, svc2); Link(m, ingress, svc3);
+        Link(m, svc1, db); Link(m, svc2, db); Link(m, svc3, db);
+        Z(m);
+        return m;
+    }
+
+    private static DiagramModel BuildCicd()
+    {
+        var m = new DiagramModel { Title = "CI/CD pipeline" };
+        var commit = N(ShapeKind.Rounded,  40, 180, 130, 60,  "Git Commit", "#DBEAFE");
+        var build  = N(ShapeKind.Rounded,  210, 180, 120, 60, "Build", "#FEF3C7");
+        var test   = N(ShapeKind.Rounded,  360, 180, 120, 60, "Test", "#FEF3C7");
+        var deploy = N(ShapeKind.Rounded,  510, 180, 120, 60, "Deploy", "#FFE4E6");
+        var prod   = N(ShapeKind.Server,   670, 150, 110, 130, "Production", "#CCFBF1");
+        var reg    = N(ShapeKind.Cylinder, 360, 320, 120, 90, "Artifacts", "#CCFBF1");
+        m.Shapes.AddRange(new[] { commit, build, test, deploy, prod, reg });
+        Link(m, commit, build); Link(m, build, test); Link(m, test, deploy); Link(m, deploy, prod);
+        Link(m, build, reg); Link(m, reg, deploy);
+        Z(m);
+        return m;
+    }
+
+    private static DiagramModel BuildEventDriven()
+    {
+        var m = new DiagramModel { Title = "Event-driven" };
+        var producer = N(ShapeKind.Rounded,  40, 190, 150, 60,  "Producer", "#DBEAFE");
+        var queue    = N(ShapeKind.Queue,    240, 195, 170, 50, "Message Queue", "#FEF3C7");
+        var c1       = N(ShapeKind.Rounded,  470, 100, 150, 60, "Consumer A", "#DBEAFE");
+        var c2       = N(ShapeKind.Rounded,  470, 290, 150, 60, "Consumer B", "#DBEAFE");
+        var db       = N(ShapeKind.Cylinder, 690, 95,  130, 100, "Database", "#CCFBF1");
+        var lake     = N(ShapeKind.Cylinder, 690, 285, 130, 100, "Data Lake", "#CCFBF1");
+        m.Shapes.AddRange(new[] { producer, queue, c1, c2, db, lake });
+        Link(m, producer, queue); Link(m, queue, c1); Link(m, queue, c2);
+        Link(m, c1, db); Link(m, c2, lake);
         Z(m);
         return m;
     }
