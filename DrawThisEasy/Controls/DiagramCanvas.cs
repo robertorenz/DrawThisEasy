@@ -120,6 +120,10 @@ public class DiagramCanvas : Canvas
 
         // Initial focus when added
         Loaded += (_, _) => Focus();
+
+        // Keep guide lines spanning the visible area as the view changes / resizes.
+        ViewChanged += (_, _) => { if (_model.Guides.Count > 0 || _guidePreview != null) RebuildGuides(); };
+        SizeChanged += (_, _) => { if (_model.Guides.Count > 0 || _guidePreview != null) RebuildGuides(); };
     }
 
     // ---------- Model management ----------
@@ -189,20 +193,33 @@ public class DiagramCanvas : Canvas
     private void RebuildGuides()
     {
         _guideLayer.Children.Clear();
-        var color = (Brush)new BrushConverter().ConvertFromString("#14B8A6")!;   // teal
+        if (_model.Guides.Count == 0 && _guidePreview == null) return;
+
+        // Span only the visible world rect (+margin); extremely long lines can fail to render
+        // once the world scale transform is applied, which made guides invisible.
+        var tl = ScreenToWorld(new Point(0, 0));
+        var br = ScreenToWorld(new Point(Math.Max(ActualWidth, 1), Math.Max(ActualHeight, 1)));
+        double minX = Math.Min(tl.X, br.X) - 400, maxX = Math.Max(tl.X, br.X) + 400;
+        double minY = Math.Min(tl.Y, br.Y) - 400, maxY = Math.Max(tl.Y, br.Y) + 400;
+        var color = (Brush)new BrushConverter().ConvertFromString("#EF4444")!;   // reddish
+        double t = 1.0 / Math.Max(Zoom, 0.4);
+
         foreach (var g in _model.Guides)
-            _guideLayer.Children.Add(MakeGuideLine(g.Horizontal, g.Position, color, dashed: false));
+            _guideLayer.Children.Add(MakeGuideLine(g.Horizontal, g.Position, minX, maxX, minY, maxY, color, t, 0.9));
         if (_guidePreview is { } p)
-            _guideLayer.Children.Add(MakeGuideLine(p.Horizontal, p.Pos, color, dashed: true));
+            _guideLayer.Children.Add(MakeGuideLine(p.Horizontal, p.Pos, minX, maxX, minY, maxY, color, t, 0.6));
     }
 
-    private static Line MakeGuideLine(bool horizontal, double pos, Brush color, bool dashed)
+    private static Line MakeGuideLine(bool horizontal, double pos, double minX, double maxX, double minY, double maxY,
+                                      Brush color, double thickness, double opacity)
     {
-        const double far = 100000;
-        var line = new Line { Stroke = color, StrokeThickness = 1, IsHitTestVisible = false };
-        if (dashed) line.StrokeDashArray = new DoubleCollection(new[] { 4.0, 3.0 });
-        if (horizontal) { line.X1 = -far; line.X2 = far; line.Y1 = line.Y2 = pos; }
-        else { line.Y1 = -far; line.Y2 = far; line.X1 = line.X2 = pos; }
+        var line = new Line
+        {
+            Stroke = color, StrokeThickness = thickness, Opacity = opacity, IsHitTestVisible = false,
+            StrokeDashArray = new DoubleCollection(new[] { 4.0, 3.0 })
+        };
+        if (horizontal) { line.X1 = minX; line.X2 = maxX; line.Y1 = line.Y2 = pos; }
+        else { line.Y1 = minY; line.Y2 = maxY; line.X1 = line.X2 = pos; }
         return line;
     }
 
