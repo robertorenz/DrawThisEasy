@@ -105,14 +105,29 @@ public static class ShapeFactory
 
     private static (UIElement, System.Windows.Shapes.Shape[]) BuildCloud(Canvas c, double w, double h, Brush fill, Brush stroke)
     {
-        // Normalized cloud path on 100x60 viewport, scaled into w x h.
-        // Using cubic beziers for smooth top, flat-ish bottom.
-        const string data = "M20,55 C5,55 0,40 12,32 C5,18 22,12 32,20 C35,5 60,3 68,18 C82,10 96,22 88,36 C100,42 92,58 78,55 C70,62 30,62 20,55 Z";
-        var geom = Geometry.Parse(data);
-        geom.Transform = new ScaleTransform(w / 100.0, h / 60.0);
+        // Build cloud as an explicit PathGeometry so we never call Geometry.Parse on a string
+        // that gets a Transform stamped on it (that combination has surprised us before).
+        var sx = w / 100.0;
+        var sy = h / 60.0;
+        Point P(double x, double y) => new Point(x * sx, y * sy);
+
+        var fig = new PathFigure { StartPoint = P(20, 55), IsClosed = true, IsFilled = true };
+        fig.Segments.Add(new BezierSegment(P(5, 55),   P(0, 40),  P(12, 32), true));
+        fig.Segments.Add(new BezierSegment(P(5, 18),   P(22, 12), P(32, 20), true));
+        fig.Segments.Add(new BezierSegment(P(35, 5),   P(60, 3),  P(68, 18), true));
+        fig.Segments.Add(new BezierSegment(P(82, 10),  P(96, 22), P(88, 36), true));
+        fig.Segments.Add(new BezierSegment(P(100, 42), P(92, 58), P(78, 55), true));
+        fig.Segments.Add(new BezierSegment(P(70, 62),  P(30, 62), P(20, 55), true));
+
+        var geom = new PathGeometry();
+        geom.Figures.Add(fig);
+
         var path = new Path
         {
-            Fill = fill, Stroke = stroke, StrokeThickness = StrokeThickness, StrokeLineJoin = PenLineJoin.Round,
+            Fill = fill,
+            Stroke = stroke,
+            StrokeThickness = StrokeThickness,
+            StrokeLineJoin = PenLineJoin.Round,
             Data = geom
         };
         c.Children.Add(path);
