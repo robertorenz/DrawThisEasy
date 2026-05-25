@@ -238,6 +238,16 @@ public static class L10n
             ["color.custom"]   = "Custom color...",
             ["color.apply"]    = "Apply",
 
+            // Right-click context menu
+            ["ctx.edittext"]  = "Edit text",
+            ["ctx.fill"]      = "Fill",
+            ["ctx.stroke"]    = "Stroke",
+            ["ctx.front"]     = "Bring to front",
+            ["ctx.back"]      = "Send to back",
+            ["ctx.duplicate"] = "Duplicate",
+            ["ctx.copy"]      = "Copy",
+            ["ctx.delete"]    = "Delete",
+
             // User manual
             ["manual.title"]    = "User manual",
             ["manual.subtitle"] = "Everything you need to build diagrams fast",
@@ -497,6 +507,16 @@ public static class L10n
             ["color.standard"] = "COLORES ESTÁNDAR",
             ["color.custom"]   = "Color personalizado...",
             ["color.apply"]    = "Aplicar",
+
+            // Right-click context menu
+            ["ctx.edittext"]  = "Editar texto",
+            ["ctx.fill"]      = "Relleno",
+            ["ctx.stroke"]    = "Borde",
+            ["ctx.front"]     = "Traer al frente",
+            ["ctx.back"]      = "Enviar al fondo",
+            ["ctx.duplicate"] = "Duplicar",
+            ["ctx.copy"]      = "Copiar",
+            ["ctx.delete"]    = "Eliminar",
 
             // User manual
             ["manual.title"]    = "Manual de usuario",

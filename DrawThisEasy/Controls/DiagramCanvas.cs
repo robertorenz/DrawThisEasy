@@ -50,6 +50,7 @@ public class DiagramCanvas : Canvas
     private Rectangle? _marqueeRect;
     private bool _spaceHeld;
     private bool _isEditingText;
+    private bool _rightClickPending;
 
     // ---- Undo/redo ----
     private readonly Stack<string> _undoStack = new();
@@ -65,6 +66,8 @@ public class DiagramCanvas : Canvas
     public event EventHandler<ToolMode>? ToolChanged;
     public event EventHandler? ZoomChanged;
     public event EventHandler? ModelDirty;
+    // Raised when the user right-clicks a shape (without dragging). Arg = screen position.
+    public event EventHandler<Point>? ContextMenuRequested;
 
     // ---- Public API ----
     public DiagramModel Model => _model;
@@ -103,6 +106,7 @@ public class DiagramCanvas : Canvas
         MouseMove += OnMouseMove;
         MouseWheel += OnMouseWheel;
         MouseRightButtonDown += OnMouseRightDown;
+        MouseRightButtonUp += OnMouseRightUp;
 
         // Initial focus when added
         Loaded += (_, _) => Focus();
@@ -723,12 +727,48 @@ public class DiagramCanvas : Canvas
 
     private void OnMouseRightDown(object sender, MouseButtonEventArgs e)
     {
-        // Right-click acts as quick pan
+        if (_isEditingText) CommitTextEdit();
+        Focus();
+        var screen = e.GetPosition(this);
+        var world = ScreenToWorld(screen);
+
+        // Right-click on a shape → select it and arm a context menu (raised on release
+        // if the user didn't drag). Right-click on empty space → quick pan, as before.
+        var hit = HitTestShape(world);
+        if (hit != null)
+        {
+            if (!_selected.Contains(hit.Id)) SelectOnly(hit.Id);
+            _rightClickPending = true;
+            _dragStartScreen = screen;
+            e.Handled = true;
+            return;
+        }
+
         _drag = DragMode.Pan;
-        _dragStartScreen = e.GetPosition(this);
+        _dragStartScreen = screen;
         _dragStartTransform = _worldTransform.Matrix;
         Cursor = Cursors.SizeAll;
         CaptureMouse();
+        e.Handled = true;
+    }
+
+    private void OnMouseRightUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_rightClickPending)
+        {
+            _rightClickPending = false;
+            var screen = e.GetPosition(this);
+            // Only treat as a context-menu click if the pointer barely moved.
+            if ((screen - _dragStartScreen).Length < 6)
+                ContextMenuRequested?.Invoke(this, screen);
+        }
+
+        if (_drag == DragMode.Pan)
+        {
+            _drag = DragMode.None;
+            if (IsMouseCaptured) ReleaseMouseCapture();
+            UpdateCursor();
+        }
         e.Handled = true;
     }
 
