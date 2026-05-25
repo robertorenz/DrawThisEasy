@@ -21,23 +21,14 @@
     <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
       <Grid Margin="16,0">
         <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="220"/>
+          <ColumnDefinition Width="Auto"/>
           <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
           <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Brand -->
-        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-          <Grid Width="28" Height="28" Margin="0,0,10,0">
-            <Rectangle Width="11" Height="9" RadiusX="2" RadiusY="2" Fill="#0EA5E9" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="2,4,0,0"/>
-            <Rectangle Width="11" Height="9" RadiusX="2" RadiusY="2" Fill="#14B8A6" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,2,0"/>
-            <Rectangle Width="11" Height="9" RadiusX="2" RadiusY="2" Fill="#F59E0B" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,3"/>
-          </Grid>
-          <TextBlock Text="PictureThis" FontFamily="Segoe UI" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Foreground="{StaticResource TextBrush}"/>
-        </StackPanel>
-
-        <!-- Center: menu bar -->
-        <Menu Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="6,0,0,0">
+        <!-- Left: menu bar -->
+        <Menu Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center">
           <MenuItem x:Name="MnuFile" Header="_File" Style="{StaticResource TopMenuItem}">
             <MenuItem x:Name="MnuFileNew"       Header="_New"            InputGestureText="Ctrl+N" Click="BtnNew_Click"/>
             <MenuItem x:Name="MnuFileTemplates" Header="_Templates..."                              Click="BtnTemplates_Click"/>
@@ -74,7 +65,7 @@
           </MenuItem>
         </Menu>
 
-        <!-- Right -->
+        <!-- Right side: zoom + lang/help icons -->
         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
           <Border Background="#FFF1F5F9" CornerRadius="6" Padding="2" Margin="0,0,8,0">
             <StackPanel Orientation="Horizontal">
@@ -87,6 +78,16 @@
           </Border>
           <Button x:Name="BtnLang" Style="{StaticResource IconButton}" Click="BtnLang_Click" Content="EN" MinWidth="40" FontWeight="SemiBold"/>
           <Button x:Name="BtnHelp" Style="{StaticResource IconButton}" Click="BtnHelp_Click" Content="?"/>
+        </StackPanel>
+
+        <!-- Right-most: brand -->
+        <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+          <Grid Width="28" Height="28" Margin="0,0,10,0">
+            <Rectangle Width="11" Height="9" RadiusX="2" RadiusY="2" Fill="#0EA5E9" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="2,4,0,0"/>
+            <Rectangle Width="11" Height="9" RadiusX="2" RadiusY="2" Fill="#14B8A6" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,2,0"/>
+            <Rectangle Width="11" Height="9" RadiusX="2" RadiusY="2" Fill="#F59E0B" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,3"/>
+          </Grid>
+          <TextBlock Text="PictureThis" FontFamily="Segoe UI" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Foreground="{StaticResource TextBrush}"/>
         </StackPanel>
       </Grid>
     </Border>
