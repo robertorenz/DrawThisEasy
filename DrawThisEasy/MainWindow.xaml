@@ -32,10 +32,14 @@
           <MenuItem x:Name="MnuFile" Header="_File" Style="{StaticResource TopMenuItem}">
             <MenuItem x:Name="MnuFileNew"       Header="_New"            InputGestureText="Ctrl+N" Click="BtnNew_Click"/>
             <MenuItem x:Name="MnuFileTemplates" Header="_Templates..."                              Click="BtnTemplates_Click"/>
+            <MenuItem x:Name="MnuFileCloud"     Header="_Cloud Services..."                          Click="BtnCloud_Click"/>
             <Separator/>
             <MenuItem x:Name="MnuFileOpen"      Header="_Open..."        InputGestureText="Ctrl+O" Click="BtnOpen_Click"/>
             <MenuItem x:Name="MnuFileSave"      Header="_Save..."        InputGestureText="Ctrl+S" Click="BtnSave_Click"/>
             <MenuItem x:Name="MnuFileExport"    Header="_Export PNG..."  InputGestureText="Ctrl+E" Click="BtnExport_Click"/>
+            <MenuItem x:Name="MnuFileExportExcalidraw" Header="Export to _Excalidraw..." Click="BtnExportExcalidraw_Click"/>
+            <MenuItem x:Name="MnuFileExportDrawio"     Header="Export to _draw.io..."    Click="BtnExportDrawio_Click"/>
+            <MenuItem x:Name="MnuFileExportMermaid"    Header="Export to _Mermaid..."    Click="BtnExportMermaid_Click"/>
             <Separator/>
             <MenuItem x:Name="MnuFileExit"      Header="E_xit"                                     Click="MnuExit_Click"/>
           </MenuItem>

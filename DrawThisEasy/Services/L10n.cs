@@ -137,6 +137,10 @@ public static class L10n
             ["templates.cancel"]   = "Cancel",
             ["templates.empty"]    = "Empty canvas",
 
+            // Cloud services gallery
+            ["cloud.title"]    = "Cloud services",
+            ["cloud.subtitle"] = "Click a service to drop it on the canvas.",
+
             ["template.blank"]              = "Blank canvas",
             ["template.blank.desc"]         = "Start from scratch with an empty diagram.",
             ["template.orgchart"]           = "Org chart",
@@ -192,9 +196,13 @@ public static class L10n
             ["menu.file"]            = "_File",
             ["menu.file.new"]        = "_New",
             ["menu.file.templates"]  = "_Templates...",
+            ["menu.file.cloud"]      = "_Cloud Services...",
             ["menu.file.open"]       = "_Open...",
             ["menu.file.save"]       = "_Save...",
             ["menu.file.export"]     = "_Export PNG...",
+            ["menu.file.export.excalidraw"] = "Export to _Excalidraw...",
+            ["menu.file.export.drawio"]     = "Export to _draw.io...",
+            ["menu.file.export.mermaid"]    = "Export to _Mermaid...",
             ["menu.file.exit"]       = "E_xit",
             ["menu.edit"]            = "_Edit",
             ["menu.edit.undo"]       = "_Undo",
@@ -219,6 +227,10 @@ public static class L10n
             // Modal
             ["modal.ok"]              = "OK",
             ["modal.cancel"]          = "Cancel",
+            ["modal.unsaved.title"]   = "Unsaved changes",
+            ["modal.unsaved.body"]    = "You have unsaved changes. Do you want to save before closing?",
+            ["modal.unsaved.save"]    = "Save",
+            ["modal.unsaved.discard"] = "Don't save",
             ["modal.new.title"]       = "New diagram?",
             ["modal.new.body"]        = "This will clear the current canvas. You'll lose any unsaved changes.",
             ["modal.new.confirm"]     = "Start new",
@@ -407,6 +419,10 @@ public static class L10n
             ["templates.cancel"]   = "Cancelar",
             ["templates.empty"]    = "Lienzo vacío",
 
+            // Cloud services gallery
+            ["cloud.title"]    = "Servicios en la nube",
+            ["cloud.subtitle"] = "Haz clic en un servicio para colocarlo en el lienzo.",
+
             ["template.blank"]              = "Lienzo en blanco",
             ["template.blank.desc"]         = "Empieza desde cero con un diagrama vacío.",
             ["template.orgchart"]           = "Organigrama",
@@ -462,9 +478,13 @@ public static class L10n
             ["menu.file"]            = "_Archivo",
             ["menu.file.new"]        = "_Nuevo",
             ["menu.file.templates"]  = "_Plantillas...",
+            ["menu.file.cloud"]      = "Servicios en la _nube...",
             ["menu.file.open"]       = "_Abrir...",
             ["menu.file.save"]       = "_Guardar...",
             ["menu.file.export"]     = "E_xportar PNG...",
+            ["menu.file.export.excalidraw"] = "Exportar a _Excalidraw...",
+            ["menu.file.export.drawio"]     = "Exportar a _draw.io...",
+            ["menu.file.export.mermaid"]    = "Exportar a _Mermaid...",
             ["menu.file.exit"]       = "_Salir",
             ["menu.edit"]            = "_Edición",
             ["menu.edit.undo"]       = "_Deshacer",
@@ -489,6 +509,10 @@ public static class L10n
             // Modal
             ["modal.ok"]              = "Aceptar",
             ["modal.cancel"]          = "Cancelar",
+            ["modal.unsaved.title"]   = "Cambios sin guardar",
+            ["modal.unsaved.body"]    = "Tienes cambios sin guardar. ¿Quieres guardarlos antes de cerrar?",
+            ["modal.unsaved.save"]    = "Guardar",
+            ["modal.unsaved.discard"] = "No guardar",
             ["modal.new.title"]       = "¿Nuevo diagrama?",
             ["modal.new.body"]        = "Esto borrará el lienzo actual. Perderás los cambios no guardados.",
             ["modal.new.confirm"]     = "Comenzar",
