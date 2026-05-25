@@ -405,7 +405,13 @@ public class DiagramCanvas : Canvas
     {
         if (fromId == toId) throw new InvalidOperationException("Cannot connect a shape to itself");
         Snapshot();
-        var conn = new Connection { FromId = fromId, ToId = toId };
+        var conn = new Connection
+        {
+            FromId = fromId, ToId = toId,
+            Routing = AppSettings.Current.DefaultRouting,
+            StrokeStyle = AppSettings.Current.DefaultStroke,
+            Dashed = AppSettings.Current.DefaultStroke == StrokeStyle.Dashed
+        };
         _model.Connections.Add(conn);
         AddConnectionVisual(conn);
         return conn;
@@ -1507,7 +1513,7 @@ public class DiagramCanvas : Canvas
     private (double dx, double dy) ComputeMoveSnap(double dx, double dy)
     {
         _snapX = null; _snapY = null;
-        if (_dragOrigins.Count == 0) return (dx, dy);
+        if (_dragOrigins.Count == 0 || !AppSettings.Current.SnapEnabled) return (dx, dy);
 
         double minX = double.MaxValue, minY = double.MaxValue, maxX = double.MinValue, maxY = double.MinValue;
         foreach (var (id, origin) in _dragOrigins)

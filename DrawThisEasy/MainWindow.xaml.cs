@@ -287,23 +287,27 @@ public partial class MainWindow : Window
         var tickBrush = (Brush)FindResource("BorderBrush");
         var textBrush = (Brush)FindResource("TextMutedBrush");
 
-        // A "nice" world step so labels land roughly every 64 px.
-        double rawStep = 64.0 / zoom;
+        // Label in the chosen unit; pick a "nice" step in units so labels land ~64 px apart.
+        double unitPx = AppSettings.UnitPixels(AppSettings.Current.Units);
+        double rawStep = (64.0 / zoom) / unitPx;
         double mag = Math.Pow(10, Math.Floor(Math.Log10(rawStep)));
         double norm = rawStep / mag;
         double step = (norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10) * mag;
 
-        double worldEnd = originWorld + lengthPx / zoom;
-        for (double w = Math.Floor(originWorld / step) * step; w <= worldEnd; w += step)
+        double endUnits = (originWorld + lengthPx / zoom) / unitPx;
+        for (double u = Math.Floor((originWorld / unitPx) / step) * step; u <= endUnits; u += step)
         {
-            double p = (w - originWorld) * zoom;
+            double p = (u * unitPx - originWorld) * zoom;
             if (p < 0 || p > lengthPx) continue;
             var tick = new Line { Stroke = tickBrush, StrokeThickness = 1 };
             if (horizontal) { tick.X1 = tick.X2 = p; tick.Y1 = 11; tick.Y2 = 18; }
             else { tick.Y1 = tick.Y2 = p; tick.X1 = 11; tick.X2 = 18; }
             ruler.Children.Add(tick);
 
-            var label = new TextBlock { Text = ((int)Math.Round(w)).ToString(), FontSize = 8, Foreground = textBrush };
+            var text = AppSettings.Current.Units == RulerUnit.Pixels
+                ? ((int)Math.Round(u)).ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : u.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+            var label = new TextBlock { Text = text, FontSize = 8, Foreground = textBrush };
             if (horizontal) { Canvas.SetLeft(label, p + 2); Canvas.SetTop(label, 1); }
             else { Canvas.SetLeft(label, 2); Canvas.SetTop(label, p + 1); }
             ruler.Children.Add(label);
@@ -1387,6 +1391,12 @@ public partial class MainWindow : Window
 
     private void MnuClearGuides_Click(object sender, RoutedEventArgs e) => Diagram.ClearGuides();
 
+    private void BtnPreferences_Click(object sender, RoutedEventArgs e)
+    {
+        if (PreferencesWindow.Show(this))
+            DrawRulers();   // ruler units may have changed
+    }
+
     private void UpdateZoomLabel() => ZoomLabel.Text = $"{(int)Math.Round(Diagram.Zoom * 100)}%";
 
     private void BtnHelp_Click(object sender, RoutedEventArgs e)
@@ -1446,6 +1456,7 @@ public partial class MainWindow : Window
         MnuEditDelete.Header     = L10n.T("menu.edit.delete");
         MnuEditSelectAll.Header  = L10n.T("menu.edit.selectall");
         MnuEditInsertImage.Header = L10n.T("menu.edit.insertimage");
+        MnuEditPreferences.Header = L10n.T("menu.edit.preferences");
 
         MnuView.Header           = L10n.T("menu.view");
         MnuViewZoomIn.Header     = L10n.T("menu.view.zoomin");
