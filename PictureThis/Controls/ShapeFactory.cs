@@ -251,12 +251,16 @@ public static class ShapeFactory
 
     private static (UIElement, System.Windows.Shapes.Shape[]) BuildText(Canvas c, double w, double h)
     {
-        // No body — invisible hit rect for selection
+        // Faint dashed frame so the user can find / hit the text shape.
+        // Becomes the accent color when selected via SetSelected.
         var hit = new System.Windows.Shapes.Rectangle
         {
-            Width = w, Height = h, Fill = Brushes.Transparent,
+            Width = w, Height = h,
+            Fill = Brushes.Transparent,
             Stroke = (Brush)new BrushConverter().ConvertFromString("#CBD5E1")!,
-            StrokeThickness = 1, StrokeDashArray = new DoubleCollection(new[] { 3.0, 3.0 }), Opacity = 0.0
+            StrokeThickness = 1,
+            StrokeDashArray = new DoubleCollection(new[] { 3.0, 3.0 }),
+            Opacity = 0.55
         };
         c.Children.Add(hit);
         return (c, new System.Windows.Shapes.Shape[] { hit });

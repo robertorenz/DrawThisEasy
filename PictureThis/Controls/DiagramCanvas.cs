@@ -238,18 +238,11 @@ public class DiagramCanvas : Canvas
     {
         var v = new ShapeVisual(node);
         v.Rebuild();
-        v.Element.MouseLeftButtonDown += (s, e) => OnShapeMouseDown(node, e);
         v.Element.MouseEnter += (s, e) => OnShapeMouseEnter(node);
         v.Element.MouseLeave += (s, e) => OnShapeMouseLeave(node);
-        v.Element.MouseLeftButtonUp += (s, e) =>
-        {
-            // Double-click to edit
-            if (e.ClickCount == 2 && _tool == ToolMode.Select)
-            {
-                BeginEditText(node);
-                e.Handled = true;
-            }
-        };
+        // NOTE: do NOT attach MouseDown/Up on the shape — the outer canvas captures
+        // the mouse on press, so handlers here never fire. Double-click is handled
+        // centrally in OnMouseLeftDown via e.ClickCount.
 
         Canvas.SetLeft(v.Element, node.X);
         Canvas.SetTop(v.Element, node.Y);
@@ -519,6 +512,15 @@ public class DiagramCanvas : Canvas
             var hit = HitTestShape(world);
             if (hit != null && _tool == ToolMode.Select)
             {
+                // Double-click → edit shape label
+                if (e.ClickCount == 2)
+                {
+                    SelectOnly(hit.Id);
+                    BeginEditText(hit);
+                    e.Handled = true;
+                    return;
+                }
+
                 if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) || Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
                     ToggleSelect(hit.Id);
                 else if (!_selected.Contains(hit.Id))
@@ -572,12 +574,6 @@ public class DiagramCanvas : Canvas
             CaptureMouse();
             e.Handled = true;
         }
-    }
-
-    private void OnShapeMouseDown(ShapeNode node, MouseButtonEventArgs e)
-    {
-        // The outer canvas handler also runs because mouse events bubble through visuals.
-        // That handler will perform hit-testing properly. So we just stop default to keep clean.
     }
 
     private void OnMouseMove(object sender, MouseEventArgs e)
