@@ -314,7 +314,7 @@ public static class L10n
             ["manual.files.h"]        = "Saving, opening and exporting",
             ["manual.files.b.save"]   = "Save and Open store diagrams as .ptd.json files you can reopen later.",
             ["manual.files.b.export"] = "Export PNG writes a crisp 2× resolution image of your diagram.",
-            ["manual.files.b.new"]    = "New clears the canvas to start over — you'll be asked to confirm first.",
+            ["manual.files.b.new"]    = "New (Ctrl+N, or the + tab) opens another diagram in its own tab; switch between open diagrams along the top.",
 
             ["manual.editing.h"] = "Copy, paste and undo",
             ["manual.editing.p"] = "Copy, Cut and Paste (Ctrl+C / X / V) work on a selection and even between two open DrawThisEasy windows, preserving the connections between shapes. Duplicate with Ctrl+D, select everything with Ctrl+A, and step backward or forward with Undo (Ctrl+Z) and Redo (Ctrl+Y).",
@@ -600,7 +600,7 @@ public static class L10n
             ["manual.files.h"]        = "Guardar, abrir y exportar",
             ["manual.files.b.save"]   = "Guardar y Abrir almacenan los diagramas como archivos .ptd.json que puedes reabrir después.",
             ["manual.files.b.export"] = "Exportar PNG genera una imagen nítida de tu diagrama al doble de resolución (2×).",
-            ["manual.files.b.new"]    = "Nuevo borra el lienzo para empezar de cero; primero se te pedirá confirmación.",
+            ["manual.files.b.new"]    = "Nuevo (Ctrl+N, o la pestaña +) abre otro diagrama en su propia pestaña; cambia entre los diagramas abiertos en la parte superior.",
 
             ["manual.editing.h"] = "Copiar, pegar y deshacer",
             ["manual.editing.p"] = "Copiar, Cortar y Pegar (Ctrl+C / X / V) funcionan sobre una selección e incluso entre dos ventanas abiertas de DrawThisEasy, conservando las conexiones entre formas. Duplica con Ctrl+D, selecciona todo con Ctrl+A y avanza o retrocede con Deshacer (Ctrl+Z) y Rehacer (Ctrl+Y).",

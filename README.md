@@ -12,6 +12,7 @@ When you need to whiteboard *"how do the clients, load balancer, app servers, qu
 
 ## Features
 
+- **Multiple documents in tabs** — open several diagrams at once and switch between them along the top of the canvas. Each tab keeps its own zoom, selection, and unsaved-changes state; the `+` (or `Ctrl+N`) opens a new one, and closing a tab with unsaved edits prompts you to save.
 - **Menu bar** (File / Edit / View / Language / Help) with full keyboard accelerators.
 - **Top tool strip** and **left palette** for fast tool switching.
 - **Shape palette** tailored to systems work:
@@ -50,7 +51,7 @@ When you need to whiteboard *"how do the clients, load balancer, app servers, qu
 | `H`            | Hexagon        | `Esc`           | Cancel          |
 | `B`            | Database       |                 |                 |
 | `C`            | Cloud          | **File**        |                 |
-| `S`            | Server         | `Ctrl+N`        | New diagram     |
+| `S`            | Server         | `Ctrl+N`        | New tab         |
 | `P`            | User / Person  | `Ctrl+O`        | Open            |
 | `T`            | Text           | `Ctrl+S`        | Save            |
 |                |                | `Ctrl+E`        | Export PNG      |
