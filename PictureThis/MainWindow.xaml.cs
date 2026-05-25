@@ -278,8 +278,11 @@ public partial class MainWindow : Window
     {
         foreach (var hex in Palette.Fills)
             FillSwatches.Children.Add(BuildSwatch(hex, isFill: true));
+        FillSwatches.Children.Add(BuildMoreSwatch(isFill: true));
+
         foreach (var hex in Palette.Strokes)
             StrokeSwatches.Children.Add(BuildSwatch(hex, isFill: false));
+        StrokeSwatches.Children.Add(BuildMoreSwatch(isFill: false));
     }
 
     private Border BuildSwatch(string hex, bool isFill)
@@ -302,6 +305,71 @@ public partial class MainWindow : Window
             else Diagram.SetSelectedStroke(hex);
         };
         return border;
+    }
+
+    // "+" swatch that opens the custom color picker dialog.
+    private Border BuildMoreSwatch(bool isFill)
+    {
+        // Visual: a small rainbow gradient swatch + a "+" overlay
+        var border = new Border
+        {
+            Width = 22, Height = 22,
+            Margin = new Thickness(0, 0, 6, 6),
+            CornerRadius = new CornerRadius(6),
+            BorderBrush = (Brush)FindResource("BorderBrush"),
+            BorderThickness = new Thickness(1),
+            Cursor = Cursors.Hand,
+            ToolTip = L10n.T("color.custom"),
+            Background = new LinearGradientBrush(
+                new GradientStopCollection
+                {
+                    new GradientStop((Color)ColorConverter.ConvertFromString("#F87171"), 0.0),
+                    new GradientStop((Color)ColorConverter.ConvertFromString("#FBBF24"), 0.25),
+                    new GradientStop((Color)ColorConverter.ConvertFromString("#34D399"), 0.50),
+                    new GradientStop((Color)ColorConverter.ConvertFromString("#38BDF8"), 0.75),
+                    new GradientStop((Color)ColorConverter.ConvertFromString("#F472B6"), 1.0),
+                },
+                new Point(0, 0), new Point(1, 1))
+        };
+        border.Child = new TextBlock
+        {
+            Text = "+",
+            FontSize = 13, FontWeight = FontWeights.Bold,
+            Foreground = Brushes.White,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            Effect = new System.Windows.Media.Effects.DropShadowEffect
+            {
+                Color = Colors.Black, Opacity = 0.45, BlurRadius = 2, ShadowDepth = 0
+            }
+        };
+        border.MouseLeftButtonDown += (s, e) =>
+        {
+            var initial = GetCurrentColorForSelection(isFill);
+            var picked = ColorPickerWindow.Pick(this, initial);
+            if (picked.HasValue)
+            {
+                var hex = $"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}";
+                if (isFill) Diagram.SetSelectedFill(hex);
+                else        Diagram.SetSelectedStroke(hex);
+            }
+        };
+        return border;
+    }
+
+    private Color GetCurrentColorForSelection(bool isFill)
+    {
+        var shape = Diagram.GetSelectedShape();
+        if (shape != null)
+        {
+            try
+            {
+                var c = (Color)ColorConverter.ConvertFromString(isFill ? shape.Fill : shape.Stroke);
+                return c;
+            }
+            catch { }
+        }
+        return isFill ? Colors.White : Color.FromRgb(0x33, 0x41, 0x55);
     }
 
     // ===== Inspector =====

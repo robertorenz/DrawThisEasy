@@ -228,6 +228,14 @@ public static class L10n
             ["modal.exported.title"]  = "Exported",
             ["modal.exported.body"]   = "PNG written to {0}.",
             ["modal.exportfail.title"]= "Could not export",
+
+            // Color picker
+            ["color.title"]    = "Color picker",
+            ["color.hex"]      = "Hex",
+            ["color.preview"]  = "Preview",
+            ["color.standard"] = "STANDARD COLORS",
+            ["color.custom"]   = "Custom color...",
+            ["color.apply"]    = "Apply",
         },
 
         [Language.Es] = new()
@@ -418,6 +426,14 @@ public static class L10n
             ["modal.exported.title"]  = "Exportado",
             ["modal.exported.body"]   = "PNG escrito en {0}.",
             ["modal.exportfail.title"]= "No se pudo exportar",
+
+            // Color picker
+            ["color.title"]    = "Selector de color",
+            ["color.hex"]      = "Hex",
+            ["color.preview"]  = "Vista previa",
+            ["color.standard"] = "COLORES ESTÁNDAR",
+            ["color.custom"]   = "Color personalizado...",
+            ["color.apply"]    = "Aplicar",
         }
     };
 }
