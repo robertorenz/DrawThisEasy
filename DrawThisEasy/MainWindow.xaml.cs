@@ -31,6 +31,25 @@ public partial class MainWindow : Window
     private Button? _tmplStripBtn;
     private TextBlock? _tmplStripLabel;
 
+    // ===== Open documents (tabs) =====
+    private sealed class DocTab
+    {
+        public DiagramCanvas Canvas = null!;
+        public Border Header = null!;
+        public TextBlock TitleText = null!;
+        public TextBlock DirtyDot = null!;
+        public string Title = "Untitled";
+        public bool Dirty;
+    }
+
+    private readonly List<DocTab> _docs = new();
+    private DocTab _active = null!;
+    private Button _addTabButton = null!;
+    private int _newDocSeq;
+
+    // All chrome (toolbar, palette, inspector, keyboard) acts on the active document's canvas.
+    private DiagramCanvas Diagram => _active.Canvas;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -38,20 +57,158 @@ public partial class MainWindow : Window
         BuildPalette();
         BuildSwatches();
 
-        Diagram.ToolChanged += (s, mode) => SyncToolButtons();
-        Diagram.SelectionChanged += (s, e) => UpdateInspectorVisibility();
-        Diagram.ZoomChanged += (s, e) => UpdateZoomLabel();
-        Diagram.ModelDirty += (s, e) => MarkDirty();
-        Diagram.ContextMenuRequested += (s, pt) => ShowShapeContextMenu(pt);
-
         Closing += Window_Closing;
-
         L10n.LanguageChanged += (s, e) => ApplyLanguage();
-        ApplyLanguage();
 
+        BuildAddTabButton();
+        NewDocument();      // first document — wires events, activates, syncs chrome
+
+        ApplyLanguage();
+    }
+
+    // ===== Documents (tabs) =====
+
+    private void BuildAddTabButton()
+    {
+        _addTabButton = new Button
+        {
+            Style = (Style)FindResource("IconButton"),
+            Content = "+",
+            FontSize = 16,
+            Width = 30, Height = 26,
+            Margin = new Thickness(2, 0, 0, 4),
+            VerticalAlignment = VerticalAlignment.Bottom,
+            ToolTip = L10n.T("topbar.new")
+        };
+        _addTabButton.Click += (s, e) => NewDocument();
+        TabStrip.Children.Add(_addTabButton);
+    }
+
+    /// Opens a document in a new tab. With no model, a blank "Untitled N" diagram.
+    private DocTab NewDocument(DiagramModel? model = null, string? title = null)
+    {
+        var canvas = new DiagramCanvas { Visibility = Visibility.Collapsed };
+        WireCanvas(canvas);
+        CanvasHost.Children.Add(canvas);
+
+        var tab = new DocTab
+        {
+            Canvas = canvas,
+            Title = title ?? (_newDocSeq == 0 ? "Untitled" : $"Untitled {_newDocSeq}")
+        };
+        _newDocSeq++;
+        BuildTabHeader(tab);
+        _docs.Add(tab);
+        TabStrip.Children.Insert(TabStrip.Children.Count - 1, tab.Header); // before the "+"
+
+        if (model != null) canvas.LoadModel(model);   // loading does not mark dirty
+        ActivateDocument(tab);
+        return tab;
+    }
+
+    private void WireCanvas(DiagramCanvas c)
+    {
+        c.ToolChanged          += (s, mode) => { if (ReferenceEquals(s, _active.Canvas)) SyncToolButtons(); };
+        c.SelectionChanged     += (s, e)    => { if (ReferenceEquals(s, _active.Canvas)) UpdateInspectorVisibility(); };
+        c.ZoomChanged          += (s, e)    => { if (ReferenceEquals(s, _active.Canvas)) UpdateZoomLabel(); };
+        c.ModelDirty           += (s, e)    => { if (s is DiagramCanvas dc) MarkDirtyFor(dc); };
+        c.ContextMenuRequested += (s, pt)   => { if (ReferenceEquals(s, _active.Canvas)) ShowShapeContextMenu(pt); };
+    }
+
+    private void ActivateDocument(DocTab tab)
+    {
+        if (_active != null && _active != tab)
+        {
+            _active.Canvas.Visibility = Visibility.Collapsed;
+            StyleTabHeader(_active, active: false);
+        }
+        _active = tab;
+        tab.Canvas.Visibility = Visibility.Visible;
+        StyleTabHeader(tab, active: true);
+
+        // Sync all chrome to the now-active document.
         SyncToolButtons();
         UpdateInspectorVisibility();
         UpdateZoomLabel();
+        UpdateWindowTitle();
+        tab.Canvas.Focus();
+    }
+
+    private void CloseDocument(DocTab tab)
+    {
+        if (tab.Dirty)
+        {
+            ActivateDocument(tab);   // show what's being closed
+            var choice = ModalWindow.AskSaveBeforeClosing(this,
+                L10n.T("modal.unsaved.title"), L10n.T("modal.unsaved.body"),
+                L10n.T("modal.unsaved.save"), L10n.T("modal.unsaved.discard"), L10n.T("modal.cancel"));
+            if (choice == ModalWindow.UnsavedChoice.Cancel) return;
+            if (choice == ModalWindow.UnsavedChoice.Save && !SaveDiagram(notify: false)) return;
+        }
+
+        TabStrip.Children.Remove(tab.Header);
+        CanvasHost.Children.Remove(tab.Canvas);
+        _docs.Remove(tab);
+
+        if (_docs.Count == 0) { _active = null!; NewDocument(); }  // always keep one open
+        else if (_active == tab) ActivateDocument(_docs[^1]);
+    }
+
+    private void BuildTabHeader(DocTab tab)
+    {
+        tab.TitleText = new TextBlock { Text = tab.Title, VerticalAlignment = VerticalAlignment.Center, FontSize = 12 };
+        tab.DirtyDot = new TextBlock
+        {
+            Text = "•", FontSize = 14, Margin = new Thickness(5, 0, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            Foreground = (Brush)FindResource("AccentBrush"),
+            Visibility = Visibility.Collapsed
+        };
+        var close = new TextBlock
+        {
+            Text = "✕", FontSize = 11, Margin = new Thickness(8, 0, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            Foreground = (Brush)FindResource("TextMutedBrush"),
+            Cursor = Cursors.Hand
+        };
+        close.MouseLeftButtonUp += (s, e) => { e.Handled = true; CloseDocument(tab); };
+
+        var content = new StackPanel { Orientation = Orientation.Horizontal };
+        content.Children.Add(tab.TitleText);
+        content.Children.Add(tab.DirtyDot);
+        content.Children.Add(close);
+
+        tab.Header = new Border
+        {
+            Child = content,
+            Padding = new Thickness(12, 6, 8, 6),
+            Margin = new Thickness(0, 4, 3, 0),
+            CornerRadius = new CornerRadius(8, 8, 0, 0),
+            Cursor = Cursors.Hand,
+            BorderThickness = new Thickness(1, 1, 1, 0)
+        };
+        tab.Header.MouseLeftButtonDown += (s, e) => ActivateDocument(tab);
+        StyleTabHeader(tab, active: false);
+    }
+
+    private void StyleTabHeader(DocTab tab, bool active)
+    {
+        tab.Header.Background = active ? Brushes.White : (Brush)new BrushConverter().ConvertFromString("#FFE2E8F0")!;
+        tab.Header.BorderBrush = active ? (Brush)FindResource("BorderBrush") : Brushes.Transparent;
+        tab.TitleText.Foreground = active ? (Brush)FindResource("TextBrush") : (Brush)FindResource("TextMutedBrush");
+        tab.TitleText.FontWeight = active ? FontWeights.SemiBold : FontWeights.Normal;
+    }
+
+    private void UpdateTabHeader(DocTab tab)
+    {
+        tab.TitleText.Text = tab.Title;
+        tab.DirtyDot.Visibility = tab.Dirty ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void UpdateWindowTitle()
+    {
+        var name = _active?.Title ?? "DrawThisEasy";
+        Title = (_active?.Dirty == true ? "• " : "") + name + " — DrawThisEasy";
     }
 
     // ===== Palette =====
@@ -672,23 +829,13 @@ public partial class MainWindow : Window
 
     // ===== Top bar =====
 
-    private void BtnNew_Click(object sender, RoutedEventArgs e)
-    {
-        ModalWindow.Confirm(this,
-            L10n.T("modal.new.title"),
-            L10n.T("modal.new.body"),
-            confirmLabel: L10n.T("modal.new.confirm"),
-            onConfirm: () => { Diagram.NewDiagram(); MarkSaved(); });
-    }
+    private void BtnNew_Click(object sender, RoutedEventArgs e) => NewDocument();
 
     private void BtnTemplates_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new TemplateGalleryWindow { Owner = this };
         if (dlg.ShowDialog() == true && dlg.SelectedTemplate != null)
-        {
-            Diagram.LoadModel(CloneModel(dlg.SelectedTemplate.Builder));
-            MarkSaved();
-        }
+            NewDocument(CloneModel(dlg.SelectedTemplate.Builder), dlg.SelectedTemplate.Title);
     }
 
     private void BtnCloud_Click(object sender, RoutedEventArgs e) => OpenCloudGallery();
@@ -789,8 +936,7 @@ public partial class MainWindow : Window
             try
             {
                 var model = Persistence.Load(dlg.FileName);
-                Diagram.LoadModel(model);
-                MarkSaved();
+                NewDocument(model, IOPath.GetFileNameWithoutExtension(dlg.FileName));
             }
             catch (Exception ex)
             {
@@ -808,7 +954,7 @@ public partial class MainWindow : Window
         var dlg = new SaveFileDialog
         {
             Filter = "DrawThisEasy JSON (*.ptd.json)|*.ptd.json|JSON (*.json)|*.json",
-            FileName = SanitizeFilename(Diagram.Model.Title) + ".ptd.json",
+            FileName = SanitizeFilename(_active.Title) + ".ptd.json",
             Title = L10n.T("topbar.save")
         };
         if (dlg.ShowDialog(this) != true) return false; // user canceled the save dialog
@@ -816,6 +962,7 @@ public partial class MainWindow : Window
         try
         {
             Persistence.Save(Diagram.Model, dlg.FileName);
+            _active.Title = IOPath.GetFileNameWithoutExtension(dlg.FileName);
             MarkSaved();
             if (notify)
                 ModalWindow.Info(this,
@@ -1013,45 +1160,41 @@ public partial class MainWindow : Window
         SyncToolButtons();
     }
 
-    // ===== Unsaved-changes tracking =====
+    // ===== Unsaved-changes tracking (per document) =====
 
-    private bool _isDirty;
-    private const string AppTitle = "DrawThisEasy";
-
-    private void MarkDirty()
+    private void MarkDirtyFor(DiagramCanvas canvas)
     {
-        if (_isDirty) return;
-        _isDirty = true;
-        Title = "• " + AppTitle;   // taskbar / title-bar indicator
+        var tab = _docs.Find(d => d.Canvas == canvas);
+        if (tab == null || tab.Dirty) return;
+        tab.Dirty = true;
+        UpdateTabHeader(tab);
+        if (tab == _active) UpdateWindowTitle();
     }
 
     private void MarkSaved()
     {
-        _isDirty = false;
-        Title = AppTitle;
+        if (_active == null) return;
+        _active.Dirty = false;
+        UpdateTabHeader(_active);
+        UpdateWindowTitle();
     }
 
     private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
-        if (!_isDirty) return;   // nothing unsaved — let it close
-
-        var choice = ModalWindow.AskSaveBeforeClosing(this,
-            L10n.T("modal.unsaved.title"),
-            L10n.T("modal.unsaved.body"),
-            saveLabel:    L10n.T("modal.unsaved.save"),
-            discardLabel: L10n.T("modal.unsaved.discard"),
-            cancelLabel:  L10n.T("modal.cancel"));
-
-        switch (choice)
+        // Prompt for each document that has unsaved changes.
+        foreach (var tab in _docs.FindAll(d => d.Dirty))
         {
-            case ModalWindow.UnsavedChoice.Save:
-                // Keep the app open if the save was canceled or failed.
-                if (!SaveDiagram(notify: false)) e.Cancel = true;
-                break;
-            case ModalWindow.UnsavedChoice.Cancel:
-                e.Cancel = true;
-                break;
-            // Discard: fall through and let the window close.
+            ActivateDocument(tab);
+            var choice = ModalWindow.AskSaveBeforeClosing(this,
+                L10n.T("modal.unsaved.title"),
+                L10n.T("modal.unsaved.body"),
+                saveLabel:    L10n.T("modal.unsaved.save"),
+                discardLabel: L10n.T("modal.unsaved.discard"),
+                cancelLabel:  L10n.T("modal.cancel"));
+
+            if (choice == ModalWindow.UnsavedChoice.Cancel) { e.Cancel = true; return; }
+            if (choice == ModalWindow.UnsavedChoice.Save && !SaveDiagram(notify: false)) { e.Cancel = true; return; }
+            tab.Dirty = false;
         }
     }
 

@@ -118,9 +118,23 @@
         </ScrollViewer>
       </Border>
 
-      <!-- Canvas area -->
+      <!-- Canvas area: document tabs + canvas host -->
       <Grid Grid.Column="1">
-        <controls:DiagramCanvas x:Name="Diagram" />
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Document tab strip -->
+        <Border Grid.Row="0" Background="#FFF1F5F9" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+          <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+            <StackPanel x:Name="TabStrip" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="8,0,8,0"/>
+          </ScrollViewer>
+        </Border>
+
+        <!-- Canvas host: every open diagram lives here; only the active one is visible -->
+        <Grid Grid.Row="1">
+          <Grid x:Name="CanvasHost"/>
 
         <!-- Status bar (bottom overlay) -->
         <Border VerticalAlignment="Bottom" Background="#F2FFFFFF" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Height="28">
@@ -166,6 +180,7 @@
             </UniformGrid>
           </StackPanel>
         </Border>
+        </Grid>
       </Grid>
     </Grid>
   </Grid>
