@@ -36,14 +36,43 @@
           <TextBlock Text="PictureThis" FontFamily="Segoe UI" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Foreground="{StaticResource TextBrush}"/>
         </StackPanel>
 
-        <!-- Center actions -->
-        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-          <Button x:Name="BtnNew"       Style="{StaticResource GhostButton}"   Click="BtnNew_Click"/>
-          <Button x:Name="BtnTemplates" Style="{StaticResource GhostButton}"   Click="BtnTemplates_Click"/>
-          <Button x:Name="BtnOpen"      Style="{StaticResource GhostButton}"   Click="BtnOpen_Click"/>
-          <Button x:Name="BtnSave"      Style="{StaticResource GhostButton}"   Click="BtnSave_Click"/>
-          <Button x:Name="BtnExport"    Style="{StaticResource PrimaryButton}" Click="BtnExport_Click" Margin="6,0,0,0"/>
-        </StackPanel>
+        <!-- Center: menu bar -->
+        <Menu Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="6,0,0,0">
+          <MenuItem x:Name="MnuFile" Header="_File" Style="{StaticResource TopMenuItem}">
+            <MenuItem x:Name="MnuFileNew"       Header="_New"            InputGestureText="Ctrl+N" Click="BtnNew_Click"/>
+            <MenuItem x:Name="MnuFileTemplates" Header="_Templates..."                              Click="BtnTemplates_Click"/>
+            <Separator/>
+            <MenuItem x:Name="MnuFileOpen"      Header="_Open..."        InputGestureText="Ctrl+O" Click="BtnOpen_Click"/>
+            <MenuItem x:Name="MnuFileSave"      Header="_Save..."        InputGestureText="Ctrl+S" Click="BtnSave_Click"/>
+            <MenuItem x:Name="MnuFileExport"    Header="_Export PNG..."  InputGestureText="Ctrl+E" Click="BtnExport_Click"/>
+            <Separator/>
+            <MenuItem x:Name="MnuFileExit"      Header="E_xit"                                     Click="MnuExit_Click"/>
+          </MenuItem>
+          <MenuItem x:Name="MnuEdit" Header="_Edit" Style="{StaticResource TopMenuItem}">
+            <MenuItem x:Name="MnuEditUndo"      Header="_Undo"      InputGestureText="Ctrl+Z" Click="MnuUndo_Click"/>
+            <MenuItem x:Name="MnuEditRedo"      Header="_Redo"      InputGestureText="Ctrl+Y" Click="MnuRedo_Click"/>
+            <Separator/>
+            <MenuItem x:Name="MnuEditCut"       Header="Cu_t"       InputGestureText="Ctrl+X" Click="MnuCut_Click"/>
+            <MenuItem x:Name="MnuEditCopy"      Header="_Copy"      InputGestureText="Ctrl+C" Click="MnuCopy_Click"/>
+            <MenuItem x:Name="MnuEditPaste"     Header="_Paste"     InputGestureText="Ctrl+V" Click="MnuPaste_Click"/>
+            <MenuItem x:Name="MnuEditDup"       Header="_Duplicate" InputGestureText="Ctrl+D" Click="BtnDup_Click"/>
+            <MenuItem x:Name="MnuEditDelete"    Header="De_lete"    InputGestureText="Del"    Click="BtnDel_Click"/>
+            <Separator/>
+            <MenuItem x:Name="MnuEditSelectAll" Header="Select _All" InputGestureText="Ctrl+A" Click="MnuSelectAll_Click"/>
+          </MenuItem>
+          <MenuItem x:Name="MnuView" Header="_View" Style="{StaticResource TopMenuItem}">
+            <MenuItem x:Name="MnuViewZoomIn"    Header="Zoom _In"      Click="BtnZoomIn_Click"/>
+            <MenuItem x:Name="MnuViewZoomOut"   Header="Zoom _Out"     Click="BtnZoomOut_Click"/>
+            <MenuItem x:Name="MnuViewZoomReset" Header="_Reset Zoom"   Click="BtnZoomReset_Click"/>
+          </MenuItem>
+          <MenuItem x:Name="MnuLang" Header="_Language" Style="{StaticResource TopMenuItem}">
+            <MenuItem x:Name="MnuLangEn" Header="English" IsCheckable="True" Click="MnuLangEn_Click"/>
+            <MenuItem x:Name="MnuLangEs" Header="Español" IsCheckable="True" Click="MnuLangEs_Click"/>
+          </MenuItem>
+          <MenuItem x:Name="MnuHelp" Header="_Help" Style="{StaticResource TopMenuItem}">
+            <MenuItem x:Name="MnuHelpShortcuts" Header="_Keyboard Shortcuts..." InputGestureText="?" Click="BtnHelp_Click"/>
+          </MenuItem>
+        </Menu>
 
         <!-- Right -->
         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">

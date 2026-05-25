@@ -236,6 +236,45 @@
     </Setter>
   </Style>
 
+  <!-- Flat modern menu -->
+  <Style TargetType="Menu">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="FontFamily" Value="{StaticResource UiFont}"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+    <Setter Property="BorderThickness" Value="0"/>
+  </Style>
+
+  <!-- Top-level menu header (File, Edit, …) -->
+  <Style x:Key="TopMenuItem" TargetType="MenuItem">
+    <Setter Property="Padding" Value="10,6"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="MenuItem">
+          <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+            <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" VerticalAlignment="Center"/>
+            <Border.Resources>
+              <Style TargetType="Popup">
+                <Setter Property="AllowsTransparency" Value="True"/>
+              </Style>
+            </Border.Resources>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsHighlighted" Value="True">
+              <Setter TargetName="bd" Property="Background" Value="#FFF1F5F9"/>
+            </Trigger>
+            <Trigger Property="IsSubmenuOpen" Value="True">
+              <Setter TargetName="bd" Property="Background" Value="{StaticResource AccentSoftBrush}"/>
+              <Setter Property="Foreground" Value="{StaticResource AccentStrongBrush}"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
   <!-- Group label in palette -->
   <Style x:Key="GroupLabel" TargetType="TextBlock">
     <Setter Property="FontFamily" Value="{StaticResource UiFont}"/>

@@ -429,28 +429,61 @@ public partial class MainWindow : Window
         L10n.Toggle();
     }
 
+    // ===== Menu handlers =====
+
+    private void MnuExit_Click(object sender, RoutedEventArgs e)      => Close();
+    private void MnuUndo_Click(object sender, RoutedEventArgs e)      => Diagram.Undo();
+    private void MnuRedo_Click(object sender, RoutedEventArgs e)      => Diagram.Redo();
+    private void MnuCut_Click(object sender, RoutedEventArgs e)       => Diagram.Cut();
+    private void MnuCopy_Click(object sender, RoutedEventArgs e)      => Diagram.Copy();
+    private void MnuPaste_Click(object sender, RoutedEventArgs e)     => Diagram.Paste();
+    private void MnuSelectAll_Click(object sender, RoutedEventArgs e) => Diagram.SelectAll();
+    private void MnuLangEn_Click(object sender, RoutedEventArgs e)    => L10n.Current = PictureThis.Services.Language.En;
+    private void MnuLangEs_Click(object sender, RoutedEventArgs e)    => L10n.Current = PictureThis.Services.Language.Es;
+
     // ===== Re-translate every string in the window =====
 
     private void ApplyLanguage()
     {
-        // Top bar buttons
-        BtnNew.Content       = L10n.T("topbar.new");
-        BtnTemplates.Content = L10n.T("topbar.templates");
-        BtnOpen.Content      = L10n.T("topbar.open");
-        BtnSave.Content      = L10n.T("topbar.save");
-        BtnExport.Content    = L10n.T("topbar.export");
+        // Menu headers
+        MnuFile.Header           = L10n.T("menu.file");
+        MnuFileNew.Header        = L10n.T("menu.file.new");
+        MnuFileTemplates.Header  = L10n.T("menu.file.templates");
+        MnuFileOpen.Header       = L10n.T("menu.file.open");
+        MnuFileSave.Header       = L10n.T("menu.file.save");
+        MnuFileExport.Header     = L10n.T("menu.file.export");
+        MnuFileExit.Header       = L10n.T("menu.file.exit");
 
-        BtnNew.ToolTip       = L10n.T("topbar.new")       + " (Ctrl+N)";
-        BtnTemplates.ToolTip = L10n.T("topbar.templates");
-        BtnOpen.ToolTip      = L10n.T("topbar.open")      + " (Ctrl+O)";
-        BtnSave.ToolTip      = L10n.T("topbar.save")      + " (Ctrl+S)";
-        BtnExport.ToolTip    = L10n.T("topbar.export")    + " (Ctrl+E)";
+        MnuEdit.Header           = L10n.T("menu.edit");
+        MnuEditUndo.Header       = L10n.T("menu.edit.undo");
+        MnuEditRedo.Header       = L10n.T("menu.edit.redo");
+        MnuEditCut.Header        = L10n.T("menu.edit.cut");
+        MnuEditCopy.Header       = L10n.T("menu.edit.copy");
+        MnuEditPaste.Header      = L10n.T("menu.edit.paste");
+        MnuEditDup.Header        = L10n.T("menu.edit.duplicate");
+        MnuEditDelete.Header     = L10n.T("menu.edit.delete");
+        MnuEditSelectAll.Header  = L10n.T("menu.edit.selectall");
 
+        MnuView.Header           = L10n.T("menu.view");
+        MnuViewZoomIn.Header     = L10n.T("menu.view.zoomin");
+        MnuViewZoomOut.Header    = L10n.T("menu.view.zoomout");
+        MnuViewZoomReset.Header  = L10n.T("menu.view.zoomreset");
+
+        MnuLang.Header           = L10n.T("menu.lang");
+        MnuLangEn.Header         = L10n.T("menu.lang.en");
+        MnuLangEs.Header         = L10n.T("menu.lang.es");
+        MnuLangEn.IsChecked      = L10n.Current == PictureThis.Services.Language.En;
+        MnuLangEs.IsChecked      = L10n.Current == PictureThis.Services.Language.Es;
+
+        MnuHelp.Header           = L10n.T("menu.help");
+        MnuHelpShortcuts.Header  = L10n.T("menu.help.shortcuts");
+
+        // Zoom button tooltips
         BtnZoomOut.ToolTip   = L10n.T("topbar.zoom.out");
         BtnZoomReset.ToolTip = L10n.T("topbar.zoom.reset");
         BtnZoomIn.ToolTip    = L10n.T("topbar.zoom.in");
 
-        // Language button shows current code
+        // Language toggle (kept in top bar for one-click switching)
         BtnLang.Content = L10n.CurrentCode;
         BtnLang.ToolTip = L10n.T("topbar.lang.tip");
         BtnHelp.ToolTip = L10n.T("topbar.help.tip");
