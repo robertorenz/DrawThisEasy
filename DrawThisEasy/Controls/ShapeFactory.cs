@@ -304,6 +304,24 @@ public static class ShapeFactory
         return (c, new System.Windows.Shapes.Shape[] { tile });
     }
 
+    /// A small standalone badge (provider-colored square + white category glyph) for menus/lists.
+    public static UIElement BuildServiceBadge(string? stencil, double size, Brush color)
+    {
+        var c = new Canvas { Width = size, Height = size, IsHitTestVisible = false };
+        c.Children.Add(new System.Windows.Shapes.Rectangle
+        {
+            Width = size, Height = size, Fill = color,
+            RadiusX = size * 0.22, RadiusY = size * 0.22
+        });
+        var category = Stencils.Find(stencil)?.Category ?? "compute";
+        var gbox = size * 0.62;
+        var glyph = BuildCategoryGlyph(category, gbox, Brushes.White);
+        Canvas.SetLeft(glyph, (size - gbox) / 2);
+        Canvas.SetTop(glyph, (size - gbox) / 2);
+        c.Children.Add(glyph);
+        return c;
+    }
+
     /// Generic, original line glyphs (drawn white) for each service category — not provider artwork.
     private static UIElement BuildCategoryGlyph(string category, double box, Brush color)
     {
