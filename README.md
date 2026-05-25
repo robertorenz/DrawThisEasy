@@ -18,12 +18,14 @@ When you need to whiteboard *"how do the clients, load balancer, app servers, qu
 - **Shape palette** tailored to systems work:
   - Process, Component, Start / End, Decision, Hexagon, Data
   - Database (cylinder), Cloud, Server stack, User, Queue, Sticky note, Text
-- **Smart connectors** that snap to shape edges and reroute automatically as shapes move. Sticky connector mode — wire shape → shape → shape without re-selecting the tool.
+- **Smart connectors** that snap to shape edges and reroute automatically as shapes move. Sticky connector mode — wire shape → shape → shape without re-selecting the tool. **Right-click a connector** to switch its routing (straight, curved, or elbow) and line style (solid, dashed, dotted); curved connectors get a draggable bézier handle.
 - **Click-on-shape selects.** In Connector mode a single click on a shape switches to Select and selects it; only drags create connections.
 - **Empty-area drag pans the canvas** in both Select and Connector modes. Hold `Shift` while dragging empty space to marquee-select instead.
 - **Inline label editing** — double-click any shape, type, `Enter` to commit.
 - **Pan & zoom** — `Space` + drag, right-click + drag, or just drag empty area. Mouse wheel zooms.
 - **Inspector panel** for fill / stroke colors and layer ordering.
+- **Rulers, guides & snapping** — rulers along the top and left; **drag from a ruler** onto the canvas to drop a guide line. Moving shapes **snap** to other shapes' edges/centers and to guides, with live red alignment lines; hold `Alt` to move freely. **View → Clear Guides** removes them.
+- **Preferences** (Edit → Preferences) — set the **default connector** routing & line style for new connectors, toggle **snapping**, and choose **ruler units** (pixels, cm, inches, picas). Saved to `%LOCALAPPDATA%\DrawThisEasy\preferences.json`.
 - **Right-click context menu** on any shape — a polished popup to edit text, apply fill / stroke swatches (or pick a custom color), reorder layers, duplicate, copy, and delete. Right-drag empty space still pans.
 - **Copy / Cut / Paste** (`Ctrl+C` / `Ctrl+X` / `Ctrl+V`) via the system clipboard, with connection edges preserved. Works between two open DrawThisEasy instances.
 - **Templates** — Org chart, Web architecture, Client-server, Microservices, Data pipeline, Blank.

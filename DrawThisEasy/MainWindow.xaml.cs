@@ -67,7 +67,9 @@ public partial class MainWindow : Window
         BuildAddTabButton();
         NewDocument();      // first document — wires events, activates, syncs chrome
 
-        CanvasHost.SizeChanged += (s, e) => UpdateScrollBars();
+        CanvasHost.SizeChanged += (s, e) => { UpdateScrollBars(); DrawRulers(); };
+        RulerTop.SizeChanged += (s, e) => DrawRulers();
+        RulerLeft.SizeChanged += (s, e) => DrawRulers();
         ApplyLanguage();
     }
 
@@ -118,7 +120,8 @@ public partial class MainWindow : Window
         c.ZoomChanged          += (s, e)    => { if (ReferenceEquals(s, _active.Canvas)) UpdateZoomLabel(); };
         c.ModelDirty           += (s, e)    => { if (s is DiagramCanvas dc) MarkDirtyFor(dc); };
         c.ContextMenuRequested += (s, pt)   => { if (ReferenceEquals(s, _active.Canvas)) ShowShapeContextMenu(pt); };
-        c.ViewChanged          += (s, e)    => { if (_active != null && ReferenceEquals(s, _active.Canvas)) UpdateScrollBars(); };
+        c.ConnectionContextRequested += (s, pt) => { if (ReferenceEquals(s, _active.Canvas)) ShowConnectionContextMenu(pt); };
+        c.ViewChanged          += (s, e)    => { if (_active != null && ReferenceEquals(s, _active.Canvas)) { UpdateScrollBars(); DrawRulers(); } };
     }
 
     private void ActivateDocument(DocTab tab)
@@ -138,6 +141,7 @@ public partial class MainWindow : Window
         UpdateZoomLabel();
         UpdateWindowTitle();
         UpdateScrollBars();
+        DrawRulers();
         tab.Canvas.Focus();
     }
 
@@ -260,6 +264,84 @@ public partial class MainWindow : Window
         bar.SmallChange = 40;
         bar.Value = Math.Min(Math.Max(value, bar.Minimum), bar.Maximum);
         bar.Visibility = (max - min) > viewport + 1 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    // ===== Rulers & guides =====
+
+    private bool? _rulerDrag;   // true = dragging a horizontal guide (top ruler), false = vertical (left ruler)
+
+    private void DrawRulers()
+    {
+        if (_active == null) return;
+        var (offX, offY) = Diagram.GetScrollOffsetWorld();
+        DrawRuler(RulerTop, horizontal: true, Diagram.Zoom, offX);
+        DrawRuler(RulerLeft, horizontal: false, Diagram.Zoom, offY);
+    }
+
+    private void DrawRuler(Canvas ruler, bool horizontal, double zoom, double originWorld)
+    {
+        ruler.Children.Clear();
+        double lengthPx = horizontal ? ruler.ActualWidth : ruler.ActualHeight;
+        if (lengthPx <= 0 || zoom <= 0) return;
+
+        var tickBrush = (Brush)FindResource("BorderBrush");
+        var textBrush = (Brush)FindResource("TextMutedBrush");
+
+        // Label in the chosen unit; pick a "nice" step in units so labels land ~64 px apart.
+        double unitPx = AppSettings.UnitPixels(AppSettings.Current.Units);
+        double rawStep = (64.0 / zoom) / unitPx;
+        double mag = Math.Pow(10, Math.Floor(Math.Log10(rawStep)));
+        double norm = rawStep / mag;
+        double step = (norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10) * mag;
+
+        double endUnits = (originWorld + lengthPx / zoom) / unitPx;
+        for (double u = Math.Floor((originWorld / unitPx) / step) * step; u <= endUnits; u += step)
+        {
+            double p = (u * unitPx - originWorld) * zoom;
+            if (p < 0 || p > lengthPx) continue;
+            var tick = new Line { Stroke = tickBrush, StrokeThickness = 1 };
+            if (horizontal) { tick.X1 = tick.X2 = p; tick.Y1 = 11; tick.Y2 = 18; }
+            else { tick.Y1 = tick.Y2 = p; tick.X1 = 11; tick.X2 = 18; }
+            ruler.Children.Add(tick);
+
+            var text = AppSettings.Current.Units == RulerUnit.Pixels
+                ? ((int)Math.Round(u)).ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : u.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+            var label = new TextBlock { Text = text, FontSize = 8, Foreground = textBrush };
+            if (horizontal) { Canvas.SetLeft(label, p + 2); Canvas.SetTop(label, 1); }
+            else { Canvas.SetLeft(label, 2); Canvas.SetTop(label, p + 1); }
+            ruler.Children.Add(label);
+        }
+    }
+
+    private void RulerTop_MouseDown(object sender, MouseButtonEventArgs e)  { _rulerDrag = true;  ((UIElement)sender).CaptureMouse(); UpdateGuidePreview(e); }
+    private void RulerLeft_MouseDown(object sender, MouseButtonEventArgs e) { _rulerDrag = false; ((UIElement)sender).CaptureMouse(); UpdateGuidePreview(e); }
+
+    private void Ruler_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_rulerDrag != null) UpdateGuidePreview(e);
+    }
+
+    private void Ruler_MouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_rulerDrag == null) return;
+        var horizontal = _rulerDrag.Value;
+        ((UIElement)sender).ReleaseMouseCapture();
+        var p = e.GetPosition(Diagram);
+        Diagram.ClearGuidePreview();
+        if (p.X >= 0 && p.Y >= 0 && p.X <= Diagram.ActualWidth && p.Y <= Diagram.ActualHeight)
+        {
+            var w = Diagram.ToWorld(p);
+            Diagram.AddGuide(horizontal, horizontal ? w.Y : w.X);
+        }
+        _rulerDrag = null;
+    }
+
+    private void UpdateGuidePreview(MouseEventArgs e)
+    {
+        if (_rulerDrag == null) return;
+        var w = Diagram.ToWorld(e.GetPosition(Diagram));
+        Diagram.SetGuidePreview(_rulerDrag.Value, _rulerDrag.Value ? w.Y : w.X);
     }
 
     // ===== Palette =====
@@ -793,6 +875,59 @@ public partial class MainWindow : Window
         if (_ctxPopup != null) { _ctxPopup.IsOpen = false; _ctxPopup = null; }
     }
 
+    private void ShowConnectionContextMenu(Point _)
+    {
+        CloseContextMenu();
+        var conn = Diagram.GetSelectedConnection();
+        if (conn == null) return;
+
+        var stack = new StackPanel { Width = 220 };
+        stack.Children.Add(CtxHeader(L10n.T("conn.routing")));
+        stack.Children.Add(RoutingRow(L10n.T("conn.straight"), ConnectorRouting.Straight, conn.Routing));
+        stack.Children.Add(RoutingRow(L10n.T("conn.curved"),   ConnectorRouting.Curved,   conn.Routing));
+        stack.Children.Add(RoutingRow(L10n.T("conn.elbow"),    ConnectorRouting.Elbow,    conn.Routing));
+
+        stack.Children.Add(CtxSeparator());
+        var stroke = EffectiveStroke(conn);
+        stack.Children.Add(CtxHeader(L10n.T("conn.stroke")));
+        stack.Children.Add(StrokeRow(L10n.T("conn.solid"),  StrokeStyle.Solid,  stroke));
+        stack.Children.Add(StrokeRow(L10n.T("conn.dashed"), StrokeStyle.Dashed, stroke));
+        stack.Children.Add(StrokeRow(L10n.T("conn.dotted"), StrokeStyle.Dotted, stroke));
+
+        stack.Children.Add(CtxSeparator());
+        stack.Children.Add(CtxActionRow("✕", L10n.T("ctx.delete"), danger: true, () => Diagram.DeleteSelection()));
+
+        var card = new Border
+        {
+            Background = Brushes.White,
+            CornerRadius = new CornerRadius(10),
+            BorderBrush = (Brush)FindResource("BorderBrush"),
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(6),
+            Child = stack,
+            Effect = new System.Windows.Media.Effects.DropShadowEffect
+            {
+                Color = (Color)ColorConverter.ConvertFromString("#0F172A"),
+                Opacity = 0.28, BlurRadius = 28, ShadowDepth = 5,
+            },
+        };
+        _ctxPopup = new Popup
+        {
+            Child = card, StaysOpen = false, AllowsTransparency = true,
+            PopupAnimation = PopupAnimation.Fade, Placement = PlacementMode.Mouse, PlacementTarget = Diagram,
+        };
+        _ctxPopup.IsOpen = true;
+    }
+
+    private UIElement RoutingRow(string label, ConnectorRouting r, ConnectorRouting current)
+        => CtxActionRow(r == current ? "✓" : "", label, danger: false, () => Diagram.SetSelectedConnectionRouting(r));
+
+    private UIElement StrokeRow(string label, StrokeStyle st, StrokeStyle current)
+        => CtxActionRow(st == current ? "✓" : "", label, danger: false, () => Diagram.SetSelectedConnectionStroke(st));
+
+    private static StrokeStyle EffectiveStroke(Connection c)
+        => c.StrokeStyle == StrokeStyle.Solid && c.Dashed ? StrokeStyle.Dashed : c.StrokeStyle;
+
     private UIElement CtxHeader(string text) => new TextBlock
     {
         Text = text.ToUpperInvariant(),
@@ -1254,6 +1389,14 @@ public partial class MainWindow : Window
     private void BtnZoomOut_Click(object sender, RoutedEventArgs e) => Diagram.SetZoom(Diagram.Zoom / 1.2);
     private void BtnZoomReset_Click(object sender, RoutedEventArgs e) => Diagram.ResetView();
 
+    private void MnuClearGuides_Click(object sender, RoutedEventArgs e) => Diagram.ClearGuides();
+
+    private void BtnPreferences_Click(object sender, RoutedEventArgs e)
+    {
+        if (PreferencesWindow.Show(this))
+            DrawRulers();   // ruler units may have changed
+    }
+
     private void UpdateZoomLabel() => ZoomLabel.Text = $"{(int)Math.Round(Diagram.Zoom * 100)}%";
 
     private void BtnHelp_Click(object sender, RoutedEventArgs e)
@@ -1313,11 +1456,13 @@ public partial class MainWindow : Window
         MnuEditDelete.Header     = L10n.T("menu.edit.delete");
         MnuEditSelectAll.Header  = L10n.T("menu.edit.selectall");
         MnuEditInsertImage.Header = L10n.T("menu.edit.insertimage");
+        MnuEditPreferences.Header = L10n.T("menu.edit.preferences");
 
         MnuView.Header           = L10n.T("menu.view");
         MnuViewZoomIn.Header     = L10n.T("menu.view.zoomin");
         MnuViewZoomOut.Header    = L10n.T("menu.view.zoomout");
         MnuViewZoomReset.Header  = L10n.T("menu.view.zoomreset");
+        MnuViewClearGuides.Header = L10n.T("menu.view.clearguides");
 
         MnuLang.Header           = L10n.T("menu.lang");
         MnuLangEn.Header         = L10n.T("menu.lang.en");
@@ -1469,7 +1614,8 @@ public partial class MainWindow : Window
             clone.Connections.Add(new Connection
             {
                 FromId = idMap[c.FromId], ToId = idMap[c.ToId],
-                Label = c.Label, Stroke = c.Stroke, Dashed = c.Dashed
+                Label = c.Label, Stroke = c.Stroke, Dashed = c.Dashed,
+                Routing = c.Routing, StrokeStyle = c.StrokeStyle, CurveDX = c.CurveDX, CurveDY = c.CurveDY
             });
         }
         return clone;

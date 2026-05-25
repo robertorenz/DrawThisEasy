@@ -237,10 +237,12 @@ public static class L10n
             ["menu.edit.delete"]     = "De_lete",
             ["menu.edit.selectall"]  = "Select _All",
             ["menu.edit.insertimage"]= "Insert _Image...",
+            ["menu.edit.preferences"]= "_Preferences...",
             ["menu.view"]            = "_View",
             ["menu.view.zoomin"]     = "Zoom _In",
             ["menu.view.zoomout"]    = "Zoom _Out",
             ["menu.view.zoomreset"]  = "_Reset Zoom",
+            ["menu.view.clearguides"]= "Clear _Guides",
             ["menu.lang"]            = "_Language",
             ["menu.lang.en"]         = "English",
             ["menu.lang.es"]         = "Español",
@@ -283,6 +285,26 @@ public static class L10n
             ["ctx.duplicate"] = "Duplicate",
             ["ctx.copy"]      = "Copy",
             ["ctx.delete"]    = "Delete",
+
+            // Connector context menu
+            ["conn.routing"]  = "Routing",
+            ["conn.straight"] = "Straight",
+            ["conn.curved"]   = "Curved",
+            ["conn.elbow"]    = "Elbow",
+            ["conn.stroke"]   = "Stroke",
+            ["conn.solid"]    = "Solid",
+            ["conn.dashed"]   = "Dashed",
+            ["conn.dotted"]   = "Dotted",
+
+            // Preferences
+            ["pref.title"]     = "Preferences",
+            ["pref.connector"] = "Default connector",
+            ["pref.snap"]      = "Snap to objects and guides",
+            ["pref.units"]     = "Ruler units",
+            ["unit.pixels"]    = "Pixels",
+            ["unit.cm"]        = "Centimeters",
+            ["unit.inches"]    = "Inches",
+            ["unit.picas"]     = "Picas",
 
             // User manual
             ["manual.title"]    = "User manual",
@@ -546,10 +568,12 @@ public static class L10n
             ["menu.edit.delete"]     = "E_liminar",
             ["menu.edit.selectall"]  = "Seleccionar _todo",
             ["menu.edit.insertimage"]= "Insertar _imagen...",
+            ["menu.edit.preferences"]= "_Preferencias...",
             ["menu.view"]            = "_Vista",
             ["menu.view.zoomin"]     = "_Acercar",
             ["menu.view.zoomout"]    = "Ale_jar",
             ["menu.view.zoomreset"]  = "_Restablecer zoom",
+            ["menu.view.clearguides"]= "Borrar _guías",
             ["menu.lang"]            = "_Idioma",
             ["menu.lang.en"]         = "English",
             ["menu.lang.es"]         = "Español",
@@ -592,6 +616,26 @@ public static class L10n
             ["ctx.duplicate"] = "Duplicar",
             ["ctx.copy"]      = "Copiar",
             ["ctx.delete"]    = "Eliminar",
+
+            // Connector context menu
+            ["conn.routing"]  = "Trazado",
+            ["conn.straight"] = "Recta",
+            ["conn.curved"]   = "Curva",
+            ["conn.elbow"]    = "En codo",
+            ["conn.stroke"]   = "Línea",
+            ["conn.solid"]    = "Sólida",
+            ["conn.dashed"]   = "Discontinua",
+            ["conn.dotted"]   = "Punteada",
+
+            // Preferences
+            ["pref.title"]     = "Preferencias",
+            ["pref.connector"] = "Conector predeterminado",
+            ["pref.snap"]      = "Ajustar a objetos y guías",
+            ["pref.units"]     = "Unidades de regla",
+            ["unit.pixels"]    = "Píxeles",
+            ["unit.cm"]        = "Centímetros",
+            ["unit.inches"]    = "Pulgadas",
+            ["unit.picas"]     = "Picas",
 
             // User manual
             ["manual.title"]    = "Manual de usuario",
