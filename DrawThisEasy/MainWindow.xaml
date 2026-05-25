@@ -32,6 +32,7 @@
           <MenuItem x:Name="MnuFile" Header="_File" Style="{StaticResource TopMenuItem}">
             <MenuItem x:Name="MnuFileNew"       Header="_New"            InputGestureText="Ctrl+N" Click="BtnNew_Click"/>
             <MenuItem x:Name="MnuFileTemplates" Header="_Templates..."                              Click="BtnTemplates_Click"/>
+            <MenuItem x:Name="MnuFileCloud"     Header="_Cloud Services..."                          Click="BtnCloud_Click"/>
             <Separator/>
             <MenuItem x:Name="MnuFileOpen"      Header="_Open..."        InputGestureText="Ctrl+O" Click="BtnOpen_Click"/>
             <MenuItem x:Name="MnuFileSave"      Header="_Save..."        InputGestureText="Ctrl+S" Click="BtnSave_Click"/>

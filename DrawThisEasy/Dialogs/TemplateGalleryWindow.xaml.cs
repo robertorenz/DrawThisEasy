@@ -144,7 +144,7 @@ public partial class TemplateGalleryWindow : Window
         {
             var fill = (Brush)new BrushConverter().ConvertFromString(s.Fill)!;
             var stroke = (Brush)new BrushConverter().ConvertFromString(s.Stroke)!;
-            var (body, _) = ShapeFactory.BuildBody(s.Kind, s.Width * scale, s.Height * scale, fill, stroke);
+            var (body, _) = ShapeFactory.BuildBody(s.Kind, s.Width * scale, s.Height * scale, fill, stroke, s.Stencil);
             Canvas.SetLeft(body, s.X * scale + offsetX);
             Canvas.SetTop(body, s.Y * scale + offsetY);
             canvas.Children.Add(body);

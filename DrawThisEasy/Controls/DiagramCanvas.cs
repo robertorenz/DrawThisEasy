@@ -205,6 +205,31 @@ public class DiagramCanvas : Canvas
         return node;
     }
 
+    /// Drops a cloud-service tile (provider badge + name) at the current viewport center.
+    public ShapeNode AddServiceTile(string stencilId, string name, string color)
+    {
+        Snapshot();
+        const double w = 120, h = 96;
+        var center = (ActualWidth > 0 && ActualHeight > 0)
+            ? ScreenToWorld(new Point(ActualWidth / 2, ActualHeight / 2))
+            : new Point(0, 0);
+        var node = new ShapeNode
+        {
+            Kind = ShapeKind.ServiceTile,
+            Stencil = stencilId,
+            X = center.X - w / 2, Y = center.Y - h / 2,
+            Width = w, Height = h,
+            Label = name,
+            Fill = "#FFFFFF",
+            Stroke = color,
+            ZIndex = _nextZ++
+        };
+        _model.Shapes.Add(node);
+        AddShapeVisual(node);
+        SelectOnly(node.Id);
+        return node;
+    }
+
     private static (double, double) DefaultSize(ShapeKind k) => k switch
     {
         ShapeKind.Ellipse       => (140, 70),
@@ -217,6 +242,7 @@ public class DiagramCanvas : Canvas
         ShapeKind.Queue         => (160, 50),
         ShapeKind.Note          => (130, 100),
         ShapeKind.Text          => (120, 30),
+        ShapeKind.ServiceTile   => (120, 96),
         _                       => (140, 70)
     };
 
@@ -887,6 +913,7 @@ public class DiagramCanvas : Canvas
                 Kind = s.Kind, X = s.X + 24, Y = s.Y + 24,
                 Width = s.Width, Height = s.Height,
                 Label = s.Label, Fill = s.Fill, Stroke = s.Stroke,
+                Stencil = s.Stencil,
                 ZIndex = _nextZ++
             };
             _model.Shapes.Add(copy);
@@ -917,6 +944,7 @@ public class DiagramCanvas : Canvas
                 Id = s.Id, Kind = s.Kind,
                 X = s.X, Y = s.Y, Width = s.Width, Height = s.Height,
                 Label = s.Label, Fill = s.Fill, Stroke = s.Stroke,
+                Stencil = s.Stencil,
                 ZIndex = s.ZIndex
             });
         }
@@ -1003,6 +1031,7 @@ public class DiagramCanvas : Canvas
                 X = s.X + dx, Y = s.Y + dy,
                 Width = s.Width, Height = s.Height,
                 Label = s.Label, Fill = s.Fill, Stroke = s.Stroke,
+                Stencil = s.Stencil,
                 ZIndex = _nextZ++
             };
             idMap[s.Id] = copy.Id;
@@ -1329,18 +1358,21 @@ public class ShapeVisual
 
         var fill = (Brush)new BrushConverter().ConvertFromString(Node.Fill)!;
         var stroke = (Brush)new BrushConverter().ConvertFromString(Node.Stroke)!;
-        var (body, styled) = ShapeFactory.BuildBody(Node.Kind, Node.Width, Node.Height, fill, stroke);
+        var (body, styled) = ShapeFactory.BuildBody(Node.Kind, Node.Width, Node.Height, fill, stroke, Node.Stencil);
         _body = body;
         _styledParts = styled;
         Element.Children.Add(body);
 
         // Special label margins for non-rect shapes (avoid overlapping cylinder top, etc.)
         _label.Text = Node.Label;
+        _label.FontSize = Node.Kind == ShapeKind.ServiceTile ? 11.5 : 13;
+        _label.FontWeight = Node.Kind == ShapeKind.ServiceTile ? FontWeights.SemiBold : FontWeights.Normal;
         _label.Margin = Node.Kind switch
         {
-            ShapeKind.Cylinder => new Thickness(8, Math.Min(Node.Height * 0.18, 18), 8, 4),
-            ShapeKind.Person   => new Thickness(8, Node.Height * 0.55, 8, 4),
-            ShapeKind.Note     => new Thickness(8, 6, Math.Min(Node.Width * 0.22, 22) + 4, 4),
+            ShapeKind.Cylinder    => new Thickness(8, Math.Min(Node.Height * 0.18, 18), 8, 4),
+            ShapeKind.Person      => new Thickness(8, Node.Height * 0.55, 8, 4),
+            ShapeKind.Note        => new Thickness(8, 6, Math.Min(Node.Width * 0.22, 22) + 4, 4),
+            ShapeKind.ServiceTile => new Thickness(6, Node.Height * 0.52, 6, 4),
             _ => new Thickness(8, 4, 8, 4)
         };
         Element.Children.Add(_label);

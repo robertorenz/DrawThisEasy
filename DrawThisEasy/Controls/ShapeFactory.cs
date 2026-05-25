@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using DrawThisEasy.Models;
+using DrawThisEasy.Services;
 
 namespace DrawThisEasy.Controls;
 
@@ -13,12 +14,13 @@ public static class ShapeFactory
     public const double StrokeThickness = 1.6;
 
     /// Renders the shape body into the supplied panel. Returns a list of shapes whose Fill/Stroke should be updated when colors change.
-    public static (UIElement Container, System.Windows.Shapes.Shape[] StyledParts) BuildBody(ShapeKind kind, double w, double h, Brush fill, Brush stroke)
+    public static (UIElement Container, System.Windows.Shapes.Shape[] StyledParts) BuildBody(ShapeKind kind, double w, double h, Brush fill, Brush stroke, string? stencil = null)
     {
         var canvas = new Canvas { Width = w, Height = h, IsHitTestVisible = true, Background = Brushes.Transparent };
 
         return kind switch
         {
+            ShapeKind.ServiceTile   => BuildServiceTile(canvas, w, h, fill, stroke, stencil),
             ShapeKind.Rectangle     => BuildRect(canvas, w, h, fill, stroke, 0),
             ShapeKind.Rounded       => BuildRect(canvas, w, h, fill, stroke, 10),
             ShapeKind.Ellipse       => BuildEllipse(canvas, w, h, fill, stroke),
@@ -264,6 +266,159 @@ public static class ShapeFactory
         };
         c.Children.Add(hit);
         return (c, new System.Windows.Shapes.Shape[] { hit });
+    }
+
+    private static (UIElement, System.Windows.Shapes.Shape[]) BuildServiceTile(Canvas c, double w, double h, Brush fill, Brush stroke, string? stencil)
+    {
+        // White rounded tile with a provider-colored border.
+        var tile = new System.Windows.Shapes.Rectangle
+        {
+            Width = w, Height = h,
+            Fill = fill, Stroke = stroke, StrokeThickness = StrokeThickness,
+            RadiusX = 10, RadiusY = 10
+        };
+        Canvas.SetLeft(tile, 0); Canvas.SetTop(tile, 0);
+        c.Children.Add(tile);
+
+        // Provider-colored badge near the top holding a generic category glyph.
+        var badgeSize = Math.Min(w, h) * 0.4;
+        var bx = (w - badgeSize) / 2.0;
+        var by = h * 0.1;
+        var badge = new System.Windows.Shapes.Rectangle
+        {
+            Width = badgeSize, Height = badgeSize,
+            Fill = stroke,
+            RadiusX = badgeSize * 0.22, RadiusY = badgeSize * 0.22
+        };
+        Canvas.SetLeft(badge, bx); Canvas.SetTop(badge, by);
+        c.Children.Add(badge);
+
+        var category = Stencils.Find(stencil)?.Category ?? "compute";
+        var glyphBox = badgeSize * 0.6;
+        var glyph = BuildCategoryGlyph(category, glyphBox, Brushes.White);
+        Canvas.SetLeft(glyph, bx + (badgeSize - glyphBox) / 2.0);
+        Canvas.SetTop(glyph, by + (badgeSize - glyphBox) / 2.0);
+        c.Children.Add(glyph);
+
+        // Only the tile border re-themes on selection; the badge keeps its provider color.
+        return (c, new System.Windows.Shapes.Shape[] { tile });
+    }
+
+    /// Generic, original line glyphs (drawn white) for each service category — not provider artwork.
+    private static UIElement BuildCategoryGlyph(string category, double box, Brush color)
+    {
+        var g = new Canvas { Width = box, Height = box, IsHitTestVisible = false };
+        double st = Math.Max(1.3, box * 0.085);
+        double B(double t) => t * box;
+
+        void Line(double x1, double y1, double x2, double y2) =>
+            g.Children.Add(new System.Windows.Shapes.Line
+            {
+                X1 = B(x1), Y1 = B(y1), X2 = B(x2), Y2 = B(y2),
+                Stroke = color, StrokeThickness = st,
+                StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round
+            });
+
+        void Ell(double cx, double cy, double rx, double ry)
+        {
+            var e = new System.Windows.Shapes.Ellipse
+            {
+                Width = B(rx * 2), Height = B(ry * 2),
+                Stroke = color, StrokeThickness = st, Fill = null
+            };
+            Canvas.SetLeft(e, B(cx - rx)); Canvas.SetTop(e, B(cy - ry));
+            g.Children.Add(e);
+        }
+
+        void RoundRect(double x, double y, double rw, double rh, double rad)
+        {
+            var r = new System.Windows.Shapes.Rectangle
+            {
+                Width = B(rw), Height = B(rh),
+                Stroke = color, StrokeThickness = st, Fill = null,
+                RadiusX = B(rad), RadiusY = B(rad)
+            };
+            Canvas.SetLeft(r, B(x)); Canvas.SetTop(r, B(y));
+            g.Children.Add(r);
+        }
+
+        void FillRect(double x, double y, double rw, double rh)
+        {
+            var r = new System.Windows.Shapes.Rectangle { Width = B(rw), Height = B(rh), Fill = color };
+            Canvas.SetLeft(r, B(x)); Canvas.SetTop(r, B(y));
+            g.Children.Add(r);
+        }
+
+        void Poly(bool fill, bool closed, params double[] xy)
+        {
+            var pts = new PointCollection();
+            for (int i = 0; i + 1 < xy.Length; i += 2) pts.Add(new Point(B(xy[i]), B(xy[i + 1])));
+            if (closed)
+                g.Children.Add(new Polygon
+                {
+                    Points = pts, Stroke = fill ? null : color, StrokeThickness = fill ? 0 : st,
+                    Fill = fill ? color : null, StrokeLineJoin = PenLineJoin.Round
+                });
+            else
+                g.Children.Add(new Polyline
+                {
+                    Points = pts, Stroke = color, StrokeThickness = st, Fill = null,
+                    StrokeLineJoin = PenLineJoin.Round,
+                    StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round
+                });
+        }
+
+        switch (category)
+        {
+            case "function": // lightning bolt
+                Poly(fill: true, closed: true, 0.56, 0.08, 0.30, 0.54, 0.46, 0.54, 0.40, 0.92, 0.72, 0.44, 0.54, 0.44);
+                break;
+            case "storage": // bucket + rim
+                Poly(fill: false, closed: true, 0.28, 0.34, 0.72, 0.34, 0.64, 0.82, 0.36, 0.82);
+                Ell(0.5, 0.34, 0.22, 0.06);
+                break;
+            case "database": // cylinder
+                Ell(0.5, 0.30, 0.20, 0.06);
+                Line(0.30, 0.30, 0.30, 0.70);
+                Line(0.70, 0.30, 0.70, 0.70);
+                g.Children.Add(new Path
+                {
+                    Data = Geometry.Parse($"M {B(0.30)},{B(0.70)} A {B(0.20)},{B(0.06)} 0 0 0 {B(0.70)},{B(0.70)}"),
+                    Stroke = color, StrokeThickness = st, Fill = null
+                });
+                break;
+            case "container": // 3D cube
+                Poly(fill: false, closed: true, 0.30, 0.42, 0.62, 0.42, 0.62, 0.80, 0.30, 0.80); // front
+                Poly(fill: false, closed: true, 0.30, 0.42, 0.42, 0.28, 0.74, 0.28, 0.62, 0.42); // top
+                Poly(fill: false, closed: true, 0.62, 0.42, 0.74, 0.28, 0.74, 0.66, 0.62, 0.80); // side
+                break;
+            case "messaging": // envelope
+                RoundRect(0.22, 0.34, 0.56, 0.34, 0.03);
+                Poly(fill: false, closed: false, 0.23, 0.36, 0.50, 0.56, 0.77, 0.36);
+                break;
+            case "network": // globe
+                Ell(0.5, 0.5, 0.26, 0.26);
+                Ell(0.5, 0.5, 0.10, 0.26);
+                Line(0.24, 0.5, 0.76, 0.5);
+                break;
+            case "analytics": // bar chart
+                FillRect(0.28, 0.56, 0.10, 0.24);
+                FillRect(0.45, 0.36, 0.10, 0.44);
+                FillRect(0.62, 0.48, 0.10, 0.32);
+                Line(0.24, 0.82, 0.76, 0.82);
+                break;
+            case "monitoring": // pulse / heartbeat
+                Poly(fill: false, closed: false, 0.18, 0.5, 0.36, 0.5, 0.44, 0.28, 0.56, 0.74, 0.64, 0.5, 0.82, 0.5);
+                break;
+            default: // compute — CPU chip
+                RoundRect(0.30, 0.30, 0.40, 0.40, 0.05);
+                Line(0.42, 0.30, 0.42, 0.20); Line(0.58, 0.30, 0.58, 0.20);
+                Line(0.42, 0.70, 0.42, 0.80); Line(0.58, 0.70, 0.58, 0.80);
+                Line(0.30, 0.42, 0.20, 0.42); Line(0.30, 0.58, 0.20, 0.58);
+                Line(0.70, 0.42, 0.80, 0.42); Line(0.70, 0.58, 0.80, 0.58);
+                break;
+        }
+        return g;
     }
 
     /// Compute where a connector line should attach to a shape edge along the ray from inside the shape toward an external point.

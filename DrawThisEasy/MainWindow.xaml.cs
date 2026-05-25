@@ -591,6 +591,13 @@ public partial class MainWindow : Window
         }
     }
 
+    private void BtnCloud_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new CloudServiceGalleryWindow { Owner = this };
+        if (dlg.ShowDialog() == true && dlg.SelectedStencil is { } def)
+            Diagram.AddServiceTile(def.Id, def.Name, def.Color);
+    }
+
     private void BtnOpen_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new OpenFileDialog
@@ -718,6 +725,7 @@ public partial class MainWindow : Window
         MnuFile.Header           = L10n.T("menu.file");
         MnuFileNew.Header        = L10n.T("menu.file.new");
         MnuFileTemplates.Header  = L10n.T("menu.file.templates");
+        MnuFileCloud.Header      = L10n.T("menu.file.cloud");
         MnuFileOpen.Header       = L10n.T("menu.file.open");
         MnuFileSave.Header       = L10n.T("menu.file.save");
         MnuFileExport.Header     = L10n.T("menu.file.export");
@@ -874,7 +882,7 @@ public partial class MainWindow : Window
             var c = new ShapeNode
             {
                 Kind = s.Kind, X = s.X, Y = s.Y, Width = s.Width, Height = s.Height,
-                Label = s.Label, Fill = s.Fill, Stroke = s.Stroke, ZIndex = s.ZIndex
+                Label = s.Label, Fill = s.Fill, Stroke = s.Stroke, Stencil = s.Stencil, ZIndex = s.ZIndex
             };
             idMap[s.Id] = c.Id;
             clone.Shapes.Add(c);

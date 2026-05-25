@@ -18,7 +18,8 @@ public enum ShapeKind
     Person,
     Queue,
     Note,
-    Text
+    Text,
+    ServiceTile   // cloud-provider service object; see Stencil + Services/Stencils.cs
 }
 
 public enum ToolMode
@@ -74,6 +75,9 @@ public class ShapeNode
     public string Fill { get; set; } = "#FFFFFF";
     public string Stroke { get; set; } = "#334155";
     public int ZIndex { get; set; }
+
+    /// For ShapeKind.ServiceTile: the cloud-service stencil id (e.g. "aws-lambda"). Null otherwise.
+    public string? Stencil { get; set; }
 
     [JsonIgnore]
     public double CenterX => X + Width / 2.0;
