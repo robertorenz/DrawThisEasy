@@ -56,6 +56,7 @@ public partial class ManualWindow : Window
         {
             new Para("manual.shapes.p"),
             new Para("manual.shapes.p2"),
+            new Para("manual.shapes.p3"),
         }),
         new("manual.connect.h", new Block[]
         {
@@ -103,7 +104,9 @@ public partial class ManualWindow : Window
             new Bullets(new[]
             {
                 "manual.files.b.save",
+                "manual.files.b.recent",
                 "manual.files.b.export",
+                "manual.files.b.import",
                 "manual.files.b.new",
             }),
         }),
