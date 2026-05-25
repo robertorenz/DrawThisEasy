@@ -219,6 +219,10 @@ public static class L10n
             // Modal
             ["modal.ok"]              = "OK",
             ["modal.cancel"]          = "Cancel",
+            ["modal.unsaved.title"]   = "Unsaved changes",
+            ["modal.unsaved.body"]    = "You have unsaved changes. Do you want to save before closing?",
+            ["modal.unsaved.save"]    = "Save",
+            ["modal.unsaved.discard"] = "Don't save",
             ["modal.new.title"]       = "New diagram?",
             ["modal.new.body"]        = "This will clear the current canvas. You'll lose any unsaved changes.",
             ["modal.new.confirm"]     = "Start new",
@@ -489,6 +493,10 @@ public static class L10n
             // Modal
             ["modal.ok"]              = "Aceptar",
             ["modal.cancel"]          = "Cancelar",
+            ["modal.unsaved.title"]   = "Cambios sin guardar",
+            ["modal.unsaved.body"]    = "Tienes cambios sin guardar. ¿Quieres guardarlos antes de cerrar?",
+            ["modal.unsaved.save"]    = "Guardar",
+            ["modal.unsaved.discard"] = "No guardar",
             ["modal.new.title"]       = "¿Nuevo diagrama?",
             ["modal.new.body"]        = "Esto borrará el lienzo actual. Perderás los cambios no guardados.",
             ["modal.new.confirm"]     = "Comenzar",

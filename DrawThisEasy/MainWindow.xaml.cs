@@ -38,8 +38,10 @@ public partial class MainWindow : Window
         Diagram.ToolChanged += (s, mode) => SyncToolButtons();
         Diagram.SelectionChanged += (s, e) => UpdateInspectorVisibility();
         Diagram.ZoomChanged += (s, e) => UpdateZoomLabel();
-        Diagram.ModelDirty += (s, e) => { /* placeholder for unsaved indicator */ };
+        Diagram.ModelDirty += (s, e) => MarkDirty();
         Diagram.ContextMenuRequested += (s, pt) => ShowShapeContextMenu(pt);
+
+        Closing += Window_Closing;
 
         L10n.LanguageChanged += (s, e) => ApplyLanguage();
         ApplyLanguage();
@@ -576,14 +578,17 @@ public partial class MainWindow : Window
             L10n.T("modal.new.title"),
             L10n.T("modal.new.body"),
             confirmLabel: L10n.T("modal.new.confirm"),
-            onConfirm: () => Diagram.NewDiagram());
+            onConfirm: () => { Diagram.NewDiagram(); MarkSaved(); });
     }
 
     private void BtnTemplates_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new TemplateGalleryWindow { Owner = this };
         if (dlg.ShowDialog() == true && dlg.SelectedTemplate != null)
+        {
             Diagram.LoadModel(CloneModel(dlg.SelectedTemplate.Builder));
+            MarkSaved();
+        }
     }
 
     private void BtnOpen_Click(object sender, RoutedEventArgs e)
@@ -599,6 +604,7 @@ public partial class MainWindow : Window
             {
                 var model = Persistence.Load(dlg.FileName);
                 Diagram.LoadModel(model);
+                MarkSaved();
             }
             catch (Exception ex)
             {
@@ -607,7 +613,11 @@ public partial class MainWindow : Window
         }
     }
 
-    private void BtnSave_Click(object sender, RoutedEventArgs e)
+    private void BtnSave_Click(object sender, RoutedEventArgs e) => SaveDiagram();
+
+    /// Runs the Save dialog. Returns true only if the diagram was written to disk.
+    /// Pass notify: false to skip the "Saved" confirmation (e.g. when saving on exit).
+    private bool SaveDiagram(bool notify = true)
     {
         var dlg = new SaveFileDialog
         {
@@ -615,19 +625,22 @@ public partial class MainWindow : Window
             FileName = SanitizeFilename(Diagram.Model.Title) + ".ptd.json",
             Title = L10n.T("topbar.save")
         };
-        if (dlg.ShowDialog(this) == true)
+        if (dlg.ShowDialog(this) != true) return false; // user canceled the save dialog
+
+        try
         {
-            try
-            {
-                Persistence.Save(Diagram.Model, dlg.FileName);
+            Persistence.Save(Diagram.Model, dlg.FileName);
+            MarkSaved();
+            if (notify)
                 ModalWindow.Info(this,
                     L10n.T("modal.saved.title"),
                     string.Format(L10n.T("modal.saved.body"), IOPath.GetFileName(dlg.FileName)));
-            }
-            catch (Exception ex)
-            {
-                ModalWindow.Info(this, L10n.T("modal.savefail.title"), ex.Message);
-            }
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ModalWindow.Info(this, L10n.T("modal.savefail.title"), ex.Message);
+            return false;
         }
     }
 
@@ -770,6 +783,48 @@ public partial class MainWindow : Window
 
         // Status text reflects current tool
         SyncToolButtons();
+    }
+
+    // ===== Unsaved-changes tracking =====
+
+    private bool _isDirty;
+    private const string AppTitle = "DrawThisEasy";
+
+    private void MarkDirty()
+    {
+        if (_isDirty) return;
+        _isDirty = true;
+        Title = "• " + AppTitle;   // taskbar / title-bar indicator
+    }
+
+    private void MarkSaved()
+    {
+        _isDirty = false;
+        Title = AppTitle;
+    }
+
+    private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (!_isDirty) return;   // nothing unsaved — let it close
+
+        var choice = ModalWindow.AskSaveBeforeClosing(this,
+            L10n.T("modal.unsaved.title"),
+            L10n.T("modal.unsaved.body"),
+            saveLabel:    L10n.T("modal.unsaved.save"),
+            discardLabel: L10n.T("modal.unsaved.discard"),
+            cancelLabel:  L10n.T("modal.cancel"));
+
+        switch (choice)
+        {
+            case ModalWindow.UnsavedChoice.Save:
+                // Keep the app open if the save was canceled or failed.
+                if (!SaveDiagram(notify: false)) e.Cancel = true;
+                break;
+            case ModalWindow.UnsavedChoice.Cancel:
+                e.Cancel = true;
+                break;
+            // Discard: fall through and let the window close.
+        }
     }
 
     // ===== Keyboard =====

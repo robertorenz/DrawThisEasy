@@ -28,6 +28,7 @@ When you need to whiteboard *"how do the clients, load balancer, app servers, qu
 - **Templates** — Org chart, Web architecture, Client-server, Microservices, Data pipeline, Blank.
 - **Undo / Redo** (`Ctrl+Z` / `Ctrl+Y`).
 - **Save / Load** as JSON; **Export** as PNG (2× resolution).
+- **Unsaved-changes guard** — closing the app with pending edits prompts you to **Save**, **Don't save**, or **Cancel**; the title bar shows a `•` whenever there are unsaved changes.
 - **Modal dialogs** instead of system message boxes — clean, on-brand prompts.
 - **Bilingual UI** — English / Español, switchable live (no restart) from the Language menu or one-click EN/ES toggle in the top bar.
 - **Built-in user manual** (Help → User Manual, or `F1`) and a keyboard-shortcut reference (Help → Keyboard Shortcuts, or `?`) — both fully localized.

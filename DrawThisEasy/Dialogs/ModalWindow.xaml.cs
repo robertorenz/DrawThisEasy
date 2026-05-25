@@ -36,6 +36,25 @@ public partial class ModalWindow : Window
         w.ShowDialog();
     }
 
+    public enum UnsavedChoice { Save, Discard, Cancel }
+
+    /// Three-way prompt: Save / Don't save / Cancel. Returns the user's choice
+    /// (closing the dialog via the ✕ or Esc is treated as Cancel).
+    public static UnsavedChoice AskSaveBeforeClosing(
+        Window owner, string title, string body,
+        string saveLabel, string discardLabel, string cancelLabel)
+    {
+        var w = new ModalWindow { Owner = owner };
+        w.TitleText.Text = title;
+        w.BodyText.Text = body;
+        var choice = UnsavedChoice.Cancel;
+        w.AddButton(cancelLabel,  primary: false, click: () => { choice = UnsavedChoice.Cancel;  w.Close(); });
+        w.AddButton(discardLabel, primary: false, click: () => { choice = UnsavedChoice.Discard; w.Close(); });
+        w.AddButton(saveLabel,    primary: true,  click: () => { choice = UnsavedChoice.Save;    w.Close(); });
+        w.ShowDialog();
+        return choice;
+    }
+
     private void AddButton(string label, bool primary, Action click)
     {
         var styleKey = primary ? "PrimaryButton" : "GhostButton";
