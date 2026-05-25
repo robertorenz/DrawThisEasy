@@ -28,9 +28,12 @@ public partial class MainWindow : Window
     private readonly Dictionary<TextBlock, string>    _toolLabelTb  = new(); // palette TextBlock -> label key
     private readonly List<(TextBlock TextBlock, string Key)> _groupLabels = new();
     private TextBlock? _paletteHint;
-    // Toolbar Templates button (re-translated live); cloud providers use proper-noun labels.
+    // Toolbar Templates / Insert-Image buttons (re-translated live); cloud providers use proper-noun labels.
     private Button? _tmplStripBtn;
     private TextBlock? _tmplStripLabel;
+    private Button? _imgStripBtn;
+    private TextBlock? _imgStripLabel;
+    private TextBlock? _imgPaletteLabel;
 
     // ===== Open documents (tabs) =====
     private sealed class DocTab
@@ -294,6 +297,7 @@ public partial class MainWindow : Window
         });
 
         AddCloudGroup();
+        AddInsertImageButton();
 
         _paletteHint = new TextBlock
         {
@@ -361,6 +365,27 @@ public partial class MainWindow : Window
             ToolTip = L10n.T("topbar.cloud.tip")
         };
         btn.Click += (s, e) => ShowCloudFlyout((UIElement)s!, provider, PlacementMode.Right);
+        PaletteStack.Children.Add(btn);
+    }
+
+    private void AddInsertImageButton()
+    {
+        var content = new StackPanel { Orientation = Orientation.Horizontal };
+        content.Children.Add(new Border
+        {
+            Child = BuildImageIcon((Brush)FindResource("SidebarTextBrush")),
+            Width = 22, Height = 22, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center
+        });
+        _imgPaletteLabel = new TextBlock { Text = L10n.T("topbar.image.tip"), VerticalAlignment = VerticalAlignment.Center };
+        content.Children.Add(_imgPaletteLabel);
+
+        var btn = new Button
+        {
+            Style = (Style)FindResource("PaletteActionButton"),
+            Content = content,
+            ToolTip = L10n.T("topbar.image.tip")
+        };
+        btn.Click += (s, e) => BtnInsertImage_Click(s, e);
         PaletteStack.Children.Add(btn);
     }
 
@@ -432,6 +457,11 @@ public partial class MainWindow : Window
         _tmplStripBtn = tBtn; _tmplStripLabel = tLbl;
         ToolStrip.Children.Add(tBtn);
 
+        var (iBtn, iLbl) = MakeStripAction(BuildImageIcon((Brush)FindResource("TextMutedBrush")), L10n.T("topbar.image"), L10n.T("topbar.image.tip"),
+            (s, e) => BtnInsertImage_Click(s, e));
+        _imgStripBtn = iBtn; _imgStripLabel = iLbl;
+        ToolStrip.Children.Add(iBtn);
+
         ToolStrip.Children.Add(BuildStripSeparator());
         ToolStrip.Children.Add(BuildProviderStripButton("AWS",    Stencils.Aws,   Stencils.AwsColor));
         ToolStrip.Children.Add(BuildProviderStripButton("Azure",  Stencils.Azure, Stencils.AzureColor));
@@ -479,6 +509,27 @@ public partial class MainWindow : Window
             Canvas.SetLeft(r, x); Canvas.SetTop(r, y); c.Children.Add(r);
         }
         Sq(1, 1); Sq(10, 1); Sq(1, 10); Sq(10, 10);
+        return c;
+    }
+
+    private UIElement BuildImageIcon(Brush brush)
+    {
+        var c = new Canvas { Width = 18, Height = 18 };
+        var frame = new System.Windows.Shapes.Rectangle
+        {
+            Width = 16, Height = 13, RadiusX = 2, RadiusY = 2,
+            Stroke = brush, StrokeThickness = 1.6, Fill = null
+        };
+        Canvas.SetLeft(frame, 1); Canvas.SetTop(frame, 3); c.Children.Add(frame);
+
+        var sun = new System.Windows.Shapes.Ellipse { Width = 3.6, Height = 3.6, Fill = brush };
+        Canvas.SetLeft(sun, 4.5); Canvas.SetTop(sun, 6); c.Children.Add(sun);
+
+        c.Children.Add(new System.Windows.Shapes.Polygon
+        {
+            Fill = brush,
+            Points = new PointCollection { new Point(3, 15), new Point(8, 9.5), new Point(12, 15) }
+        });
         return c;
     }
 
@@ -981,27 +1032,53 @@ public partial class MainWindow : Window
             Multiselect = true   // pick several files; each opens in its own tab
         };
         if (dlg.ShowDialog(this) != true) return;
+        OpenPaths(dlg.FileNames);
+    }
 
+    /// Opens each path in its own tab (native .ptd.json or Excalidraw), records it in Recent, reports errors.
+    private void OpenPaths(IEnumerable<string> paths)
+    {
         var errors = new List<string>();
-        foreach (var file in dlg.FileNames)
+        foreach (var file in paths)
         {
             try
             {
                 var text = File.ReadAllText(file);
-                // Open also accepts Excalidraw scenes — by extension or by content.
-                var model = IsExcalidraw(file, text)
-                    ? DiagramImport.FromExcalidraw(text)
-                    : Persistence.Load(file);
+                var model = IsExcalidraw(file, text) ? DiagramImport.FromExcalidraw(text) : Persistence.Load(file);
                 NewDocument(model, IOPath.GetFileNameWithoutExtension(file));
+                RecentFiles.Add(file);
             }
             catch (Exception ex)
             {
                 errors.Add($"{IOPath.GetFileName(file)}: {ex.Message}");
             }
         }
-
+        RebuildRecentMenu();
         if (errors.Count > 0)
             ModalWindow.Info(this, L10n.T("modal.openfail.title"), string.Join("\n", errors));
+    }
+
+    private void RebuildRecentMenu()
+    {
+        MnuFileRecent.Items.Clear();
+        var existing = RecentFiles.Load().Where(File.Exists).ToList();
+        if (existing.Count == 0)
+        {
+            MnuFileRecent.Items.Add(new MenuItem { Header = L10n.T("menu.file.recent.none"), IsEnabled = false });
+            return;
+        }
+        int i = 1;
+        foreach (var path in existing)
+        {
+            var captured = path;
+            MnuFileRecent.Items.Add(new MenuItem { Header = $"_{i} {IOPath.GetFileName(path)}", ToolTip = path });
+            ((MenuItem)MnuFileRecent.Items[^1]).Click += (s, e) => OpenPaths(new[] { captured });
+            i++;
+        }
+        MnuFileRecent.Items.Add(new Separator());
+        var clear = new MenuItem { Header = L10n.T("menu.file.recent.clear") };
+        clear.Click += (s, e) => { RecentFiles.Clear(); RebuildRecentMenu(); };
+        MnuFileRecent.Items.Add(clear);
     }
 
     private static bool IsExcalidraw(string path, string content)
@@ -1022,23 +1099,7 @@ public partial class MainWindow : Window
             Multiselect = true
         };
         if (dlg.ShowDialog(this) != true) return;
-
-        var errors = new List<string>();
-        foreach (var file in dlg.FileNames)
-        {
-            try
-            {
-                var model = DiagramImport.FromExcalidraw(File.ReadAllText(file));
-                NewDocument(model, IOPath.GetFileNameWithoutExtension(file));
-            }
-            catch (Exception ex)
-            {
-                errors.Add($"{IOPath.GetFileName(file)}: {ex.Message}");
-            }
-        }
-
-        if (errors.Count > 0)
-            ModalWindow.Info(this, L10n.T("modal.openfail.title"), string.Join("\n", errors));
+        OpenPaths(dlg.FileNames);
     }
 
     private void BtnInsertImage_Click(object sender, RoutedEventArgs e)
@@ -1107,6 +1168,8 @@ public partial class MainWindow : Window
             Persistence.Save(Diagram.Model, dlg.FileName);
             _active.Title = IOPath.GetFileNameWithoutExtension(dlg.FileName);
             MarkSaved();
+            RecentFiles.Add(dlg.FileName);
+            RebuildRecentMenu();
             if (notify)
                 ModalWindow.Info(this,
                     L10n.T("modal.saved.title"),
@@ -1230,6 +1293,8 @@ public partial class MainWindow : Window
         MnuFileTemplates.Header  = L10n.T("menu.file.templates");
         MnuFileCloud.Header      = L10n.T("menu.file.cloud");
         MnuFileOpen.Header       = L10n.T("menu.file.open");
+        MnuFileRecent.Header     = L10n.T("menu.file.recent");
+        RebuildRecentMenu();
         MnuFileImportExcalidraw.Header = L10n.T("menu.file.import.excalidraw");
         MnuFileSave.Header       = L10n.T("menu.file.save");
         MnuFileExport.Header     = L10n.T("menu.file.export");
@@ -1277,6 +1342,9 @@ public partial class MainWindow : Window
         // Toolbar Templates button (cloud-provider buttons use proper-noun labels)
         if (_tmplStripLabel != null) _tmplStripLabel.Text = L10n.T("topbar.templates");
         if (_tmplStripBtn != null) _tmplStripBtn.ToolTip = L10n.T("topbar.templates.tip");
+        if (_imgStripLabel != null) _imgStripLabel.Text = L10n.T("topbar.image");
+        if (_imgStripBtn != null) _imgStripBtn.ToolTip = L10n.T("topbar.image.tip");
+        if (_imgPaletteLabel != null) _imgPaletteLabel.Text = L10n.T("topbar.image.tip");
 
         // Palette group labels
         foreach (var (tb, key) in _groupLabels)

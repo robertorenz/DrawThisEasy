@@ -29,10 +29,10 @@ When you need to whiteboard *"how do the clients, load balancer, app servers, qu
 - **Templates** — Org chart, Web architecture, Client-server, Microservices, Data pipeline, Blank.
 - **Cloud service objects** — a gallery of **AWS**, **Azure**, and **Google Cloud** services (compute, functions, storage, databases, containers, messaging, networking, analytics, monitoring) drawn as provider-tinted badge tiles. *Generic, original glyphs — not the providers' trademarked icons.* The **AWS / Azure / Google** buttons — in both the toolbar and the left **Cloud** palette group — drop down a flyout of that provider's services (icon + name); click one to place it, no dialog. File → Cloud Services still opens the full browse-all gallery. A **Templates** button is in the toolbar too.
 - **Undo / Redo** (`Ctrl+Z` / `Ctrl+Y`).
-- **Save / Load** as JSON; **Open** supports selecting **several files at once** (each opens in its own tab); **Export** as PNG (2× resolution).
+- **Save / Load** as JSON; **Open** supports selecting **several files at once** (each opens in its own tab); **Open Recent** lists the last 5 files; **Export** as PNG (2× resolution).
 - **Export to other tools** (File menu) — **Excalidraw** (`.excalidraw`), **draw.io / diagrams.net** (`.drawio`), and **Mermaid** (`.mmd`) so diagrams open in the editors you already use.
 - **Import from Excalidraw** (File → Import from Excalidraw, or just File → Open) — opens `.excalidraw` scenes as diagrams, mapping shapes, labels, **images**, and bound arrows into connections. Select several files to import them as separate tabs.
-- **Images** — insert a raster image (Edit → Insert Image) or import one from Excalidraw. Images are stored inline (base64) in the `.ptd.json`, so saved files stay self-contained.
+- **Images** — insert a raster image from the toolbar **Image** button, the left palette, or Edit → Insert Image (or import one from Excalidraw). Images are stored inline (base64) in the `.ptd.json`, so saved files stay self-contained.
 - **Unsaved-changes guard** — closing the app with pending edits prompts you to **Save**, **Don't save**, or **Cancel**; the title bar shows a `•` whenever there are unsaved changes.
 - **Modal dialogs** instead of system message boxes — clean, on-brand prompts.
 - **Bilingual UI** — English / Español, switchable live (no restart) from the Language menu or one-click EN/ES toggle in the top bar.
