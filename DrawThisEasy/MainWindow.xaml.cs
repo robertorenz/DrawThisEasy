@@ -492,6 +492,11 @@ public partial class MainWindow : Window
         HelpWindow.Show(this);
     }
 
+    private void BtnManual_Click(object sender, RoutedEventArgs e)
+    {
+        ManualWindow.Show(this);
+    }
+
     private void BtnLang_Click(object sender, RoutedEventArgs e)
     {
         L10n.Toggle();
@@ -544,6 +549,7 @@ public partial class MainWindow : Window
         MnuLangEs.IsChecked      = L10n.Current == DrawThisEasy.Services.Language.Es;
 
         MnuHelp.Header           = L10n.T("menu.help");
+        MnuHelpManual.Header     = L10n.T("menu.help.manual");
         MnuHelpShortcuts.Header  = L10n.T("menu.help.shortcuts");
 
         // Zoom button tooltips
@@ -599,6 +605,11 @@ public partial class MainWindow : Window
                 case Key.S: BtnSave_Click(this, new RoutedEventArgs()); e.Handled = true; return;
                 case Key.E: BtnExport_Click(this, new RoutedEventArgs()); e.Handled = true; return;
             }
+        }
+
+        if (e.Key == Key.F1)
+        {
+            BtnManual_Click(this, new RoutedEventArgs()); e.Handled = true; return;
         }
 
         if (e.Key == Key.OemQuestion && Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))

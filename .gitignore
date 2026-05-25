@@ -6,6 +6,10 @@ publish/
 *.user
 *.suo
 
+# Packaged artifacts (keep the installer script, ignore the built binaries)
+run/
+installer/Output/
+
 # Visual Studio / Rider
 .vs/
 .idea/
