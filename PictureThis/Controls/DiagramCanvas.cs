@@ -216,23 +216,23 @@ public class DiagramCanvas : Canvas
         _                       => (140, 70)
     };
 
-    private static string DefaultLabel(ShapeKind k) => k switch
+    private static string DefaultLabel(ShapeKind k) => L10n.T(k switch
     {
-        ShapeKind.Rectangle     => "Process",
-        ShapeKind.Rounded       => "Component",
-        ShapeKind.Ellipse       => "Start",
-        ShapeKind.Diamond       => "Decision",
-        ShapeKind.Hexagon       => "Step",
-        ShapeKind.Parallelogram => "Data",
-        ShapeKind.Cylinder      => "Database",
-        ShapeKind.Cloud         => "Cloud Service",
-        ShapeKind.Server        => "Server",
-        ShapeKind.Person        => "User",
-        ShapeKind.Queue         => "Queue",
-        ShapeKind.Note          => "Note",
-        ShapeKind.Text          => "Text",
-        _ => ""
-    };
+        ShapeKind.Rectangle     => "default.process",
+        ShapeKind.Rounded       => "default.component",
+        ShapeKind.Ellipse       => "default.start",
+        ShapeKind.Diamond       => "default.decision",
+        ShapeKind.Hexagon       => "default.step",
+        ShapeKind.Parallelogram => "default.data",
+        ShapeKind.Cylinder      => "default.database",
+        ShapeKind.Cloud         => "default.cloud",
+        ShapeKind.Server        => "default.server",
+        ShapeKind.Person        => "default.user",
+        ShapeKind.Queue         => "default.queue",
+        ShapeKind.Note          => "default.note",
+        ShapeKind.Text          => "default.text",
+        _ => "default.process"
+    });
 
     private void AddShapeVisual(ShapeNode node)
     {

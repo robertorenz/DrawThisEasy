@@ -21,6 +21,12 @@ public partial class MainWindow : Window
 {
     // Multiple ToggleButtons can represent the same tool (palette + top strip).
     private readonly Dictionary<ToolMode, List<ToggleButton>> _toolButtons = new();
+    // Refs we re-translate when language changes
+    private readonly Dictionary<ToggleButton, string> _toolLabelKey = new(); // palette button -> label key
+    private readonly Dictionary<ToggleButton, string> _toolTipKey   = new(); // any tool button -> tooltip key
+    private readonly Dictionary<TextBlock, string>    _toolLabelTb  = new(); // palette TextBlock -> label key
+    private readonly List<(TextBlock TextBlock, string Key)> _groupLabels = new();
+    private TextBlock? _paletteHint;
 
     public MainWindow()
     {
@@ -34,6 +40,9 @@ public partial class MainWindow : Window
         Diagram.ZoomChanged += (s, e) => UpdateZoomLabel();
         Diagram.ModelDirty += (s, e) => { /* placeholder for unsaved indicator */ };
 
+        L10n.LanguageChanged += (s, e) => ApplyLanguage();
+        ApplyLanguage();
+
         SyncToolButtons();
         UpdateInspectorVisibility();
         UpdateZoomLabel();
@@ -41,56 +50,57 @@ public partial class MainWindow : Window
 
     // ===== Palette =====
 
-    private record ToolDef(ToolMode Mode, string Label, string Title);
+    private record ToolDef(ToolMode Mode, string LabelKey, string TipKey);
 
     private void BuildPalette()
     {
-        AddGroup("Tools", new[]
+        AddGroup("group.tools", new[]
         {
-            new ToolDef(ToolMode.Select,  "Select",    "Select & move (V)"),
-            new ToolDef(ToolMode.Connect, "Connector", "Connect shapes (L)"),
-            new ToolDef(ToolMode.Pan,     "Pan",       "Pan canvas (Space + drag)")
+            new ToolDef(ToolMode.Select,  "tool.select",  "tip.select"),
+            new ToolDef(ToolMode.Connect, "tool.connect", "tip.connect"),
+            new ToolDef(ToolMode.Pan,     "tool.pan",     "tip.pan")
         });
 
-        AddGroup("Shapes", new[]
+        AddGroup("group.shapes", new[]
         {
-            new ToolDef(ToolMode.AddRectangle,     "Process",      "Rectangle (R)"),
-            new ToolDef(ToolMode.AddRounded,       "Component",    "Rounded rectangle (O)"),
-            new ToolDef(ToolMode.AddEllipse,       "Start / End",  "Ellipse (E)"),
-            new ToolDef(ToolMode.AddDiamond,       "Decision",     "Diamond (D)"),
-            new ToolDef(ToolMode.AddHexagon,       "Hexagon",      "Hexagon (H)"),
-            new ToolDef(ToolMode.AddParallelogram, "Data",         "Parallelogram"),
+            new ToolDef(ToolMode.AddRectangle,     "tool.process",   "tip.rectangle"),
+            new ToolDef(ToolMode.AddRounded,       "tool.component", "tip.rounded"),
+            new ToolDef(ToolMode.AddEllipse,       "tool.startend",  "tip.ellipse"),
+            new ToolDef(ToolMode.AddDiamond,       "tool.decision",  "tip.diamond"),
+            new ToolDef(ToolMode.AddHexagon,       "tool.hexagon",   "tip.hexagon"),
+            new ToolDef(ToolMode.AddParallelogram, "tool.data",      "tip.parallelogram"),
         });
 
-        AddGroup("Infrastructure", new[]
+        AddGroup("group.infra", new[]
         {
-            new ToolDef(ToolMode.AddCylinder, "Database",     "Cylinder / Database (B)"),
-            new ToolDef(ToolMode.AddCloud,    "Cloud",        "Cloud service (C)"),
-            new ToolDef(ToolMode.AddServer,   "Server",       "Server (S)"),
-            new ToolDef(ToolMode.AddPerson,   "User",         "Person (P)"),
-            new ToolDef(ToolMode.AddQueue,    "Queue",        "Queue / stream"),
-            new ToolDef(ToolMode.AddNote,     "Note",         "Sticky note"),
-            new ToolDef(ToolMode.AddText,     "Text",         "Text label (T)"),
+            new ToolDef(ToolMode.AddCylinder, "tool.database", "tip.cylinder"),
+            new ToolDef(ToolMode.AddCloud,    "tool.cloud",    "tip.cloud"),
+            new ToolDef(ToolMode.AddServer,   "tool.server",   "tip.server"),
+            new ToolDef(ToolMode.AddPerson,   "tool.user",     "tip.person"),
+            new ToolDef(ToolMode.AddQueue,    "tool.queue",    "tip.queue"),
+            new ToolDef(ToolMode.AddNote,     "tool.note",     "tip.note"),
+            new ToolDef(ToolMode.AddText,     "tool.text",     "tip.text"),
         });
 
-        var hint = new TextBlock
+        _paletteHint = new TextBlock
         {
-            Text = "Click a tool, then click the canvas.\nDrag from a shape's edge in Connector mode to link two shapes.",
+            Text = L10n.T("palette.hint"),
             FontSize = 11,
             Foreground = (Brush)FindResource("SidebarMutedBrush"),
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(6, 16, 6, 0)
         };
-        PaletteStack.Children.Add(hint);
+        PaletteStack.Children.Add(_paletteHint);
     }
 
-    private void AddGroup(string title, ToolDef[] tools)
+    private void AddGroup(string titleKey, ToolDef[] tools)
     {
         var label = new TextBlock
         {
-            Text = title.ToUpper(),
+            Text = L10n.T(titleKey).ToUpper(),
             Style = (Style)FindResource("GroupLabel")
         };
+        _groupLabels.Add((label, titleKey));
         PaletteStack.Children.Add(label);
         foreach (var t in tools) AddToolButton(t);
 
@@ -105,19 +115,20 @@ public partial class MainWindow : Window
     private void AddToolButton(ToolDef def)
     {
         var icon = ShapeIcons.GetIcon(def.Mode, (Brush)FindResource("SidebarTextBrush"));
+        var labelTb = new TextBlock { Text = L10n.T(def.LabelKey), VerticalAlignment = VerticalAlignment.Center };
         var content = new StackPanel { Orientation = Orientation.Horizontal };
         content.Children.Add(new Border
         {
             Child = icon,
             Width = 22, Height = 22, Margin = new Thickness(0, 0, 10, 0)
         });
-        content.Children.Add(new TextBlock { Text = def.Label, VerticalAlignment = VerticalAlignment.Center });
+        content.Children.Add(labelTb);
 
         var btn = new ToggleButton
         {
             Style = (Style)FindResource("ToolButton"),
             Content = content,
-            ToolTip = def.Title,
+            ToolTip = L10n.T(def.TipKey),
             Tag = def.Mode,
         };
         btn.Checked += (s, e) => Diagram.CurrentTool = (ToolMode)btn.Tag;
@@ -127,6 +138,9 @@ public partial class MainWindow : Window
             if (btn.IsChecked != true) btn.IsChecked = true;
         };
         RegisterToolButton(def.Mode, btn);
+        _toolLabelKey[btn] = def.LabelKey;
+        _toolTipKey[btn] = def.TipKey;
+        _toolLabelTb[labelTb] = def.LabelKey;
         PaletteStack.Children.Add(btn);
     }
 
@@ -162,11 +176,12 @@ public partial class MainWindow : Window
 
     private ToggleButton BuildStripButton(ToolMode mode)
     {
+        var tipKey = TipKeyForTool(mode);
         var btn = new ToggleButton
         {
             Style = (Style)FindResource("StripToolButton"),
             Tag = mode,
-            ToolTip = StripTooltip(mode),
+            ToolTip = L10n.T(tipKey),
             Content = ShapeIcons.GetIcon(mode, (Brush)FindResource("TextMutedBrush"))
         };
         btn.Checked += (s, e) => Diagram.CurrentTool = (ToolMode)btn.Tag;
@@ -175,6 +190,7 @@ public partial class MainWindow : Window
             if (btn.IsChecked != true) btn.IsChecked = true;
         };
         RegisterToolButton(mode, btn);
+        _toolTipKey[btn] = tipKey;
         return btn;
     }
 
@@ -189,25 +205,46 @@ public partial class MainWindow : Window
         };
     }
 
-    private static string StripTooltip(ToolMode mode) => mode switch
+    private static string TipKeyForTool(ToolMode m) => m switch
     {
-        ToolMode.Select               => "Select (V)",
-        ToolMode.Connect              => "Connector (L)",
-        ToolMode.Pan                  => "Pan (Space + drag)",
-        ToolMode.AddRectangle         => "Rectangle / Process (R)",
-        ToolMode.AddRounded           => "Rounded / Component (O)",
-        ToolMode.AddEllipse           => "Ellipse / Start-End (E)",
-        ToolMode.AddDiamond           => "Decision (D)",
-        ToolMode.AddHexagon           => "Hexagon (H)",
-        ToolMode.AddParallelogram     => "Data",
-        ToolMode.AddCylinder          => "Database (B)",
-        ToolMode.AddCloud             => "Cloud (C)",
-        ToolMode.AddServer            => "Server (S)",
-        ToolMode.AddPerson            => "User / Person (P)",
-        ToolMode.AddQueue             => "Queue",
-        ToolMode.AddNote              => "Sticky note",
-        ToolMode.AddText              => "Text (T)",
-        _ => mode.ToString()
+        ToolMode.Select               => "tip.select",
+        ToolMode.Connect              => "tip.connect",
+        ToolMode.Pan                  => "tip.pan",
+        ToolMode.AddRectangle         => "tip.rectangle",
+        ToolMode.AddRounded           => "tip.rounded",
+        ToolMode.AddEllipse           => "tip.ellipse",
+        ToolMode.AddDiamond           => "tip.diamond",
+        ToolMode.AddHexagon           => "tip.hexagon",
+        ToolMode.AddParallelogram     => "tip.parallelogram",
+        ToolMode.AddCylinder          => "tip.cylinder",
+        ToolMode.AddCloud             => "tip.cloud",
+        ToolMode.AddServer            => "tip.server",
+        ToolMode.AddPerson            => "tip.person",
+        ToolMode.AddQueue             => "tip.queue",
+        ToolMode.AddNote              => "tip.note",
+        ToolMode.AddText              => "tip.text",
+        _ => "tip.select"
+    };
+
+    private static string LabelKeyForTool(ToolMode m) => m switch
+    {
+        ToolMode.Select               => "tool.select",
+        ToolMode.Connect              => "tool.connect",
+        ToolMode.Pan                  => "tool.pan",
+        ToolMode.AddRectangle         => "tool.process",
+        ToolMode.AddRounded           => "tool.component",
+        ToolMode.AddEllipse           => "tool.startend",
+        ToolMode.AddDiamond           => "tool.decision",
+        ToolMode.AddHexagon           => "tool.hexagon",
+        ToolMode.AddParallelogram     => "tool.data",
+        ToolMode.AddCylinder          => "tool.database",
+        ToolMode.AddCloud             => "tool.cloud",
+        ToolMode.AddServer            => "tool.server",
+        ToolMode.AddPerson            => "tool.user",
+        ToolMode.AddQueue             => "tool.queue",
+        ToolMode.AddNote              => "tool.note",
+        ToolMode.AddText              => "tool.text",
+        _ => "tool.select"
     };
 
     private void SyncToolButtons()
@@ -220,33 +257,19 @@ public partial class MainWindow : Window
         StatusHint.Text = HintForTool(Diagram.CurrentTool);
     }
 
-    private static string ToolDisplayName(ToolMode m) => m switch
+    private static string ToolDisplayName(ToolMode m)
     {
-        ToolMode.Select => "Select",
-        ToolMode.Connect => "Connector",
-        ToolMode.Pan => "Pan",
-        ToolMode.AddRectangle => "Add Rectangle",
-        ToolMode.AddRounded => "Add Component",
-        ToolMode.AddEllipse => "Add Ellipse",
-        ToolMode.AddDiamond => "Add Decision",
-        ToolMode.AddHexagon => "Add Hexagon",
-        ToolMode.AddParallelogram => "Add Data",
-        ToolMode.AddCylinder => "Add Database",
-        ToolMode.AddCloud => "Add Cloud",
-        ToolMode.AddServer => "Add Server",
-        ToolMode.AddPerson => "Add User",
-        ToolMode.AddQueue => "Add Queue",
-        ToolMode.AddNote => "Add Note",
-        ToolMode.AddText => "Add Text",
-        _ => m.ToString()
-    };
+        var baseName = L10n.T(LabelKeyForTool(m));
+        var isAdd = m != ToolMode.Select && m != ToolMode.Connect && m != ToolMode.Pan;
+        return isAdd ? (L10n.T("status.add.prefix") + baseName.ToLowerInvariant()) : baseName;
+    }
 
     private static string HintForTool(ToolMode m) => m switch
     {
-        ToolMode.Select => "Click to select. Drag to move. Double-click to edit text. Space + drag to pan.",
-        ToolMode.Connect => "Click a shape, drag to another shape to connect them.",
-        ToolMode.Pan => "Drag the canvas to pan.",
-        _ => "Click the canvas to drop the shape."
+        ToolMode.Select  => L10n.T("status.hint.select"),
+        ToolMode.Connect => L10n.T("status.hint.connect"),
+        ToolMode.Pan     => L10n.T("status.hint.pan"),
+        _                => L10n.T("status.hint.add")
     };
 
     // ===== Swatches =====
@@ -298,8 +321,10 @@ public partial class MainWindow : Window
 
     private void BtnNew_Click(object sender, RoutedEventArgs e)
     {
-        ModalWindow.Confirm(this, "New diagram?", "This will clear the current canvas. You'll lose any unsaved changes.",
-            confirmLabel: "Start new",
+        ModalWindow.Confirm(this,
+            L10n.T("modal.new.title"),
+            L10n.T("modal.new.body"),
+            confirmLabel: L10n.T("modal.new.confirm"),
             onConfirm: () => Diagram.NewDiagram());
     }
 
@@ -326,7 +351,7 @@ public partial class MainWindow : Window
             }
             catch (Exception ex)
             {
-                ModalWindow.Info(this, "Could not open file", ex.Message);
+                ModalWindow.Info(this, L10n.T("modal.openfail.title"), ex.Message);
             }
         }
     }
@@ -337,18 +362,20 @@ public partial class MainWindow : Window
         {
             Filter = "PictureThis JSON (*.ptd.json)|*.ptd.json|JSON (*.json)|*.json",
             FileName = SanitizeFilename(Diagram.Model.Title) + ".ptd.json",
-            Title = "Save diagram"
+            Title = L10n.T("topbar.save")
         };
         if (dlg.ShowDialog(this) == true)
         {
             try
             {
                 Persistence.Save(Diagram.Model, dlg.FileName);
-                ModalWindow.Info(this, "Saved", $"Diagram saved to {IOPath.GetFileName(dlg.FileName)}.");
+                ModalWindow.Info(this,
+                    L10n.T("modal.saved.title"),
+                    string.Format(L10n.T("modal.saved.body"), IOPath.GetFileName(dlg.FileName)));
             }
             catch (Exception ex)
             {
-                ModalWindow.Info(this, "Could not save", ex.Message);
+                ModalWindow.Info(this, L10n.T("modal.savefail.title"), ex.Message);
             }
         }
     }
@@ -359,7 +386,7 @@ public partial class MainWindow : Window
         {
             Filter = "PNG image (*.png)|*.png",
             FileName = SanitizeFilename(Diagram.Model.Title) + ".png",
-            Title = "Export as PNG"
+            Title = L10n.T("topbar.export")
         };
         if (dlg.ShowDialog(this) == true)
         {
@@ -369,11 +396,13 @@ public partial class MainWindow : Window
                 Diagram.UpdateLayout();
                 Exporter.ExportPng(Diagram, dlg.FileName, scale: 2.0,
                     background: (Brush)FindResource("CanvasBgBrush"));
-                ModalWindow.Info(this, "Exported", $"PNG written to {IOPath.GetFileName(dlg.FileName)}.");
+                ModalWindow.Info(this,
+                    L10n.T("modal.exported.title"),
+                    string.Format(L10n.T("modal.exported.body"), IOPath.GetFileName(dlg.FileName)));
             }
             catch (Exception ex)
             {
-                ModalWindow.Info(this, "Could not export", ex.Message);
+                ModalWindow.Info(this, L10n.T("modal.exportfail.title"), ex.Message);
             }
         }
     }
@@ -393,6 +422,64 @@ public partial class MainWindow : Window
     private void BtnHelp_Click(object sender, RoutedEventArgs e)
     {
         HelpWindow.Show(this);
+    }
+
+    private void BtnLang_Click(object sender, RoutedEventArgs e)
+    {
+        L10n.Toggle();
+    }
+
+    // ===== Re-translate every string in the window =====
+
+    private void ApplyLanguage()
+    {
+        // Top bar buttons
+        BtnNew.Content       = L10n.T("topbar.new");
+        BtnTemplates.Content = L10n.T("topbar.templates");
+        BtnOpen.Content      = L10n.T("topbar.open");
+        BtnSave.Content      = L10n.T("topbar.save");
+        BtnExport.Content    = L10n.T("topbar.export");
+
+        BtnNew.ToolTip       = L10n.T("topbar.new")       + " (Ctrl+N)";
+        BtnTemplates.ToolTip = L10n.T("topbar.templates");
+        BtnOpen.ToolTip      = L10n.T("topbar.open")      + " (Ctrl+O)";
+        BtnSave.ToolTip      = L10n.T("topbar.save")      + " (Ctrl+S)";
+        BtnExport.ToolTip    = L10n.T("topbar.export")    + " (Ctrl+E)";
+
+        BtnZoomOut.ToolTip   = L10n.T("topbar.zoom.out");
+        BtnZoomReset.ToolTip = L10n.T("topbar.zoom.reset");
+        BtnZoomIn.ToolTip    = L10n.T("topbar.zoom.in");
+
+        // Language button shows current code
+        BtnLang.Content = L10n.CurrentCode;
+        BtnLang.ToolTip = L10n.T("topbar.lang.tip");
+        BtnHelp.ToolTip = L10n.T("topbar.help.tip");
+
+        // Palette group labels
+        foreach (var (tb, key) in _groupLabels)
+            tb.Text = L10n.T(key).ToUpper();
+
+        // Palette tool labels
+        foreach (var (tb, key) in _toolLabelTb)
+            tb.Text = L10n.T(key);
+
+        // Tooltips on tool buttons (palette + top strip)
+        foreach (var (btn, key) in _toolTipKey)
+            btn.ToolTip = L10n.T(key);
+
+        // Palette footer hint
+        if (_paletteHint != null) _paletteHint.Text = L10n.T("palette.hint");
+
+        // Inspector
+        LblFill.Text   = L10n.T("inspector.fill");
+        LblStroke.Text = L10n.T("inspector.stroke");
+        BtnFront.Content = L10n.T("inspector.front");  BtnFront.ToolTip = L10n.T("inspector.tip.front");
+        BtnBack.Content  = L10n.T("inspector.back");   BtnBack.ToolTip  = L10n.T("inspector.tip.back");
+        BtnDup.Content   = L10n.T("inspector.dup");    BtnDup.ToolTip   = L10n.T("inspector.tip.dup");
+        BtnDel.Content   = L10n.T("inspector.delete"); BtnDel.ToolTip   = L10n.T("inspector.tip.delete");
+
+        // Status text reflects current tool
+        SyncToolButtons();
     }
 
     // ===== Keyboard =====

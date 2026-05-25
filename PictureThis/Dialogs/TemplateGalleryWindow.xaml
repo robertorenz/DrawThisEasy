@@ -25,8 +25,8 @@
             <ColumnDefinition Width="Auto"/>
           </Grid.ColumnDefinitions>
           <StackPanel Grid.Column="0">
-            <TextBlock Text="Start from a template" FontFamily="Segoe UI" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
-            <TextBlock Text="Pick a starting point. You can edit everything afterwards." FontSize="12" Foreground="{StaticResource TextMutedBrush}" Margin="0,3,0,0"/>
+            <TextBlock x:Name="TitleText" Text="Start from a template" FontFamily="Segoe UI" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+            <TextBlock x:Name="SubtitleText" Text="Pick a starting point. You can edit everything afterwards." FontSize="12" Foreground="{StaticResource TextMutedBrush}" Margin="0,3,0,0"/>
           </StackPanel>
           <Button Grid.Column="1" Style="{StaticResource IconButton}" Click="Close_Click" Content="✕" FontSize="14" Foreground="{StaticResource TextMutedBrush}"/>
         </Grid>
@@ -44,7 +44,7 @@
 
       <Border Grid.Row="2" Background="#FFF8FAFC" CornerRadius="0,0,12,12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="12,10">
-          <Button Content="Cancel" Style="{StaticResource GhostButton}" Click="Close_Click" MinWidth="92" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"/>
+          <Button x:Name="BtnCancel" Content="Cancel" Style="{StaticResource GhostButton}" Click="Close_Click" MinWidth="92" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"/>
         </StackPanel>
       </Border>
     </Grid>

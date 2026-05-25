@@ -24,7 +24,7 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
           </Grid.ColumnDefinitions>
-          <TextBlock Grid.Column="0" Text="Keyboard shortcuts" FontFamily="Segoe UI" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
+          <TextBlock Grid.Column="0" x:Name="TitleText" Text="Keyboard shortcuts" FontFamily="Segoe UI" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
           <Button Grid.Column="1" Style="{StaticResource IconButton}" Click="Close_Click" Content="✕" FontSize="14" Foreground="{StaticResource TextMutedBrush}"/>
         </Grid>
       </Border>
@@ -37,16 +37,16 @@
           </Grid.ColumnDefinitions>
 
           <StackPanel Grid.Column="0" Margin="0,0,12,0">
-            <TextBlock Text="TOOLS" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,6"/>
+            <TextBlock x:Name="LblTools" Text="TOOLS" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,6"/>
             <ContentControl x:Name="ToolsList"/>
           </StackPanel>
 
           <StackPanel Grid.Column="1" Margin="12,0,0,0">
-            <TextBlock Text="EDITING" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,6"/>
+            <TextBlock x:Name="LblEditing" Text="EDITING" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,6"/>
             <ContentControl x:Name="EditList"/>
-            <TextBlock Text="FILE" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,14,0,6"/>
+            <TextBlock x:Name="LblFile" Text="FILE" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,14,0,6"/>
             <ContentControl x:Name="FileList"/>
-            <TextBlock Text="VIEW" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,14,0,6"/>
+            <TextBlock x:Name="LblView" Text="VIEW" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,14,0,6"/>
             <ContentControl x:Name="ViewList"/>
           </StackPanel>
         </Grid>
@@ -54,7 +54,7 @@
 
       <Border Grid.Row="2" Background="#FFF8FAFC" CornerRadius="0,0,12,12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="12,10">
-          <Button Content="Close" Style="{StaticResource PrimaryButton}" Click="Close_Click" MinWidth="92"/>
+          <Button x:Name="BtnClose" Content="Close" Style="{StaticResource PrimaryButton}" Click="Close_Click" MinWidth="92"/>
         </StackPanel>
       </Border>
     </Grid>

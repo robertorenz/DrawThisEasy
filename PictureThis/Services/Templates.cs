@@ -3,18 +3,22 @@ using PictureThis.Models;
 
 namespace PictureThis.Services;
 
-public record DiagramTemplate(string Id, string Title, string Description, DiagramModel Builder);
+public record DiagramTemplate(string Id, string TitleKey, string DescriptionKey, DiagramModel Builder)
+{
+    public string Title       => L10n.T(TitleKey);
+    public string Description => L10n.T(DescriptionKey);
+}
 
 public static class Templates
 {
     public static List<DiagramTemplate> All() => new()
     {
-        new("blank", "Blank canvas", "Start from scratch with an empty diagram.", new DiagramModel { Title = "Untitled" }),
-        new("org-chart", "Org chart", "Simple three-level organization chart.", BuildOrgChart()),
-        new("web-arch", "Web architecture", "Client → load balancer → app servers → database with cache.", BuildWebArchitecture()),
-        new("client-server", "Client-server", "Web/mobile clients calling an API with a database.", BuildClientServer()),
-        new("microservices", "Microservices", "API gateway fanning out to several services with a queue.", BuildMicroservices()),
-        new("data-pipeline", "Data pipeline", "Source → ingestion → processing → warehouse → dashboard.", BuildDataPipeline()),
+        new("blank",         "template.blank",         "template.blank.desc",         new DiagramModel { Title = "Untitled" }),
+        new("org-chart",     "template.orgchart",      "template.orgchart.desc",      BuildOrgChart()),
+        new("web-arch",      "template.webarch",       "template.webarch.desc",       BuildWebArchitecture()),
+        new("client-server", "template.clientserver",  "template.clientserver.desc",  BuildClientServer()),
+        new("microservices", "template.microservices", "template.microservices.desc", BuildMicroservices()),
+        new("data-pipeline", "template.datapipeline",  "template.datapipeline.desc",  BuildDataPipeline()),
     };
 
     private static ShapeNode N(ShapeKind k, double x, double y, double w, double h, string label, string? fill = null)

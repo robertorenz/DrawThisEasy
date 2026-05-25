@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using PictureThis.Services;
 
 namespace PictureThis.Dialogs;
 
@@ -9,6 +10,12 @@ public partial class HelpWindow : Window
     public HelpWindow()
     {
         InitializeComponent();
+        TitleText.Text  = L10n.T("help.title");
+        LblTools.Text   = L10n.T("help.tools");
+        LblEditing.Text = L10n.T("help.editing");
+        LblFile.Text    = L10n.T("help.file");
+        LblView.Text    = L10n.T("help.view");
+        BtnClose.Content = L10n.T("help.close");
         Build();
     }
 
@@ -24,44 +31,44 @@ public partial class HelpWindow : Window
     {
         ToolsList.Content = MakeList(new (string, string)[]
         {
-            ("V", "Select tool"),
-            ("L", "Connector tool"),
-            ("R", "Rectangle"),
-            ("O", "Rounded / Component"),
-            ("E", "Ellipse"),
-            ("D", "Diamond / Decision"),
-            ("H", "Hexagon"),
-            ("B", "Database (cylinder)"),
-            ("C", "Cloud"),
-            ("S", "Server"),
-            ("P", "User / Person"),
-            ("T", "Text label"),
-            ("Esc", "Cancel / select")
+            ("V",   L10n.T("help.action.select")),
+            ("L",   L10n.T("help.action.connector")),
+            ("R",   L10n.T("help.action.rectangle")),
+            ("O",   L10n.T("help.action.rounded")),
+            ("E",   L10n.T("help.action.ellipse")),
+            ("D",   L10n.T("help.action.diamond")),
+            ("H",   L10n.T("help.action.hexagon")),
+            ("B",   L10n.T("help.action.database")),
+            ("C",   L10n.T("help.action.cloud")),
+            ("S",   L10n.T("help.action.server")),
+            ("P",   L10n.T("help.action.user")),
+            ("T",   L10n.T("help.action.text")),
+            ("Esc", L10n.T("help.action.cancel"))
         });
         EditList.Content = MakeList(new (string, string)[]
         {
-            ("Ctrl+Z", "Undo"),
-            ("Ctrl+Y", "Redo"),
-            ("Ctrl+C", "Copy"),
-            ("Ctrl+X", "Cut"),
-            ("Ctrl+V", "Paste"),
-            ("Ctrl+D", "Duplicate"),
-            ("Ctrl+A", "Select all"),
-            ("Del", "Delete selection"),
-            ("Double-click", "Edit label")
+            ("Ctrl+Z", L10n.T("help.action.undo")),
+            ("Ctrl+Y", L10n.T("help.action.redo")),
+            ("Ctrl+C", L10n.T("help.action.copy")),
+            ("Ctrl+X", L10n.T("help.action.cut")),
+            ("Ctrl+V", L10n.T("help.action.paste")),
+            ("Ctrl+D", L10n.T("help.action.duplicate")),
+            ("Ctrl+A", L10n.T("help.action.selectall")),
+            ("Del",    L10n.T("help.action.delete")),
+            (L10n.T("help.action.doubleclick"), L10n.T("help.action.edit"))
         });
         FileList.Content = MakeList(new (string, string)[]
         {
-            ("Ctrl+N", "New diagram"),
-            ("Ctrl+O", "Open"),
-            ("Ctrl+S", "Save"),
-            ("Ctrl+E", "Export PNG")
+            ("Ctrl+N", L10n.T("help.action.new")),
+            ("Ctrl+O", L10n.T("help.action.open")),
+            ("Ctrl+S", L10n.T("help.action.save")),
+            ("Ctrl+E", L10n.T("help.action.export"))
         });
         ViewList.Content = MakeList(new (string, string)[]
         {
-            ("Space + drag", "Pan canvas"),
-            ("Right-click + drag", "Pan canvas"),
-            ("Wheel", "Zoom in / out")
+            ("Space + drag",       L10n.T("help.action.pan.space")),
+            ("Right-click + drag", L10n.T("help.action.pan.right")),
+            ("Wheel",              L10n.T("help.action.zoom"))
         });
     }
 

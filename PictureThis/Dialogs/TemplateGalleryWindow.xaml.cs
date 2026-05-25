@@ -17,6 +17,9 @@ public partial class TemplateGalleryWindow : Window
     public TemplateGalleryWindow()
     {
         InitializeComponent();
+        TitleText.Text    = L10n.T("templates.title");
+        SubtitleText.Text = L10n.T("templates.subtitle");
+        BtnCancel.Content = L10n.T("templates.cancel");
         foreach (var t in Templates.All())
             TemplatesGrid.Items.Add(BuildCard(t));
     }
@@ -97,7 +100,7 @@ public partial class TemplateGalleryWindow : Window
         {
             canvas.Children.Add(new TextBlock
             {
-                Text = "Empty canvas",
+                Text = L10n.T("templates.empty"),
                 FontSize = 12,
                 Foreground = (Brush)FindResource("TextMutedBrush"),
                 Margin = new Thickness(0)

@@ -38,25 +38,26 @@
 
         <!-- Center actions -->
         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-          <Button Style="{StaticResource GhostButton}" Content="New" Click="BtnNew_Click" ToolTip="New diagram (Ctrl+N)"/>
-          <Button Style="{StaticResource GhostButton}" Content="Templates" Click="BtnTemplates_Click" ToolTip="Start from a template"/>
-          <Button Style="{StaticResource GhostButton}" Content="Open" Click="BtnOpen_Click" ToolTip="Open (Ctrl+O)"/>
-          <Button Style="{StaticResource GhostButton}" Content="Save" Click="BtnSave_Click" ToolTip="Save (Ctrl+S)"/>
-          <Button Style="{StaticResource PrimaryButton}" Content="Export" Click="BtnExport_Click" Margin="6,0,0,0" ToolTip="Export PNG (Ctrl+E)"/>
+          <Button x:Name="BtnNew"       Style="{StaticResource GhostButton}"   Click="BtnNew_Click"/>
+          <Button x:Name="BtnTemplates" Style="{StaticResource GhostButton}"   Click="BtnTemplates_Click"/>
+          <Button x:Name="BtnOpen"      Style="{StaticResource GhostButton}"   Click="BtnOpen_Click"/>
+          <Button x:Name="BtnSave"      Style="{StaticResource GhostButton}"   Click="BtnSave_Click"/>
+          <Button x:Name="BtnExport"    Style="{StaticResource PrimaryButton}" Click="BtnExport_Click" Margin="6,0,0,0"/>
         </StackPanel>
 
         <!-- Right -->
         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
           <Border Background="#FFF1F5F9" CornerRadius="6" Padding="2" Margin="0,0,8,0">
             <StackPanel Orientation="Horizontal">
-              <Button Style="{StaticResource IconButton}" Content="−" Click="BtnZoomOut_Click" Width="28" Height="26" ToolTip="Zoom out"/>
-              <Button Style="{StaticResource IconButton}" Click="BtnZoomReset_Click" Width="50" Height="26" ToolTip="Reset zoom">
+              <Button x:Name="BtnZoomOut"   Style="{StaticResource IconButton}" Content="−" Click="BtnZoomOut_Click"   Width="28" Height="26"/>
+              <Button x:Name="BtnZoomReset" Style="{StaticResource IconButton}"             Click="BtnZoomReset_Click" Width="50" Height="26">
                 <TextBlock x:Name="ZoomLabel" Text="100%" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
               </Button>
-              <Button Style="{StaticResource IconButton}" Content="+" Click="BtnZoomIn_Click" Width="28" Height="26" ToolTip="Zoom in"/>
+              <Button x:Name="BtnZoomIn"    Style="{StaticResource IconButton}" Content="+" Click="BtnZoomIn_Click"    Width="28" Height="26"/>
             </StackPanel>
           </Border>
-          <Button Style="{StaticResource IconButton}" Content="?" Click="BtnHelp_Click" ToolTip="Keyboard shortcuts"/>
+          <Button x:Name="BtnLang" Style="{StaticResource IconButton}" Click="BtnLang_Click" Content="EN" MinWidth="40" FontWeight="SemiBold"/>
+          <Button x:Name="BtnHelp" Style="{StaticResource IconButton}" Click="BtnHelp_Click" Content="?"/>
         </StackPanel>
       </Grid>
     </Border>
@@ -110,20 +111,20 @@
           </Border.Effect>
           <StackPanel>
             <DockPanel Margin="0,2,0,6">
-              <TextBlock Text="FILL" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Width="48" VerticalAlignment="Center"/>
+              <TextBlock x:Name="LblFill" Text="FILL" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Width="48" VerticalAlignment="Center"/>
               <WrapPanel x:Name="FillSwatches" Orientation="Horizontal"/>
             </DockPanel>
             <Border Background="{StaticResource BorderBrush}" Height="1" Margin="0,4"/>
             <DockPanel Margin="0,6,0,6">
-              <TextBlock Text="STROKE" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Width="48" VerticalAlignment="Center"/>
+              <TextBlock x:Name="LblStroke" Text="STROKE" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Width="48" VerticalAlignment="Center"/>
               <WrapPanel x:Name="StrokeSwatches" Orientation="Horizontal"/>
             </DockPanel>
             <Border Background="{StaticResource BorderBrush}" Height="1" Margin="0,4"/>
             <UniformGrid Columns="4" Margin="0,6,0,0">
-              <Button Style="{StaticResource MiniButton}" Content="Front" Click="BtnFront_Click" ToolTip="Bring to front" Margin="0,0,4,0"/>
-              <Button Style="{StaticResource MiniButton}" Content="Back" Click="BtnBack_Click" ToolTip="Send to back" Margin="0,0,4,0"/>
-              <Button Style="{StaticResource MiniButton}" Content="Dup" Click="BtnDup_Click" ToolTip="Duplicate (Ctrl+D)" Margin="0,0,4,0"/>
-              <Button Style="{StaticResource MiniButton}" Content="Delete" Click="BtnDel_Click" ToolTip="Delete (Del)">
+              <Button x:Name="BtnFront" Style="{StaticResource MiniButton}" Content="Front"  Click="BtnFront_Click" Margin="0,0,4,0"/>
+              <Button x:Name="BtnBack"  Style="{StaticResource MiniButton}" Content="Back"   Click="BtnBack_Click"  Margin="0,0,4,0"/>
+              <Button x:Name="BtnDup"   Style="{StaticResource MiniButton}" Content="Dup"    Click="BtnDup_Click"   Margin="0,0,4,0"/>
+              <Button x:Name="BtnDel"   Style="{StaticResource MiniButton}" Content="Delete" Click="BtnDel_Click">
                 <Button.Background><SolidColorBrush Color="#FFFEF2F2"/></Button.Background>
                 <Button.Foreground><SolidColorBrush Color="#FFEF4444"/></Button.Foreground>
               </Button>
