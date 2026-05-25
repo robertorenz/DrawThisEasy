@@ -684,6 +684,40 @@ public partial class MainWindow : Window
         return string.IsNullOrWhiteSpace(s) ? "diagram" : s.Trim();
     }
 
+    private void BtnExportExcalidraw_Click(object sender, RoutedEventArgs e) =>
+        ExportText(DiagramExport.ToExcalidraw(Diagram.Model),
+            "Excalidraw (*.excalidraw)|*.excalidraw|JSON (*.json)|*.json", ".excalidraw");
+
+    private void BtnExportDrawio_Click(object sender, RoutedEventArgs e) =>
+        ExportText(DiagramExport.ToDrawio(Diagram.Model),
+            "draw.io (*.drawio)|*.drawio|XML (*.xml)|*.xml", ".drawio");
+
+    private void BtnExportMermaid_Click(object sender, RoutedEventArgs e) =>
+        ExportText(DiagramExport.ToMermaid(Diagram.Model),
+            "Mermaid (*.mmd)|*.mmd|Text (*.txt)|*.txt", ".mmd");
+
+    private void ExportText(string content, string filter, string defaultExt)
+    {
+        var dlg = new SaveFileDialog
+        {
+            Filter = filter,
+            FileName = SanitizeFilename(Diagram.Model.Title) + defaultExt,
+            Title = L10n.T("topbar.export")
+        };
+        if (dlg.ShowDialog(this) != true) return;
+        try
+        {
+            File.WriteAllText(dlg.FileName, content);
+            ModalWindow.Info(this,
+                L10n.T("modal.exported.title"),
+                string.Format(L10n.T("modal.exported.body"), IOPath.GetFileName(dlg.FileName)));
+        }
+        catch (Exception ex)
+        {
+            ModalWindow.Info(this, L10n.T("modal.exportfail.title"), ex.Message);
+        }
+    }
+
     private void BtnZoomIn_Click(object sender, RoutedEventArgs e) => Diagram.SetZoom(Diagram.Zoom * 1.2);
     private void BtnZoomOut_Click(object sender, RoutedEventArgs e) => Diagram.SetZoom(Diagram.Zoom / 1.2);
     private void BtnZoomReset_Click(object sender, RoutedEventArgs e) => Diagram.ResetView();
@@ -729,6 +763,9 @@ public partial class MainWindow : Window
         MnuFileOpen.Header       = L10n.T("menu.file.open");
         MnuFileSave.Header       = L10n.T("menu.file.save");
         MnuFileExport.Header     = L10n.T("menu.file.export");
+        MnuFileExportExcalidraw.Header = L10n.T("menu.file.export.excalidraw");
+        MnuFileExportDrawio.Header     = L10n.T("menu.file.export.drawio");
+        MnuFileExportMermaid.Header    = L10n.T("menu.file.export.mermaid");
         MnuFileExit.Header       = L10n.T("menu.file.exit");
 
         MnuEdit.Header           = L10n.T("menu.edit");
