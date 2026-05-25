@@ -1,0 +1,62 @@
+<Window x:Class="PictureThis.Dialogs.HelpWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        AllowsTransparency="True"
+        Background="Transparent"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Width="620" SizeToContent="Height">
+  <Border Background="White" CornerRadius="12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+    <Border.Effect>
+      <DropShadowEffect Color="#0F172A" Opacity="0.35" BlurRadius="40" ShadowDepth="6"/>
+    </Border.Effect>
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+      </Grid.RowDefinitions>
+      <Border Grid.Row="0" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+        <Grid Margin="18,14">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <TextBlock Grid.Column="0" Text="Keyboard shortcuts" FontFamily="Segoe UI" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
+          <Button Grid.Column="1" Style="{StaticResource IconButton}" Click="Close_Click" Content="✕" FontSize="14" Foreground="{StaticResource TextMutedBrush}"/>
+        </Grid>
+      </Border>
+
+      <ScrollViewer Grid.Row="1" MaxHeight="520" VerticalScrollBarVisibility="Auto" Margin="0">
+        <Grid Margin="22,14,22,18">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+
+          <StackPanel Grid.Column="0" Margin="0,0,12,0">
+            <TextBlock Text="TOOLS" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,6"/>
+            <ContentControl x:Name="ToolsList"/>
+          </StackPanel>
+
+          <StackPanel Grid.Column="1" Margin="12,0,0,0">
+            <TextBlock Text="EDITING" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,6"/>
+            <ContentControl x:Name="EditList"/>
+            <TextBlock Text="FILE" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,14,0,6"/>
+            <ContentControl x:Name="FileList"/>
+            <TextBlock Text="VIEW" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,14,0,6"/>
+            <ContentControl x:Name="ViewList"/>
+          </StackPanel>
+        </Grid>
+      </ScrollViewer>
+
+      <Border Grid.Row="2" Background="#FFF8FAFC" CornerRadius="0,0,12,12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="12,10">
+          <Button Content="Close" Style="{StaticResource PrimaryButton}" Click="Close_Click" MinWidth="92"/>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Border>
+</Window>

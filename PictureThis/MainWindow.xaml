@@ -1,0 +1,128 @@
+<Window x:Class="PictureThis.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:PictureThis.Controls"
+        Title="PictureThis"
+        Height="780" Width="1280"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource BgBrush}"
+        Focusable="True"
+        KeyDown="Window_KeyDown"
+        KeyUp="Window_KeyUp">
+
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="52"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <!-- ====== Top bar ====== -->
+    <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+      <Grid Margin="16,0">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="220"/>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Brand -->
+        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+          <Grid Width="28" Height="28" Margin="0,0,10,0">
+            <Rectangle Width="11" Height="9" RadiusX="2" RadiusY="2" Fill="#0EA5E9" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="2,4,0,0"/>
+            <Rectangle Width="11" Height="9" RadiusX="2" RadiusY="2" Fill="#14B8A6" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,2,0"/>
+            <Rectangle Width="11" Height="9" RadiusX="2" RadiusY="2" Fill="#F59E0B" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,3"/>
+          </Grid>
+          <TextBlock Text="PictureThis" FontFamily="Segoe UI" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Foreground="{StaticResource TextBrush}"/>
+        </StackPanel>
+
+        <!-- Center actions -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <Button Style="{StaticResource GhostButton}" Content="New" Click="BtnNew_Click" ToolTip="New diagram (Ctrl+N)"/>
+          <Button Style="{StaticResource GhostButton}" Content="Templates" Click="BtnTemplates_Click" ToolTip="Start from a template"/>
+          <Button Style="{StaticResource GhostButton}" Content="Open" Click="BtnOpen_Click" ToolTip="Open (Ctrl+O)"/>
+          <Button Style="{StaticResource GhostButton}" Content="Save" Click="BtnSave_Click" ToolTip="Save (Ctrl+S)"/>
+          <Button Style="{StaticResource PrimaryButton}" Content="Export" Click="BtnExport_Click" Margin="6,0,0,0" ToolTip="Export PNG (Ctrl+E)"/>
+        </StackPanel>
+
+        <!-- Right -->
+        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+          <Border Background="#FFF1F5F9" CornerRadius="6" Padding="2" Margin="0,0,8,0">
+            <StackPanel Orientation="Horizontal">
+              <Button Style="{StaticResource IconButton}" Content="−" Click="BtnZoomOut_Click" Width="28" Height="26" ToolTip="Zoom out"/>
+              <Button Style="{StaticResource IconButton}" Click="BtnZoomReset_Click" Width="50" Height="26" ToolTip="Reset zoom">
+                <TextBlock x:Name="ZoomLabel" Text="100%" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+              </Button>
+              <Button Style="{StaticResource IconButton}" Content="+" Click="BtnZoomIn_Click" Width="28" Height="26" ToolTip="Zoom in"/>
+            </StackPanel>
+          </Border>
+          <Button Style="{StaticResource IconButton}" Content="?" Click="BtnHelp_Click" ToolTip="Keyboard shortcuts"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- ====== Body: palette + canvas ====== -->
+    <Grid Grid.Row="1">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="220"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+
+      <!-- Palette -->
+      <Border Grid.Column="0" Background="{StaticResource SidebarBgBrush}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Margin="10,12,10,12" x:Name="PaletteStack"/>
+        </ScrollViewer>
+      </Border>
+
+      <!-- Canvas area -->
+      <Grid Grid.Column="1">
+        <controls:DiagramCanvas x:Name="Diagram" />
+
+        <!-- Status bar (bottom overlay) -->
+        <Border VerticalAlignment="Bottom" Background="#F2FFFFFF" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Height="28">
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0">
+            <TextBlock x:Name="StatusTool" Text="Select" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+            <TextBlock Text="·" Margin="8,0" Foreground="{StaticResource TextMutedBrush}"/>
+            <TextBlock x:Name="StatusHint" Text="Click a tool, then click the canvas. Hold Space to pan." FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+          </StackPanel>
+        </Border>
+
+        <!-- Inspector (top right floating) -->
+        <Border x:Name="Inspector"
+                HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="0,16,16,0"
+                Background="White"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                CornerRadius="12"
+                Width="240"
+                Padding="12"
+                Visibility="Collapsed">
+          <Border.Effect>
+            <DropShadowEffect Color="#0F172A" Opacity="0.12" BlurRadius="16" ShadowDepth="2"/>
+          </Border.Effect>
+          <StackPanel>
+            <DockPanel Margin="0,2,0,6">
+              <TextBlock Text="FILL" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Width="48" VerticalAlignment="Center"/>
+              <WrapPanel x:Name="FillSwatches" Orientation="Horizontal"/>
+            </DockPanel>
+            <Border Background="{StaticResource BorderBrush}" Height="1" Margin="0,4"/>
+            <DockPanel Margin="0,6,0,6">
+              <TextBlock Text="STROKE" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Width="48" VerticalAlignment="Center"/>
+              <WrapPanel x:Name="StrokeSwatches" Orientation="Horizontal"/>
+            </DockPanel>
+            <Border Background="{StaticResource BorderBrush}" Height="1" Margin="0,4"/>
+            <UniformGrid Columns="4" Margin="0,6,0,0">
+              <Button Style="{StaticResource MiniButton}" Content="Front" Click="BtnFront_Click" ToolTip="Bring to front" Margin="0,0,4,0"/>
+              <Button Style="{StaticResource MiniButton}" Content="Back" Click="BtnBack_Click" ToolTip="Send to back" Margin="0,0,4,0"/>
+              <Button Style="{StaticResource MiniButton}" Content="Dup" Click="BtnDup_Click" ToolTip="Duplicate (Ctrl+D)" Margin="0,0,4,0"/>
+              <Button Style="{StaticResource MiniButton}" Content="Delete" Click="BtnDel_Click" ToolTip="Delete (Del)">
+                <Button.Background><SolidColorBrush Color="#FFFEF2F2"/></Button.Background>
+                <Button.Foreground><SolidColorBrush Color="#FFEF4444"/></Button.Foreground>
+              </Button>
+            </UniformGrid>
+          </StackPanel>
+        </Border>
+      </Grid>
+    </Grid>
+  </Grid>
+</Window>
