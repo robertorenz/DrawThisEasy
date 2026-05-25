@@ -39,6 +39,7 @@ public partial class MainWindow : Window
         Diagram.SelectionChanged += (s, e) => UpdateInspectorVisibility();
         Diagram.ZoomChanged += (s, e) => UpdateZoomLabel();
         Diagram.ModelDirty += (s, e) => { /* placeholder for unsaved indicator */ };
+        Diagram.ContextMenuRequested += (s, pt) => ShowShapeContextMenu(pt);
 
         L10n.LanguageChanged += (s, e) => ApplyLanguage();
         ApplyLanguage();
@@ -370,6 +371,188 @@ public partial class MainWindow : Window
             catch { }
         }
         return isFill ? Colors.White : Color.FromRgb(0x33, 0x41, 0x55);
+    }
+
+    // ===== Right-click context menu =====
+
+    private Popup? _ctxPopup;
+
+    private void ShowShapeContextMenu(Point _)
+    {
+        CloseContextMenu();
+        if (Diagram.SelectedShapeIds.Count == 0) return;
+
+        var stack = new StackPanel { Width = 248 };
+
+        stack.Children.Add(CtxActionRow("✎", L10n.T("ctx.edittext"), danger: false, () =>
+        {
+            var sh = Diagram.GetSelectedShape();
+            if (sh != null) Diagram.BeginEditText(sh);
+        }));
+
+        stack.Children.Add(CtxSeparator());
+        stack.Children.Add(CtxHeader(L10n.T("ctx.fill")));
+        stack.Children.Add(CtxSwatchRow(Palette.Fills, isFill: true));
+        stack.Children.Add(CtxHeader(L10n.T("ctx.stroke")));
+        stack.Children.Add(CtxSwatchRow(Palette.Strokes, isFill: false));
+
+        stack.Children.Add(CtxSeparator());
+        stack.Children.Add(CtxActionRow("⤒", L10n.T("ctx.front"),     danger: false, () => Diagram.BringToFront()));
+        stack.Children.Add(CtxActionRow("⤓", L10n.T("ctx.back"),      danger: false, () => Diagram.SendToBack()));
+        stack.Children.Add(CtxActionRow("⧉", L10n.T("ctx.duplicate"), danger: false, () => Diagram.DuplicateSelection()));
+        stack.Children.Add(CtxActionRow("❏", L10n.T("ctx.copy"),      danger: false, () => Diagram.Copy()));
+        stack.Children.Add(CtxActionRow("✕", L10n.T("ctx.delete"),    danger: true,  () => Diagram.DeleteSelection()));
+
+        var card = new Border
+        {
+            Background = Brushes.White,
+            CornerRadius = new CornerRadius(10),
+            BorderBrush = (Brush)FindResource("BorderBrush"),
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(6),
+            Child = stack,
+            Effect = new System.Windows.Media.Effects.DropShadowEffect
+            {
+                Color = (Color)ColorConverter.ConvertFromString("#0F172A"),
+                Opacity = 0.28, BlurRadius = 28, ShadowDepth = 5,
+            },
+        };
+
+        _ctxPopup = new Popup
+        {
+            Child = card,
+            StaysOpen = false,
+            AllowsTransparency = true,
+            PopupAnimation = PopupAnimation.Fade,
+            Placement = PlacementMode.Mouse,
+            PlacementTarget = Diagram,
+        };
+        _ctxPopup.IsOpen = true;
+    }
+
+    private void CloseContextMenu()
+    {
+        if (_ctxPopup != null) { _ctxPopup.IsOpen = false; _ctxPopup = null; }
+    }
+
+    private UIElement CtxHeader(string text) => new TextBlock
+    {
+        Text = text.ToUpperInvariant(),
+        FontSize = 10,
+        FontWeight = FontWeights.SemiBold,
+        Foreground = (Brush)FindResource("TextMutedBrush"),
+        Margin = new Thickness(8, 6, 8, 3),
+    };
+
+    private UIElement CtxSeparator() => new Border
+    {
+        Height = 1,
+        Background = (Brush)FindResource("BorderBrush"),
+        Margin = new Thickness(4, 5, 4, 5),
+    };
+
+    private UIElement CtxActionRow(string glyph, string label, bool danger, Action onClick)
+    {
+        var dangerBrush = (Brush)new BrushConverter().ConvertFromString("#EF4444")!;
+        var glyphBrush  = danger ? dangerBrush : (Brush)FindResource("AccentBrush");
+        var textBrush   = danger ? dangerBrush : (Brush)FindResource("TextBrush");
+        var hoverBrush  = (Brush)new BrushConverter().ConvertFromString(danger ? "#FFFEF2F2" : "#FFF1F5F9")!;
+
+        var row = new StackPanel { Orientation = Orientation.Horizontal };
+        row.Children.Add(new TextBlock
+        {
+            Text = glyph, FontSize = 13, Width = 22, Foreground = glyphBrush,
+            VerticalAlignment = VerticalAlignment.Center, TextAlignment = TextAlignment.Center,
+        });
+        row.Children.Add(new TextBlock
+        {
+            Text = label, FontSize = 13, Foreground = textBrush, VerticalAlignment = VerticalAlignment.Center,
+        });
+
+        var b = new Border
+        {
+            Child = row,
+            Padding = new Thickness(6, 7, 16, 7),
+            CornerRadius = new CornerRadius(6),
+            Background = Brushes.Transparent,
+            Cursor = Cursors.Hand,
+        };
+        b.MouseEnter += (s, e) => b.Background = hoverBrush;
+        b.MouseLeave += (s, e) => b.Background = Brushes.Transparent;
+        b.MouseLeftButtonUp += (s, e) => { CloseContextMenu(); onClick(); };
+        return b;
+    }
+
+    private UIElement CtxSwatchRow(string[] colors, bool isFill)
+    {
+        var wrap = new WrapPanel { Margin = new Thickness(8, 0, 8, 4), MaxWidth = 232 };
+        foreach (var hex in colors) wrap.Children.Add(CtxSwatch(hex, isFill));
+        wrap.Children.Add(CtxCustomSwatch(isFill));
+        return wrap;
+    }
+
+    private Border CtxSwatch(string hex, bool isFill)
+    {
+        var border = new Border
+        {
+            Width = 22, Height = 22,
+            Margin = new Thickness(0, 0, 6, 6),
+            CornerRadius = new CornerRadius(6),
+            Background = (Brush)new BrushConverter().ConvertFromString(hex)!,
+            BorderBrush = (Brush)FindResource("BorderBrush"),
+            BorderThickness = new Thickness(1),
+            Cursor = Cursors.Hand,
+            ToolTip = hex,
+        };
+        border.MouseLeftButtonUp += (s, e) =>
+        {
+            CloseContextMenu();
+            if (isFill) Diagram.SetSelectedFill(hex); else Diagram.SetSelectedStroke(hex);
+            e.Handled = true;
+        };
+        return border;
+    }
+
+    private Border CtxCustomSwatch(bool isFill)
+    {
+        var border = new Border
+        {
+            Width = 22, Height = 22,
+            Margin = new Thickness(0, 0, 6, 6),
+            CornerRadius = new CornerRadius(6),
+            BorderBrush = (Brush)FindResource("BorderBrush"),
+            BorderThickness = new Thickness(1),
+            Cursor = Cursors.Hand,
+            ToolTip = L10n.T("color.custom"),
+            Background = new LinearGradientBrush(
+                new GradientStopCollection
+                {
+                    new GradientStop((Color)ColorConverter.ConvertFromString("#F87171"), 0.0),
+                    new GradientStop((Color)ColorConverter.ConvertFromString("#FBBF24"), 0.25),
+                    new GradientStop((Color)ColorConverter.ConvertFromString("#34D399"), 0.50),
+                    new GradientStop((Color)ColorConverter.ConvertFromString("#38BDF8"), 0.75),
+                    new GradientStop((Color)ColorConverter.ConvertFromString("#F472B6"), 1.0),
+                },
+                new Point(0, 0), new Point(1, 1)),
+            Child = new TextBlock
+            {
+                Text = "+", FontSize = 13, FontWeight = FontWeights.Bold, Foreground = Brushes.White,
+                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+            },
+        };
+        border.MouseLeftButtonUp += (s, e) =>
+        {
+            CloseContextMenu();
+            var initial = GetCurrentColorForSelection(isFill);
+            var picked = ColorPickerWindow.Pick(this, initial);
+            if (picked.HasValue)
+            {
+                var hex = $"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}";
+                if (isFill) Diagram.SetSelectedFill(hex); else Diagram.SetSelectedStroke(hex);
+            }
+            e.Handled = true;
+        };
+        return border;
     }
 
     // ===== Inspector =====
