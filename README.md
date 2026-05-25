@@ -29,7 +29,7 @@ When you need to whiteboard *"how do the clients, load balancer, app servers, qu
 - **Templates** — Org chart, Web architecture, Client-server, Microservices, Data pipeline, Blank.
 - **Cloud service objects** — a gallery of **AWS**, **Azure**, and **Google Cloud** services (compute, functions, storage, databases, containers, messaging, networking, analytics, monitoring) drawn as provider-tinted badge tiles. *Generic, original glyphs — not the providers' trademarked icons.* The **AWS / Azure / Google** buttons — in both the toolbar and the left **Cloud** palette group — drop down a flyout of that provider's services (icon + name); click one to place it, no dialog. File → Cloud Services still opens the full browse-all gallery. A **Templates** button is in the toolbar too.
 - **Undo / Redo** (`Ctrl+Z` / `Ctrl+Y`).
-- **Save / Load** as JSON; **Export** as PNG (2× resolution).
+- **Save / Load** as JSON; **Open** supports selecting **several files at once** (each opens in its own tab); **Export** as PNG (2× resolution).
 - **Export to other tools** (File menu) — **Excalidraw** (`.excalidraw`), **draw.io / diagrams.net** (`.drawio`), and **Mermaid** (`.mmd`) so diagrams open in the editors you already use.
 - **Unsaved-changes guard** — closing the app with pending edits prompts you to **Save**, **Don't save**, or **Cancel**; the title bar shows a `•` whenever there are unsaved changes.
 - **Modal dialogs** instead of system message boxes — clean, on-brand prompts.

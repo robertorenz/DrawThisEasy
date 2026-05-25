@@ -929,20 +929,27 @@ public partial class MainWindow : Window
         var dlg = new OpenFileDialog
         {
             Filter = "DrawThisEasy JSON (*.ptd.json;*.json)|*.ptd.json;*.json|All files (*.*)|*.*",
-            Title = "Open diagram"
+            Title = "Open diagram",
+            Multiselect = true   // pick several files; each opens in its own tab
         };
-        if (dlg.ShowDialog(this) == true)
+        if (dlg.ShowDialog(this) != true) return;
+
+        var errors = new List<string>();
+        foreach (var file in dlg.FileNames)
         {
             try
             {
-                var model = Persistence.Load(dlg.FileName);
-                NewDocument(model, IOPath.GetFileNameWithoutExtension(dlg.FileName));
+                var model = Persistence.Load(file);
+                NewDocument(model, IOPath.GetFileNameWithoutExtension(file));
             }
             catch (Exception ex)
             {
-                ModalWindow.Info(this, L10n.T("modal.openfail.title"), ex.Message);
+                errors.Add($"{IOPath.GetFileName(file)}: {ex.Message}");
             }
         }
+
+        if (errors.Count > 0)
+            ModalWindow.Info(this, L10n.T("modal.openfail.title"), string.Join("\n", errors));
     }
 
     private void BtnSave_Click(object sender, RoutedEventArgs e) => SaveDiagram();
