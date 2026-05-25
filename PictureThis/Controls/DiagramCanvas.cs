@@ -496,6 +496,7 @@ public class DiagramCanvas : Canvas
             {
                 _connectFromId = hit.Id;
                 _drag = DragMode.ConnectDrag;
+                _dragStartScreen = screen; // for click-vs-drag detection on mouse-up
                 if (_shapeVisuals.TryGetValue(hit.Id, out var sv)) sv.SetConnectSource(true);
                 _dragLine = new Path
                 {
@@ -509,13 +510,14 @@ public class DiagramCanvas : Canvas
                 e.Handled = true;
                 return;
             }
+            // Empty space in connector mode → fall through to pan (matches select-tool behavior)
         }
 
         // Select tool: shape hit?
-        if (_tool == ToolMode.Select)
+        if (_tool == ToolMode.Select || _tool == ToolMode.Connect)
         {
             var hit = HitTestShape(world);
-            if (hit != null)
+            if (hit != null && _tool == ToolMode.Select)
             {
                 if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) || Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
                     ToggleSelect(hit.Id);
@@ -537,21 +539,36 @@ public class DiagramCanvas : Canvas
                 return;
             }
 
-            // Empty space → marquee
-            ClearSelection();
-            _drag = DragMode.Marquee;
-            _dragStartWorld = world;
-            _marqueeRect = new Rectangle
+            // Empty space:
+            //   Shift + drag → marquee selection (kept available for multi-select)
+            //   default      → pan canvas
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
             {
-                Stroke = (Brush)new BrushConverter().ConvertFromString("#0EA5E9")!,
-                StrokeThickness = 1,
-                StrokeDashArray = new DoubleCollection(new[] { 4.0, 3.0 }),
-                Fill = (Brush)new BrushConverter().ConvertFromString("#190EA5E9")!,
-                Width = 0, Height = 0
-            };
-            Canvas.SetLeft(_marqueeRect, world.X);
-            Canvas.SetTop(_marqueeRect, world.Y);
-            _overlayLayer.Children.Add(_marqueeRect);
+                ClearSelection();
+                _drag = DragMode.Marquee;
+                _dragStartWorld = world;
+                _marqueeRect = new Rectangle
+                {
+                    Stroke = (Brush)new BrushConverter().ConvertFromString("#0EA5E9")!,
+                    StrokeThickness = 1,
+                    StrokeDashArray = new DoubleCollection(new[] { 4.0, 3.0 }),
+                    Fill = (Brush)new BrushConverter().ConvertFromString("#190EA5E9")!,
+                    Width = 0, Height = 0
+                };
+                Canvas.SetLeft(_marqueeRect, world.X);
+                Canvas.SetTop(_marqueeRect, world.Y);
+                _overlayLayer.Children.Add(_marqueeRect);
+                CaptureMouse();
+                e.Handled = true;
+                return;
+            }
+
+            // Default empty-area behavior: pan
+            ClearSelection();
+            _drag = DragMode.Pan;
+            _dragStartScreen = screen;
+            _dragStartTransform = _worldTransform.Matrix;
+            Cursor = Cursors.SizeAll;
             CaptureMouse();
             e.Handled = true;
         }
@@ -669,15 +686,28 @@ public class DiagramCanvas : Canvas
             if (_shapeVisuals.TryGetValue(_connectFromId, out var sv)) sv.SetConnectSource(false);
             foreach (var v in _shapeVisuals.Values) v.SetConnectTarget(false);
 
-            if (target != null && target.Id != _connectFromId)
-            {
-                AddConnection(_connectFromId, target.Id);
-            }
+            // Was this a click (almost no drag) instead of a real drag?
+            var screen = e.GetPosition(this);
+            var travel = Math.Sqrt(
+                Math.Pow(screen.X - _dragStartScreen.X, 2) +
+                Math.Pow(screen.Y - _dragStartScreen.Y, 2));
+            var sourceId = _connectFromId;
+
             if (_dragLine != null) _overlayLayer.Children.Remove(_dragLine);
             _dragLine = null;
             _connectFromId = null;
-            // Stay in connector mode so several shapes can be linked back-to-back.
-            // Press Esc (or V) to leave.
+
+            if (travel < 4)
+            {
+                // Treat as a click: switch to Select tool and select the shape.
+                CurrentTool = ToolMode.Select;
+                SelectOnly(sourceId);
+            }
+            else if (target != null && target.Id != sourceId)
+            {
+                AddConnection(sourceId, target.Id);
+            }
+            // Otherwise: drag fizzled (released on empty space). Stay in connector mode.
         }
 
         if (_drag == DragMode.Marquee && _marqueeRect != null)
