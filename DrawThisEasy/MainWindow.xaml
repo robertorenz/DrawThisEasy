@@ -35,6 +35,7 @@
             <MenuItem x:Name="MnuFileCloud"     Header="_Cloud Services..."                          Click="BtnCloud_Click"/>
             <Separator/>
             <MenuItem x:Name="MnuFileOpen"      Header="_Open..."        InputGestureText="Ctrl+O" Click="BtnOpen_Click"/>
+            <MenuItem x:Name="MnuFileImportExcalidraw" Header="_Import from Excalidraw..."           Click="BtnImportExcalidraw_Click"/>
             <MenuItem x:Name="MnuFileSave"      Header="_Save..."        InputGestureText="Ctrl+S" Click="BtnSave_Click"/>
             <MenuItem x:Name="MnuFileExport"    Header="_Export PNG..."  InputGestureText="Ctrl+E" Click="BtnExport_Click"/>
             <MenuItem x:Name="MnuFileExportExcalidraw" Header="Export to _Excalidraw..." Click="BtnExportExcalidraw_Click"/>

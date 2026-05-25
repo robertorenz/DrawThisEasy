@@ -952,6 +952,34 @@ public partial class MainWindow : Window
             ModalWindow.Info(this, L10n.T("modal.openfail.title"), string.Join("\n", errors));
     }
 
+    private void BtnImportExcalidraw_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new OpenFileDialog
+        {
+            Filter = "Excalidraw (*.excalidraw;*.json)|*.excalidraw;*.json|All files (*.*)|*.*",
+            Title = L10n.T("menu.file.import.excalidraw"),
+            Multiselect = true
+        };
+        if (dlg.ShowDialog(this) != true) return;
+
+        var errors = new List<string>();
+        foreach (var file in dlg.FileNames)
+        {
+            try
+            {
+                var model = DiagramImport.FromExcalidraw(File.ReadAllText(file));
+                NewDocument(model, IOPath.GetFileNameWithoutExtension(file));
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"{IOPath.GetFileName(file)}: {ex.Message}");
+            }
+        }
+
+        if (errors.Count > 0)
+            ModalWindow.Info(this, L10n.T("modal.openfail.title"), string.Join("\n", errors));
+    }
+
     private void BtnSave_Click(object sender, RoutedEventArgs e) => SaveDiagram();
 
     /// Runs the Save dialog. Returns true only if the diagram was written to disk.
@@ -1094,6 +1122,7 @@ public partial class MainWindow : Window
         MnuFileTemplates.Header  = L10n.T("menu.file.templates");
         MnuFileCloud.Header      = L10n.T("menu.file.cloud");
         MnuFileOpen.Header       = L10n.T("menu.file.open");
+        MnuFileImportExcalidraw.Header = L10n.T("menu.file.import.excalidraw");
         MnuFileSave.Header       = L10n.T("menu.file.save");
         MnuFileExport.Header     = L10n.T("menu.file.export");
         MnuFileExportExcalidraw.Header = L10n.T("menu.file.export.excalidraw");
