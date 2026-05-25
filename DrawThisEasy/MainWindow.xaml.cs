@@ -118,6 +118,7 @@ public partial class MainWindow : Window
         c.ZoomChanged          += (s, e)    => { if (ReferenceEquals(s, _active.Canvas)) UpdateZoomLabel(); };
         c.ModelDirty           += (s, e)    => { if (s is DiagramCanvas dc) MarkDirtyFor(dc); };
         c.ContextMenuRequested += (s, pt)   => { if (ReferenceEquals(s, _active.Canvas)) ShowShapeContextMenu(pt); };
+        c.ConnectionContextRequested += (s, pt) => { if (ReferenceEquals(s, _active.Canvas)) ShowConnectionContextMenu(pt); };
         c.ViewChanged          += (s, e)    => { if (_active != null && ReferenceEquals(s, _active.Canvas)) UpdateScrollBars(); };
     }
 
@@ -792,6 +793,59 @@ public partial class MainWindow : Window
     {
         if (_ctxPopup != null) { _ctxPopup.IsOpen = false; _ctxPopup = null; }
     }
+
+    private void ShowConnectionContextMenu(Point _)
+    {
+        CloseContextMenu();
+        var conn = Diagram.GetSelectedConnection();
+        if (conn == null) return;
+
+        var stack = new StackPanel { Width = 220 };
+        stack.Children.Add(CtxHeader(L10n.T("conn.routing")));
+        stack.Children.Add(RoutingRow(L10n.T("conn.straight"), ConnectorRouting.Straight, conn.Routing));
+        stack.Children.Add(RoutingRow(L10n.T("conn.curved"),   ConnectorRouting.Curved,   conn.Routing));
+        stack.Children.Add(RoutingRow(L10n.T("conn.elbow"),    ConnectorRouting.Elbow,    conn.Routing));
+
+        stack.Children.Add(CtxSeparator());
+        var stroke = EffectiveStroke(conn);
+        stack.Children.Add(CtxHeader(L10n.T("conn.stroke")));
+        stack.Children.Add(StrokeRow(L10n.T("conn.solid"),  StrokeStyle.Solid,  stroke));
+        stack.Children.Add(StrokeRow(L10n.T("conn.dashed"), StrokeStyle.Dashed, stroke));
+        stack.Children.Add(StrokeRow(L10n.T("conn.dotted"), StrokeStyle.Dotted, stroke));
+
+        stack.Children.Add(CtxSeparator());
+        stack.Children.Add(CtxActionRow("✕", L10n.T("ctx.delete"), danger: true, () => Diagram.DeleteSelection()));
+
+        var card = new Border
+        {
+            Background = Brushes.White,
+            CornerRadius = new CornerRadius(10),
+            BorderBrush = (Brush)FindResource("BorderBrush"),
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(6),
+            Child = stack,
+            Effect = new System.Windows.Media.Effects.DropShadowEffect
+            {
+                Color = (Color)ColorConverter.ConvertFromString("#0F172A"),
+                Opacity = 0.28, BlurRadius = 28, ShadowDepth = 5,
+            },
+        };
+        _ctxPopup = new Popup
+        {
+            Child = card, StaysOpen = false, AllowsTransparency = true,
+            PopupAnimation = PopupAnimation.Fade, Placement = PlacementMode.Mouse, PlacementTarget = Diagram,
+        };
+        _ctxPopup.IsOpen = true;
+    }
+
+    private UIElement RoutingRow(string label, ConnectorRouting r, ConnectorRouting current)
+        => CtxActionRow(r == current ? "✓" : "", label, danger: false, () => Diagram.SetSelectedConnectionRouting(r));
+
+    private UIElement StrokeRow(string label, StrokeStyle st, StrokeStyle current)
+        => CtxActionRow(st == current ? "✓" : "", label, danger: false, () => Diagram.SetSelectedConnectionStroke(st));
+
+    private static StrokeStyle EffectiveStroke(Connection c)
+        => c.StrokeStyle == StrokeStyle.Solid && c.Dashed ? StrokeStyle.Dashed : c.StrokeStyle;
 
     private UIElement CtxHeader(string text) => new TextBlock
     {
@@ -1469,7 +1523,8 @@ public partial class MainWindow : Window
             clone.Connections.Add(new Connection
             {
                 FromId = idMap[c.FromId], ToId = idMap[c.ToId],
-                Label = c.Label, Stroke = c.Stroke, Dashed = c.Dashed
+                Label = c.Label, Stroke = c.Stroke, Dashed = c.Dashed,
+                Routing = c.Routing, StrokeStyle = c.StrokeStyle, CurveDX = c.CurveDX, CurveDY = c.CurveDY
             });
         }
         return clone;

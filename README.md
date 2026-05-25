@@ -18,7 +18,7 @@ When you need to whiteboard *"how do the clients, load balancer, app servers, qu
 - **Shape palette** tailored to systems work:
   - Process, Component, Start / End, Decision, Hexagon, Data
   - Database (cylinder), Cloud, Server stack, User, Queue, Sticky note, Text
-- **Smart connectors** that snap to shape edges and reroute automatically as shapes move. Sticky connector mode — wire shape → shape → shape without re-selecting the tool.
+- **Smart connectors** that snap to shape edges and reroute automatically as shapes move. Sticky connector mode — wire shape → shape → shape without re-selecting the tool. **Right-click a connector** to switch its routing (straight, curved, or elbow) and line style (solid, dashed, dotted); curved connectors get a draggable bézier handle.
 - **Click-on-shape selects.** In Connector mode a single click on a shape switches to Select and selects it; only drags create connections.
 - **Empty-area drag pans the canvas** in both Select and Connector modes. Hold `Shift` while dragging empty space to marquee-select instead.
 - **Inline label editing** — double-click any shape, type, `Enter` to commit.

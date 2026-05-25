@@ -89,6 +89,10 @@ public class ShapeNode
     public double CenterY => Y + Height / 2.0;
 }
 
+public enum ConnectorRouting { Straight, Curved, Elbow }
+
+public enum StrokeStyle { Solid, Dashed, Dotted }
+
 public class Connection
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
@@ -96,7 +100,15 @@ public class Connection
     public string ToId { get; set; } = "";
     public string Label { get; set; } = "";
     public string Stroke { get; set; } = "#334155";
-    public bool Dashed { get; set; }
+    public bool Dashed { get; set; }   // legacy; superseded by StrokeStyle
+
+    public ConnectorRouting Routing { get; set; } = ConnectorRouting.Straight;
+    public StrokeStyle StrokeStyle { get; set; } = StrokeStyle.Solid;
+
+    /// For Curved routing: control-point offset from the straight midpoint (world units).
+    /// (0,0) means "auto" — a gentle perpendicular bow.
+    public double CurveDX { get; set; }
+    public double CurveDY { get; set; }
 }
 
 public class DiagramModel

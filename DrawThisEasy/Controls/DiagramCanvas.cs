@@ -36,7 +36,7 @@ public class DiagramCanvas : Canvas
     private ToolMode _tool = ToolMode.Select;
 
     // ---- Interaction state ----
-    private enum DragMode { None, Pan, MoveShape, ResizeShape, ConnectDrag, Marquee }
+    private enum DragMode { None, Pan, MoveShape, ResizeShape, ConnectDrag, Marquee, ConnCurve }
     private DragMode _drag = DragMode.None;
     private Point _dragStartScreen;
     private Point _dragStartWorld;
@@ -46,11 +46,13 @@ public class DiagramCanvas : Canvas
     private string _resizeHandle = "";
     private (double X, double Y, double W, double H) _resizeOrigin;
     private string? _connectFromId;
+    private string? _curveConnId;
     private Path? _dragLine;
     private Rectangle? _marqueeRect;
     private bool _spaceHeld;
     private bool _isEditingText;
     private bool _rightClickPending;
+    private bool _rightClickConn;
 
     // ---- Undo/redo ----
     private readonly Stack<string> _undoStack = new();
@@ -70,6 +72,8 @@ public class DiagramCanvas : Canvas
     public event EventHandler<Point>? ContextMenuRequested;
     // Raised whenever the pan/zoom transform changes (so scrollbars can refresh).
     public event EventHandler? ViewChanged;
+    // Raised when the user right-clicks a connector (without dragging). Arg = screen position.
+    public event EventHandler<Point>? ConnectionContextRequested;
 
     // ---- Public API ----
     public DiagramModel Model => _model;
@@ -342,6 +346,7 @@ public class DiagramCanvas : Canvas
         };
         _connLayer.Children.Add(v.HitPath);
         _connLayer.Children.Add(v.Path);
+        _connLayer.Children.Add(v.Arrow);
         _connVisuals[conn.Id] = v;
         RouteConnection(conn);
     }
@@ -418,6 +423,14 @@ public class DiagramCanvas : Canvas
     {
         _overlayLayer.Children.Clear();
 
+        // A selected curved connection gets a draggable control handle (shapes and
+        // connections are never selected at the same time).
+        if (_selectedConnectionId != null)
+        {
+            BuildCurveHandle();
+            return;
+        }
+
         // Draw selection box around bounding rect of selected shapes
         if (_selected.Count == 0) return;
 
@@ -492,6 +505,36 @@ public class DiagramCanvas : Canvas
                 _overlayLayer.Children.Add(r);
             }
         }
+    }
+
+    private void BuildCurveHandle()
+    {
+        var c = GetSelectedConnection();
+        if (c == null || c.Routing != ConnectorRouting.Curved) return;
+        if (!_connVisuals.TryGetValue(c.Id, out var v)) return;
+
+        var cp = v.ControlPoint;
+        var size = 11.0 / Math.Max(Zoom, 0.4);
+        var dot = new Ellipse
+        {
+            Width = size, Height = size,
+            Fill = Brushes.White,
+            Stroke = (Brush)new BrushConverter().ConvertFromString("#0EA5E9")!,
+            StrokeThickness = 1.6,
+            Cursor = Cursors.SizeAll
+        };
+        Canvas.SetLeft(dot, cp.X - size / 2);
+        Canvas.SetTop(dot, cp.Y - size / 2);
+        _overlayLayer.IsHitTestVisible = true;
+        dot.MouseLeftButtonDown += (s, e) =>
+        {
+            e.Handled = true;
+            _drag = DragMode.ConnCurve;
+            _curveConnId = c.Id;
+            CaptureMouse();
+            Snapshot();
+        };
+        _overlayLayer.Children.Add(dot);
     }
 
     private static Cursor HandleCursor(string name) => name switch
@@ -651,6 +694,19 @@ public class DiagramCanvas : Canvas
             return;
         }
 
+        if (_drag == DragMode.ConnCurve && _curveConnId != null)
+        {
+            var c = _model.Connections.FirstOrDefault(x => x.Id == _curveConnId);
+            if (c != null && _connVisuals.TryGetValue(c.Id, out var cv))
+            {
+                c.CurveDX = world.X - cv.MidPoint.X;
+                c.CurveDY = world.Y - cv.MidPoint.Y;
+                RouteConnection(c);
+                RebuildOverlay();
+            }
+            return;
+        }
+
         if (_drag == DragMode.MoveShape)
         {
             var dx = world.X - _dragStartWorld.X;
@@ -772,6 +828,7 @@ public class DiagramCanvas : Canvas
 
         _drag = DragMode.None;
         _resizeShapeId = null;
+        _curveConnId = null;
         _dragOrigins.Clear();
         if (IsMouseCaptured) ReleaseMouseCapture();
         UpdateCursor();
@@ -796,6 +853,17 @@ public class DiagramCanvas : Canvas
             return;
         }
 
+        // Right-click on a connector → select it and arm its context menu.
+        var connId = HitTestConnection(world);
+        if (connId != null)
+        {
+            SelectConnection(connId);
+            _rightClickConn = true;
+            _dragStartScreen = screen;
+            e.Handled = true;
+            return;
+        }
+
         _drag = DragMode.Pan;
         _dragStartScreen = screen;
         _dragStartTransform = _worldTransform.Matrix;
@@ -813,6 +881,14 @@ public class DiagramCanvas : Canvas
             // Only treat as a context-menu click if the pointer barely moved.
             if ((screen - _dragStartScreen).Length < 6)
                 ContextMenuRequested?.Invoke(this, screen);
+        }
+
+        if (_rightClickConn)
+        {
+            _rightClickConn = false;
+            var screen = e.GetPosition(this);
+            if ((screen - _dragStartScreen).Length < 6)
+                ConnectionContextRequested?.Invoke(this, screen);
         }
 
         if (_drag == DragMode.Pan)
@@ -911,6 +987,7 @@ public class DiagramCanvas : Canvas
             if (_connVisuals.TryGetValue(_selectedConnectionId, out var v))
             {
                 _connLayer.Children.Remove(v.Path);
+                _connLayer.Children.Remove(v.Arrow);
                 _connLayer.Children.Remove(v.HitPath);
                 _connVisuals.Remove(_selectedConnectionId);
             }
@@ -933,6 +1010,7 @@ public class DiagramCanvas : Canvas
             {
                 var cv = _connVisuals[cid];
                 _connLayer.Children.Remove(cv.Path);
+                _connLayer.Children.Remove(cv.Arrow);
                 _connLayer.Children.Remove(cv.HitPath);
                 _connVisuals.Remove(cid);
             }
@@ -1000,7 +1078,8 @@ public class DiagramCanvas : Canvas
                 snippet.Connections.Add(new Connection
                 {
                     FromId = c.FromId, ToId = c.ToId,
-                    Label = c.Label, Stroke = c.Stroke, Dashed = c.Dashed
+                    Label = c.Label, Stroke = c.Stroke, Dashed = c.Dashed,
+                    Routing = c.Routing, StrokeStyle = c.StrokeStyle, CurveDX = c.CurveDX, CurveDY = c.CurveDY
                 });
         }
 
@@ -1092,7 +1171,8 @@ public class DiagramCanvas : Canvas
             var conn = new Connection
             {
                 FromId = fromId, ToId = toId,
-                Label = c.Label, Stroke = c.Stroke, Dashed = c.Dashed
+                Label = c.Label, Stroke = c.Stroke, Dashed = c.Dashed,
+                Routing = c.Routing, StrokeStyle = c.StrokeStyle, CurveDX = c.CurveDX, CurveDY = c.CurveDY
             };
             _model.Connections.Add(conn);
             AddConnectionVisual(conn);
@@ -1179,6 +1259,30 @@ public class DiagramCanvas : Canvas
     }
 
     public ShapeNode? GetSelectedShape() => _selected.Count == 1 ? _model.FindShape(_selected.First()) : null;
+
+    public Connection? GetSelectedConnection() =>
+        _selectedConnectionId == null ? null : _model.Connections.FirstOrDefault(c => c.Id == _selectedConnectionId);
+
+    public void SetSelectedConnectionRouting(ConnectorRouting routing)
+    {
+        var c = GetSelectedConnection();
+        if (c == null) return;
+        Snapshot();
+        c.Routing = routing;
+        if (routing != ConnectorRouting.Curved) { c.CurveDX = 0; c.CurveDY = 0; }
+        RouteConnection(c);
+        RebuildOverlay();
+    }
+
+    public void SetSelectedConnectionStroke(StrokeStyle style)
+    {
+        var c = GetSelectedConnection();
+        if (c == null) return;
+        Snapshot();
+        c.StrokeStyle = style;
+        c.Dashed = style == StrokeStyle.Dashed;   // keep the legacy flag consistent
+        RouteConnection(c);
+    }
 
     // ---------- Text edit ----------
 
@@ -1304,6 +1408,15 @@ public class DiagramCanvas : Canvas
              && world.Y >= s.Y && world.Y <= s.Y + s.Height)
                 return s;
         }
+        return null;
+    }
+
+    private string? HitTestConnection(Point world)
+    {
+        var pen = new Pen(Brushes.Black, 16);
+        foreach (var (id, v) in _connVisuals)
+            if (v.HitPath.Data != null && v.HitPath.Data.StrokeContains(pen, world))
+                return id;
         return null;
     }
 
@@ -1510,85 +1623,142 @@ public class ShapeVisual
 public class ConnectionVisual
 {
     public Connection Conn;
-    public Path Path;        // visible
-    public Path HitPath;     // wider transparent for easier clicking
-    public Point MidPoint { get; private set; }
+    public Path Path;        // the connector line (carries the dash/dot style)
+    public Path Arrow;       // solid filled arrowhead (never dashed)
+    public Path HitPath;     // wide transparent path for easy clicking
+    public Point MidPoint { get; private set; }       // straight midpoint (label anchor)
+    public Point ControlPoint { get; private set; }   // curve control point (drag handle)
+
+    private const double ArrowLen = 10, ArrowWidth = 6;
 
     public ConnectionVisual(Connection conn)
     {
         Conn = conn;
-        var stroke = (Brush)new BrushConverter().ConvertFromString(conn.Stroke)!;
+        var stroke = MakeBrush(conn.Stroke);
         Path = new Path
         {
-            Stroke = stroke,
-            StrokeThickness = 1.8,
-            Fill = null,
-            StrokeStartLineCap = PenLineCap.Round,
-            StrokeEndLineCap = PenLineCap.Round
+            Stroke = stroke, StrokeThickness = 1.8, Fill = null,
+            StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round,
+            StrokeLineJoin = PenLineJoin.Round
         };
-        if (conn.Dashed) Path.StrokeDashArray = new DoubleCollection(new[] { 6.0, 4.0 });
-        HitPath = new Path
+        Arrow = new Path { Stroke = null, Fill = stroke };
+        HitPath = new Path { Stroke = Brushes.Transparent, StrokeThickness = 14, Fill = null };
+        ApplyStrokeStyle();
+    }
+
+    private static Brush MakeBrush(string hex) => (Brush)new BrushConverter().ConvertFromString(hex)!;
+
+    private void ApplyStrokeStyle()
+    {
+        // Legacy files only have the Dashed flag; treat that as Dashed.
+        var style = Conn.StrokeStyle == StrokeStyle.Solid && Conn.Dashed ? StrokeStyle.Dashed : Conn.StrokeStyle;
+        switch (style)
         {
-            Stroke = Brushes.Transparent,
-            StrokeThickness = 14,
-            Fill = null
-        };
+            case StrokeStyle.Dashed:
+                Path.StrokeDashCap = PenLineCap.Flat;
+                Path.StrokeDashArray = new DoubleCollection(new[] { 6.0, 4.0 });
+                break;
+            case StrokeStyle.Dotted:
+                Path.StrokeDashCap = PenLineCap.Round;
+                Path.StrokeDashArray = new DoubleCollection(new[] { 0.1, 2.5 });
+                break;
+            default:
+                Path.StrokeDashArray = new DoubleCollection();
+                break;
+        }
     }
 
     public void SetEndpoints(Point from, Point to)
     {
-        var dx = to.X - from.X;
-        var dy = to.Y - from.Y;
-        var len = Math.Sqrt(dx * dx + dy * dy);
-        if (len < 1) { Path.Data = HitPath.Data = null; return; }
-
-        // Shorten end by arrow length so the arrow tip lands at edge
-        const double arrowLen = 10;
-        const double arrowWidth = 6;
-        var ux = dx / len; var uy = dy / len;
-        var endX = to.X - ux * arrowLen;
-        var endY = to.Y - uy * arrowLen;
-
-        // Slight curve for organic look (offset perpendicular to midpoint)
-        var midX = (from.X + endX) / 2.0;
-        var midY = (from.Y + endY) / 2.0;
-        MidPoint = new Point((from.X + to.X) / 2, (from.Y + to.Y) / 2);
-
-        // Line + two arrow-head sides. Build with invariant formatting so a comma-decimal
-        // locale never injects commas into the geometry string (which breaks Geometry.Parse).
-        var px = -uy; var py = ux;
-        var ax1 = to.X - ux * arrowLen + px * arrowWidth;
-        var ay1 = to.Y - uy * arrowLen + py * arrowWidth;
-        var ax2 = to.X - ux * arrowLen - px * arrowWidth;
-        var ay2 = to.Y - uy * arrowLen - py * arrowWidth;
-
-        var pathData = FormattableString.Invariant(
-            $"M {from.X},{from.Y} L {to.X - ux * arrowLen * 0.05},{to.Y - uy * arrowLen * 0.05} M {ax1},{ay1} L {to.X},{to.Y} L {ax2},{ay2} Z");
-        Path.Data = Geometry.Parse(pathData);
-        Path.Fill = Path.Stroke;
-        HitPath.Data = Geometry.Parse(FormattableString.Invariant($"M {from.X},{from.Y} L {to.X},{to.Y}"));
-
-        UpdateLabel();
+        ApplyStrokeStyle();
+        MidPoint = new Point((from.X + to.X) / 2.0, (from.Y + to.Y) / 2.0);
+        switch (Conn.Routing)
+        {
+            case ConnectorRouting.Curved: BuildCurved(from, to); break;
+            case ConnectorRouting.Elbow:  BuildElbow(from, to);  break;
+            default:                      BuildStraight(from, to); break;
+        }
     }
+
+    private void BuildStraight(Point from, Point to)
+    {
+        var dx = to.X - from.X; var dy = to.Y - from.Y;
+        var len = Math.Sqrt(dx * dx + dy * dy);
+        if (len < 1) { Clear(); return; }
+        var ux = dx / len; var uy = dy / len;
+        ControlPoint = MidPoint;
+        Path.Data = Geometry.Parse(FormattableString.Invariant($"M {from.X},{from.Y} L {to.X - ux * ArrowLen},{to.Y - uy * ArrowLen}"));
+        HitPath.Data = Geometry.Parse(FormattableString.Invariant($"M {from.X},{from.Y} L {to.X},{to.Y}"));
+        SetArrow(to, ux, uy);
+    }
+
+    private void BuildCurved(Point from, Point to)
+    {
+        var dx = to.X - from.X; var dy = to.Y - from.Y;
+        var len = Math.Sqrt(dx * dx + dy * dy);
+        if (len < 1) { Clear(); return; }
+
+        Point c;
+        if (Conn.CurveDX == 0 && Conn.CurveDY == 0)
+        {
+            var px = -dy / len; var py = dx / len;       // perpendicular
+            var bow = Math.Min(80, len * 0.25);
+            c = new Point(MidPoint.X + px * bow, MidPoint.Y + py * bow);
+        }
+        else c = new Point(MidPoint.X + Conn.CurveDX, MidPoint.Y + Conn.CurveDY);
+        ControlPoint = c;
+
+        var tx = to.X - c.X; var ty = to.Y - c.Y;        // tangent at the end
+        var tl = Math.Sqrt(tx * tx + ty * ty); if (tl < 1) tl = 1;
+        var ux = tx / tl; var uy = ty / tl;
+        Path.Data = Geometry.Parse(FormattableString.Invariant($"M {from.X},{from.Y} Q {c.X},{c.Y} {to.X - ux * ArrowLen},{to.Y - uy * ArrowLen}"));
+        HitPath.Data = Geometry.Parse(FormattableString.Invariant($"M {from.X},{from.Y} Q {c.X},{c.Y} {to.X},{to.Y}"));
+        SetArrow(to, ux, uy);
+    }
+
+    private void BuildElbow(Point from, Point to)
+    {
+        var dx = to.X - from.X; var dy = to.Y - from.Y;
+        if (Math.Abs(dx) < 1 && Math.Abs(dy) < 1) { Clear(); return; }
+        Point e1, e2; double ux, uy;
+        if (Math.Abs(dx) >= Math.Abs(dy))
+        {
+            var midX = (from.X + to.X) / 2.0;
+            e1 = new Point(midX, from.Y); e2 = new Point(midX, to.Y);
+            ux = Math.Sign(dx); uy = 0;                  // last leg horizontal
+        }
+        else
+        {
+            var midY = (from.Y + to.Y) / 2.0;
+            e1 = new Point(from.X, midY); e2 = new Point(to.X, midY);
+            ux = 0; uy = Math.Sign(dy);                  // last leg vertical
+        }
+        ControlPoint = new Point((e1.X + e2.X) / 2.0, (e1.Y + e2.Y) / 2.0);
+        Path.Data = Geometry.Parse(FormattableString.Invariant($"M {from.X},{from.Y} L {e1.X},{e1.Y} L {e2.X},{e2.Y} L {to.X - ux * ArrowLen},{to.Y - uy * ArrowLen}"));
+        HitPath.Data = Geometry.Parse(FormattableString.Invariant($"M {from.X},{from.Y} L {e1.X},{e1.Y} L {e2.X},{e2.Y} L {to.X},{to.Y}"));
+        SetArrow(to, ux, uy);
+    }
+
+    private void SetArrow(Point tip, double ux, double uy)
+    {
+        var px = -uy; var py = ux;
+        var ax1 = tip.X - ux * ArrowLen + px * ArrowWidth;
+        var ay1 = tip.Y - uy * ArrowLen + py * ArrowWidth;
+        var ax2 = tip.X - ux * ArrowLen - px * ArrowWidth;
+        var ay2 = tip.Y - uy * ArrowLen - py * ArrowWidth;
+        Arrow.Data = Geometry.Parse(FormattableString.Invariant($"M {ax1},{ay1} L {tip.X},{tip.Y} L {ax2},{ay2} Z"));
+        Arrow.Fill = Path.Stroke;
+    }
+
+    private void Clear() { Path.Data = HitPath.Data = Arrow.Data = null; }
 
     public void SetSelected(bool selected)
     {
-        Path.Stroke = selected
-            ? (Brush)new BrushConverter().ConvertFromString("#0EA5E9")!
-            : (Brush)new BrushConverter().ConvertFromString(Conn.Stroke)!;
-        Path.Fill = Path.Stroke;
+        var brush = selected ? MakeBrush("#0EA5E9") : MakeBrush(Conn.Stroke);
+        Path.Stroke = brush;
+        Arrow.Fill = brush;
         Path.StrokeThickness = selected ? 2.4 : 1.8;
     }
 
-    public void SetLabel(string text)
-    {
-        Conn.Label = text;
-        UpdateLabel();
-    }
-
-    private void UpdateLabel()
-    {
-        // Cheap label rendering — owner Canvas adds/removes elements.
-        // Labels are rendered as part of the connection visual list by the canvas; for simplicity we don't add them here.
-    }
+    public void SetLabel(string text) => Conn.Label = text;
 }

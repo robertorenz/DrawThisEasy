@@ -284,6 +284,16 @@ public static class L10n
             ["ctx.copy"]      = "Copy",
             ["ctx.delete"]    = "Delete",
 
+            // Connector context menu
+            ["conn.routing"]  = "Routing",
+            ["conn.straight"] = "Straight",
+            ["conn.curved"]   = "Curved",
+            ["conn.elbow"]    = "Elbow",
+            ["conn.stroke"]   = "Stroke",
+            ["conn.solid"]    = "Solid",
+            ["conn.dashed"]   = "Dashed",
+            ["conn.dotted"]   = "Dotted",
+
             // User manual
             ["manual.title"]    = "User manual",
             ["manual.subtitle"] = "Everything you need to build diagrams fast",
@@ -592,6 +602,16 @@ public static class L10n
             ["ctx.duplicate"] = "Duplicar",
             ["ctx.copy"]      = "Copiar",
             ["ctx.delete"]    = "Eliminar",
+
+            // Connector context menu
+            ["conn.routing"]  = "Trazado",
+            ["conn.straight"] = "Recta",
+            ["conn.curved"]   = "Curva",
+            ["conn.elbow"]    = "En codo",
+            ["conn.stroke"]   = "Línea",
+            ["conn.solid"]    = "Sólida",
+            ["conn.dashed"]   = "Discontinua",
+            ["conn.dotted"]   = "Punteada",
 
             // User manual
             ["manual.title"]    = "Manual de usuario",
