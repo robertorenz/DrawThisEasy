@@ -675,7 +675,7 @@ public class DiagramCanvas : Canvas
             var from = _model.FindShape(_connectFromId);
             if (from == null) return;
             var fromPt = ShapeFactory.EdgeIntersect(from, world);
-            _dragLine.Data = Geometry.Parse($"M {fromPt.X},{fromPt.Y} L {world.X},{world.Y}");
+            _dragLine.Data = Geometry.Parse(FormattableString.Invariant($"M {fromPt.X},{fromPt.Y} L {world.X},{world.Y}"));
             return;
         }
 
@@ -1468,20 +1468,19 @@ public class ConnectionVisual
         var midY = (from.Y + endY) / 2.0;
         MidPoint = new Point((from.X + to.X) / 2, (from.Y + to.Y) / 2);
 
-        // Straight line + arrow head
-        var data = $"M {from.X},{from.Y} L {endX},{endY} L {to.X - ux * 0 - uy * arrowWidth / 2},{to.Y - uy * 0 + ux * arrowWidth / 2} M {endX},{endY} L {to.X + uy * arrowWidth / 2},{to.Y - ux * arrowWidth / 2} M {endX},{endY} L {to.X},{to.Y}";
-        // Simpler: line + two arrow head sides
+        // Line + two arrow-head sides. Build with invariant formatting so a comma-decimal
+        // locale never injects commas into the geometry string (which breaks Geometry.Parse).
         var px = -uy; var py = ux;
         var ax1 = to.X - ux * arrowLen + px * arrowWidth;
         var ay1 = to.Y - uy * arrowLen + py * arrowWidth;
         var ax2 = to.X - ux * arrowLen - px * arrowWidth;
         var ay2 = to.Y - uy * arrowLen - py * arrowWidth;
 
-        var pathData = $"M {from.X},{from.Y} L {to.X - ux * arrowLen * 0.05},{to.Y - uy * arrowLen * 0.05} " +
-                       $"M {ax1},{ay1} L {to.X},{to.Y} L {ax2},{ay2} Z";
+        var pathData = FormattableString.Invariant(
+            $"M {from.X},{from.Y} L {to.X - ux * arrowLen * 0.05},{to.Y - uy * arrowLen * 0.05} M {ax1},{ay1} L {to.X},{to.Y} L {ax2},{ay2} Z");
         Path.Data = Geometry.Parse(pathData);
         Path.Fill = Path.Stroke;
-        HitPath.Data = Geometry.Parse($"M {from.X},{from.Y} L {to.X},{to.Y}");
+        HitPath.Data = Geometry.Parse(FormattableString.Invariant($"M {from.X},{from.Y} L {to.X},{to.Y}"));
 
         UpdateLabel();
     }

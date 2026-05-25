@@ -83,7 +83,7 @@ public static class ShapeFactory
         var body = new Path
         {
             Fill = fill,
-            Data = Geometry.Parse($"M 0,{ry} L 0,{h - ry} A {rx},{ry} 0 0 0 {w},{h - ry} L {w},{ry} Z")
+            Data = Geometry.Parse(FormattableString.Invariant($"M 0,{ry} L 0,{h - ry} A {rx},{ry} 0 0 0 {w},{h - ry} L {w},{ry} Z"))
         };
         // Top ellipse fill
         var top = new System.Windows.Shapes.Ellipse
@@ -95,7 +95,7 @@ public static class ShapeFactory
         var outline = new Path
         {
             Stroke = stroke, StrokeThickness = StrokeThickness, Fill = Brushes.Transparent,
-            Data = Geometry.Parse($"M 0,{ry} L 0,{h - ry} A {rx},{ry} 0 0 0 {w},{h - ry} L {w},{ry}")
+            Data = Geometry.Parse(FormattableString.Invariant($"M 0,{ry} L 0,{h - ry} A {rx},{ry} 0 0 0 {w},{h - ry} L {w},{ry}"))
         };
 
         c.Children.Add(body);
@@ -199,7 +199,7 @@ public static class ShapeFactory
         var body = new Path
         {
             Fill = fill, Stroke = stroke, StrokeThickness = StrokeThickness,
-            Data = Geometry.Parse($"M {bodyLeft},{h} L {bodyLeft},{bodyTop + bodyTopRadius} A {bodyTopRadius},{bodyTopRadius} 0 0 1 {bodyLeft + bodyWidth},{bodyTop + bodyTopRadius} L {bodyLeft + bodyWidth},{h} Z")
+            Data = Geometry.Parse(FormattableString.Invariant($"M {bodyLeft},{h} L {bodyLeft},{bodyTop + bodyTopRadius} A {bodyTopRadius},{bodyTopRadius} 0 0 1 {bodyLeft + bodyWidth},{bodyTop + bodyTopRadius} L {bodyLeft + bodyWidth},{h} Z"))
         };
         c.Children.Add(body);
         c.Children.Add(head);
@@ -239,12 +239,12 @@ public static class ShapeFactory
         var body = new Path
         {
             Fill = fillBrush, Stroke = stroke, StrokeThickness = StrokeThickness,
-            Data = Geometry.Parse($"M 0,0 L {w - fold},0 L {w},{fold} L {w},{h} L 0,{h} Z")
+            Data = Geometry.Parse(FormattableString.Invariant($"M 0,0 L {w - fold},0 L {w},{fold} L {w},{h} L 0,{h} Z"))
         };
         var foldTri = new Path
         {
             Fill = Brushes.White, Stroke = stroke, StrokeThickness = StrokeThickness,
-            Data = Geometry.Parse($"M {w - fold},0 L {w - fold},{fold} L {w},{fold} Z")
+            Data = Geometry.Parse(FormattableString.Invariant($"M {w - fold},0 L {w - fold},{fold} L {w},{fold} Z"))
         };
         c.Children.Add(body);
         c.Children.Add(foldTri);
@@ -401,7 +401,7 @@ public static class ShapeFactory
                 Line(0.70, 0.30, 0.70, 0.70);
                 g.Children.Add(new Path
                 {
-                    Data = Geometry.Parse($"M {B(0.30)},{B(0.70)} A {B(0.20)},{B(0.06)} 0 0 0 {B(0.70)},{B(0.70)}"),
+                    Data = Geometry.Parse(FormattableString.Invariant($"M {B(0.30)},{B(0.70)} A {B(0.20)},{B(0.06)} 0 0 0 {B(0.70)},{B(0.70)}")),
                     Stroke = color, StrokeThickness = st, Fill = null
                 });
                 break;
