@@ -928,7 +928,7 @@ public partial class MainWindow : Window
     {
         var dlg = new OpenFileDialog
         {
-            Filter = "DrawThisEasy JSON (*.ptd.json;*.json)|*.ptd.json;*.json|All files (*.*)|*.*",
+            Filter = "Diagrams (*.ptd.json;*.json;*.excalidraw)|*.ptd.json;*.json;*.excalidraw|All files (*.*)|*.*",
             Title = "Open diagram",
             Multiselect = true   // pick several files; each opens in its own tab
         };
@@ -939,7 +939,11 @@ public partial class MainWindow : Window
         {
             try
             {
-                var model = Persistence.Load(file);
+                var text = File.ReadAllText(file);
+                // Open also accepts Excalidraw scenes — by extension or by content.
+                var model = IsExcalidraw(file, text)
+                    ? DiagramImport.FromExcalidraw(text)
+                    : Persistence.Load(file);
                 NewDocument(model, IOPath.GetFileNameWithoutExtension(file));
             }
             catch (Exception ex)
@@ -950,6 +954,15 @@ public partial class MainWindow : Window
 
         if (errors.Count > 0)
             ModalWindow.Info(this, L10n.T("modal.openfail.title"), string.Join("\n", errors));
+    }
+
+    private static bool IsExcalidraw(string path, string content)
+    {
+        if (IOPath.GetExtension(path).Equals(".excalidraw", StringComparison.OrdinalIgnoreCase))
+            return true;
+        // Detect an Excalidraw scene saved as .json by its type marker.
+        return content.Contains("\"type\"", StringComparison.Ordinal)
+            && content.Contains("\"excalidraw\"", StringComparison.Ordinal);
     }
 
     private void BtnImportExcalidraw_Click(object sender, RoutedEventArgs e)
