@@ -29,6 +29,7 @@ When you need to whiteboard *"how do the clients, load balancer, app servers, qu
 - **Save / Load** as JSON; **Export** as PNG (2× resolution).
 - **Modal dialogs** instead of system message boxes — clean, on-brand prompts.
 - **Bilingual UI** — English / Español, switchable live (no restart) from the Language menu or one-click EN/ES toggle in the top bar.
+- **Built-in user manual** (Help → User Manual, or `F1`) and a keyboard-shortcut reference (Help → Keyboard Shortcuts, or `?`) — both fully localized.
 - **Global crash handler** writes a diagnostic log to `%LOCALAPPDATA%\DrawThisEasy\DrawThisEasy-crash.log` and shows a dialog instead of silently exiting.
 - Professional palette: slate / sky / teal / amber. **No purple.**
 
@@ -53,6 +54,7 @@ When you need to whiteboard *"how do the clients, load balancer, app servers, qu
 **Pan:** hold `Space` and drag, right-click and drag, or just drag any empty area.
 **Zoom:** mouse wheel.
 **Marquee select:** hold `Shift` and drag empty area.
+**Help:** `F1` opens the user manual; `?` opens the keyboard-shortcut reference.
 
 ## Build & run
 
@@ -86,6 +88,7 @@ DrawThisEasy/
 ├── Dialogs/
 │   ├── ModalWindow.xaml(.cs)      — Reusable modal (Info / Confirm)
 │   ├── HelpWindow.xaml(.cs)       — Localized keyboard-shortcut reference
+│   ├── ManualWindow.xaml(.cs)     — Localized user manual (Help → User Manual / F1)
 │   └── TemplateGalleryWindow…     — Template picker with live previews
 ├── Models/Models.cs               — DiagramModel, ShapeNode, Connection, enums, palette
 ├── Resources/Theme.xaml           — Brushes, button + menu styles, fonts

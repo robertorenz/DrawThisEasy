@@ -61,7 +61,8 @@
             <MenuItem x:Name="MnuLangEs" Header="Español" IsCheckable="True" Click="MnuLangEs_Click"/>
           </MenuItem>
           <MenuItem x:Name="MnuHelp" Header="_Help" Style="{StaticResource TopMenuItem}">
-            <MenuItem x:Name="MnuHelpShortcuts" Header="_Keyboard Shortcuts..." InputGestureText="?" Click="BtnHelp_Click"/>
+            <MenuItem x:Name="MnuHelpManual"    Header="_User Manual..."        InputGestureText="F1" Click="BtnManual_Click"/>
+            <MenuItem x:Name="MnuHelpShortcuts" Header="_Keyboard Shortcuts..." InputGestureText="?"  Click="BtnHelp_Click"/>
           </MenuItem>
         </Menu>
 

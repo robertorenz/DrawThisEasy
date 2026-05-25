@@ -213,6 +213,7 @@ public static class L10n
             ["menu.lang.en"]         = "English",
             ["menu.lang.es"]         = "Español",
             ["menu.help"]            = "_Help",
+            ["menu.help.manual"]     = "_User Manual...",
             ["menu.help.shortcuts"]  = "_Keyboard Shortcuts...",
 
             // Modal
@@ -236,6 +237,67 @@ public static class L10n
             ["color.standard"] = "STANDARD COLORS",
             ["color.custom"]   = "Custom color...",
             ["color.apply"]    = "Apply",
+
+            // User manual
+            ["manual.title"]    = "User manual",
+            ["manual.subtitle"] = "Everything you need to build diagrams fast",
+
+            ["manual.overview.h"] = "Overview",
+            ["manual.overview.p"] = "DrawThisEasy helps you sketch org charts, architecture diagrams and system flows in seconds. The idea is simple: pick a tool, click the canvas to drop a shape, type a label, then drag from one shape to another to connect them.",
+
+            ["manual.workspace.h"]          = "The workspace",
+            ["manual.workspace.p"]          = "The window is organized into a few clear areas:",
+            ["manual.workspace.b.strip"]    = "Top tool strip — one-click icon buttons for every tool, next to the menu bar and zoom controls.",
+            ["manual.workspace.b.palette"]  = "Left palette — the same tools grouped into Tools, Shapes and Infrastructure, with labels.",
+            ["manual.workspace.b.canvas"]   = "Canvas — the dotted grid in the center where you build the diagram.",
+            ["manual.workspace.b.inspector"]= "Inspector — appears on the right when a shape is selected; sets fill, stroke and layer order.",
+            ["manual.workspace.b.status"]   = "Status bar — shows the active tool and a short hint about what to do next.",
+
+            ["manual.shapes.h"]  = "Adding shapes",
+            ["manual.shapes.p"]  = "Click a shape tool in the palette or top strip (or press its keyboard shortcut), then click the canvas to drop the shape where you clicked. After adding a shape the tool returns to Select automatically, so you can immediately move or edit it.",
+            ["manual.shapes.p2"] = "Flow shapes include Process, Component, Start / End, Decision, Hexagon and Data. Infrastructure shapes include Database, Cloud, Server, User, Queue, sticky Note and plain Text.",
+
+            ["manual.connect.h"]  = "Connecting shapes",
+            ["manual.connect.p"]  = "Switch to the Connector tool (press L), then drag from one shape to another. The connector snaps to the edge of each shape and automatically reroutes whenever you move either shape.",
+            ["manual.connect.p2"] = "Connector mode is sticky — you can wire shape to shape to shape without re-selecting the tool. A single click on a shape (with no drag) simply selects it instead of starting a connection.",
+
+            ["manual.select.h"]        = "Selecting, moving and resizing",
+            ["manual.select.b.click"]  = "Click a shape to select it, then drag it to move. The Inspector appears for the selection.",
+            ["manual.select.b.multi"]  = "Shift-click or Ctrl-click to add or remove shapes from the selection.",
+            ["manual.select.b.marquee"]= "Hold Shift and drag across empty space to draw a marquee and select everything it touches.",
+            ["manual.select.b.pan"]    = "Drag empty space (or hold Space, or right-click and drag) to pan the canvas instead.",
+            ["manual.select.b.resize"] = "With a single shape selected, drag the square handles around it to resize.",
+
+            ["manual.labels.h"] = "Editing labels",
+            ["manual.labels.p"] = "Double-click any shape to edit its label in place. Type your text and press Enter to commit, or Esc to cancel. Connectors can carry labels too.",
+
+            ["manual.colors.h"] = "Colors and style",
+            ["manual.colors.p"] = "Select one or more shapes to reveal the Inspector, then click a Fill or Stroke swatch to apply it. Click the “+” swatch to choose a custom color from the picker. The built-in palette uses professional slate, sky, teal and amber tones.",
+
+            ["manual.layers.h"] = "Layering",
+            ["manual.layers.p"] = "When shapes overlap, use Front and Back in the Inspector (or the Edit menu) to control which one sits on top.",
+
+            ["manual.view.h"]       = "Panning and zooming",
+            ["manual.view.b.pan"]   = "Pan: drag an empty area of the canvas, hold Space and drag, or right-click and drag.",
+            ["manual.view.b.zoom"]  = "Zoom: scroll the mouse wheel, or use the zoom buttons in the top bar.",
+            ["manual.view.b.reset"] = "Reset zoom returns the view to 100%.",
+
+            ["manual.templates.h"] = "Templates",
+            ["manual.templates.p"] = "Start fast from a ready-made template — Org chart, Web architecture, Client-server, Microservices, Data pipeline, or a blank canvas. Open Templates from the toolbar or the File menu; everything stays fully editable afterwards.",
+
+            ["manual.files.h"]        = "Saving, opening and exporting",
+            ["manual.files.b.save"]   = "Save and Open store diagrams as .ptd.json files you can reopen later.",
+            ["manual.files.b.export"] = "Export PNG writes a crisp 2× resolution image of your diagram.",
+            ["manual.files.b.new"]    = "New clears the canvas to start over — you'll be asked to confirm first.",
+
+            ["manual.editing.h"] = "Copy, paste and undo",
+            ["manual.editing.p"] = "Copy, Cut and Paste (Ctrl+C / X / V) work on a selection and even between two open DrawThisEasy windows, preserving the connections between shapes. Duplicate with Ctrl+D, select everything with Ctrl+A, and step backward or forward with Undo (Ctrl+Z) and Redo (Ctrl+Y).",
+
+            ["manual.language.h"] = "Language",
+            ["manual.language.p"] = "Switch between English and Español at any time from the Language menu or the EN / ES button in the top bar. The whole interface updates live — no restart required.",
+
+            ["manual.shortcuts.h"] = "Keyboard shortcuts",
+            ["manual.shortcuts.p"] = "Prefer the keyboard? Open Help ▸ Keyboard Shortcuts (or press ?) for the full list of shortcuts. Press F1 anytime to reopen this manual.",
         },
 
         [Language.Es] = new()
@@ -411,6 +473,7 @@ public static class L10n
             ["menu.lang.en"]         = "English",
             ["menu.lang.es"]         = "Español",
             ["menu.help"]            = "A_yuda",
+            ["menu.help.manual"]     = "_Manual de usuario...",
             ["menu.help.shortcuts"]  = "_Atajos de teclado...",
 
             // Modal
@@ -434,6 +497,67 @@ public static class L10n
             ["color.standard"] = "COLORES ESTÁNDAR",
             ["color.custom"]   = "Color personalizado...",
             ["color.apply"]    = "Aplicar",
+
+            // User manual
+            ["manual.title"]    = "Manual de usuario",
+            ["manual.subtitle"] = "Todo lo que necesitas para crear diagramas rápido",
+
+            ["manual.overview.h"] = "Descripción general",
+            ["manual.overview.p"] = "DrawThisEasy te ayuda a esbozar organigramas, diagramas de arquitectura y flujos de sistemas en segundos. La idea es sencilla: elige una herramienta, haz clic en el lienzo para colocar una forma, escribe una etiqueta y arrastra de una forma a otra para conectarlas.",
+
+            ["manual.workspace.h"]          = "El área de trabajo",
+            ["manual.workspace.p"]          = "La ventana se organiza en unas pocas zonas claras:",
+            ["manual.workspace.b.strip"]    = "Barra de herramientas superior: botones de un clic para cada herramienta, junto al menú y los controles de zoom.",
+            ["manual.workspace.b.palette"]  = "Paleta izquierda: las mismas herramientas agrupadas en Herramientas, Formas e Infraestructura, con etiquetas.",
+            ["manual.workspace.b.canvas"]   = "Lienzo: la cuadrícula de puntos en el centro donde construyes el diagrama.",
+            ["manual.workspace.b.inspector"]= "Inspector: aparece a la derecha cuando hay una forma seleccionada; ajusta relleno, borde y orden de capas.",
+            ["manual.workspace.b.status"]   = "Barra de estado: muestra la herramienta activa y una breve sugerencia de qué hacer.",
+
+            ["manual.shapes.h"]  = "Agregar formas",
+            ["manual.shapes.p"]  = "Haz clic en una herramienta de forma en la paleta o en la barra superior (o pulsa su atajo de teclado) y luego haz clic en el lienzo para colocar la forma donde hiciste clic. Después de agregar una forma, la herramienta vuelve a Seleccionar automáticamente para que puedas moverla o editarla enseguida.",
+            ["manual.shapes.p2"] = "Las formas de flujo incluyen Proceso, Componente, Inicio / Fin, Decisión, Hexágono y Datos. Las de infraestructura incluyen Base de datos, Nube, Servidor, Usuario, Cola, Nota adhesiva y Texto simple.",
+
+            ["manual.connect.h"]  = "Conectar formas",
+            ["manual.connect.p"]  = "Cambia a la herramienta Conector (pulsa L) y arrastra de una forma a otra. El conector se ajusta al borde de cada forma y se redibuja automáticamente cada vez que mueves cualquiera de ellas.",
+            ["manual.connect.p2"] = "El modo Conector es continuo: puedes enlazar forma con forma con forma sin volver a elegir la herramienta. Un solo clic en una forma (sin arrastrar) simplemente la selecciona en lugar de iniciar una conexión.",
+
+            ["manual.select.h"]        = "Seleccionar, mover y redimensionar",
+            ["manual.select.b.click"]  = "Haz clic en una forma para seleccionarla y arrástrala para moverla. El Inspector aparece para la selección.",
+            ["manual.select.b.multi"]  = "Mantén Mayús o Ctrl y haz clic para agregar o quitar formas de la selección.",
+            ["manual.select.b.marquee"]= "Mantén Mayús y arrastra sobre un área vacía para dibujar un marco y seleccionar todo lo que toque.",
+            ["manual.select.b.pan"]    = "Arrastra un área vacía (o mantén Espacio, o haz clic derecho y arrastra) para desplazar el lienzo.",
+            ["manual.select.b.resize"] = "Con una sola forma seleccionada, arrastra los tiradores cuadrados que la rodean para redimensionarla.",
+
+            ["manual.labels.h"] = "Editar etiquetas",
+            ["manual.labels.p"] = "Haz doble clic en cualquier forma para editar su etiqueta en el lugar. Escribe el texto y pulsa Entrar para confirmar, o Esc para cancelar. Los conectores también pueden llevar etiquetas.",
+
+            ["manual.colors.h"] = "Colores y estilo",
+            ["manual.colors.p"] = "Selecciona una o varias formas para mostrar el Inspector y luego haz clic en una muestra de Relleno o Borde para aplicarla. Haz clic en la muestra «+» para elegir un color personalizado con el selector. La paleta integrada usa tonos profesionales de pizarra, cielo, verde azulado y ámbar.",
+
+            ["manual.layers.h"] = "Capas",
+            ["manual.layers.p"] = "Cuando las formas se superponen, usa Frente y Atrás en el Inspector (o el menú Edición) para controlar cuál queda encima.",
+
+            ["manual.view.h"]       = "Desplazar y hacer zoom",
+            ["manual.view.b.pan"]   = "Desplazar: arrastra un área vacía del lienzo, mantén Espacio y arrastra, o haz clic derecho y arrastra.",
+            ["manual.view.b.zoom"]  = "Zoom: gira la rueda del ratón o usa los botones de zoom de la barra superior.",
+            ["manual.view.b.reset"] = "Restablecer zoom devuelve la vista al 100%.",
+
+            ["manual.templates.h"] = "Plantillas",
+            ["manual.templates.p"] = "Empieza rápido con una plantilla lista: Organigrama, Arquitectura web, Cliente-servidor, Microservicios, Tubería de datos o un lienzo en blanco. Abre Plantillas desde la barra de herramientas o el menú Archivo; después puedes editarlo todo.",
+
+            ["manual.files.h"]        = "Guardar, abrir y exportar",
+            ["manual.files.b.save"]   = "Guardar y Abrir almacenan los diagramas como archivos .ptd.json que puedes reabrir después.",
+            ["manual.files.b.export"] = "Exportar PNG genera una imagen nítida de tu diagrama al doble de resolución (2×).",
+            ["manual.files.b.new"]    = "Nuevo borra el lienzo para empezar de cero; primero se te pedirá confirmación.",
+
+            ["manual.editing.h"] = "Copiar, pegar y deshacer",
+            ["manual.editing.p"] = "Copiar, Cortar y Pegar (Ctrl+C / X / V) funcionan sobre una selección e incluso entre dos ventanas abiertas de DrawThisEasy, conservando las conexiones entre formas. Duplica con Ctrl+D, selecciona todo con Ctrl+A y avanza o retrocede con Deshacer (Ctrl+Z) y Rehacer (Ctrl+Y).",
+
+            ["manual.language.h"] = "Idioma",
+            ["manual.language.p"] = "Cambia entre English y Español en cualquier momento desde el menú Idioma o el botón EN / ES de la barra superior. Toda la interfaz se actualiza al instante, sin reiniciar.",
+
+            ["manual.shortcuts.h"] = "Atajos de teclado",
+            ["manual.shortcuts.p"] = "¿Prefieres el teclado? Abre Ayuda ▸ Atajos de teclado (o pulsa ?) para ver la lista completa de atajos. Pulsa F1 en cualquier momento para volver a abrir este manual.",
         }
     };
 }
