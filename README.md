@@ -8,44 +8,55 @@ Designed for speed: pick a tool, click the canvas, type a label. Drag from any s
 
 ## Why it exists
 
-When you need to whiteboard "how do the clients, load balancer, app servers, queue, and database fit together," you don't want to wrestle with Visio or wait for a web app to load. PictureThis opens instantly, ships as a single `.exe`, and stays out of your way.
+When you need to whiteboard *"how do the clients, load balancer, app servers, queue, and database fit together"*, you don't want to wrestle with Visio or wait for a web app to load. PictureThis opens instantly, ships as a single `.exe`, and stays out of your way.
 
 ## Features
 
-- **Shape palette** tailored to systems work: process, decision, database (cylinder), cloud, server, user, queue, sticky note, plus the standard rectangle / rounded / ellipse / diamond / hexagon / parallelogram / text.
-- **Smart connectors** that snap to shape edges and reroute automatically as shapes move.
-- **Pan & zoom** (Space + drag, right-click + drag, mouse wheel).
-- **Inline label editing** — double-click any shape.
+- **Menu bar** (File / Edit / View / Language / Help) with full keyboard accelerators.
+- **Top tool strip** and **left palette** for fast tool switching.
+- **Shape palette** tailored to systems work:
+  - Process, Component, Start / End, Decision, Hexagon, Data
+  - Database (cylinder), Cloud, Server stack, User, Queue, Sticky note, Text
+- **Smart connectors** that snap to shape edges and reroute automatically as shapes move. Sticky connector mode — wire shape → shape → shape without re-selecting the tool.
+- **Click-on-shape selects.** In Connector mode a single click on a shape switches to Select and selects it; only drags create connections.
+- **Empty-area drag pans the canvas** in both Select and Connector modes. Hold `Shift` while dragging empty space to marquee-select instead.
+- **Inline label editing** — double-click any shape, type, `Enter` to commit.
+- **Pan & zoom** — `Space` + drag, right-click + drag, or just drag empty area. Mouse wheel zooms.
 - **Inspector panel** for fill / stroke colors and layer ordering.
-- **Templates** — start from an org chart, web architecture, microservices, data pipeline, etc.
-- **Undo / redo** (`Ctrl+Z` / `Ctrl+Y`).
-- **Save / load** as JSON; **export** as PNG (2× resolution).
+- **Copy / Cut / Paste** (`Ctrl+C` / `Ctrl+X` / `Ctrl+V`) via the system clipboard, with connection edges preserved. Works between two open PictureThis instances.
+- **Templates** — Org chart, Web architecture, Client-server, Microservices, Data pipeline, Blank.
+- **Undo / Redo** (`Ctrl+Z` / `Ctrl+Y`).
+- **Save / Load** as JSON; **Export** as PNG (2× resolution).
 - **Modal dialogs** instead of system message boxes — clean, on-brand prompts.
-- Professional palette: slate / sky / teal / amber. No purple.
+- **Bilingual UI** — English / Español, switchable live (no restart) from the Language menu or one-click EN/ES toggle in the top bar.
+- **Global crash handler** writes a diagnostic log to `%LOCALAPPDATA%\PictureThis\picturethis-crash.log` and shows a dialog instead of silently exiting.
+- Professional palette: slate / sky / teal / amber. **No purple.**
 
 ## Keyboard shortcuts
 
-| Tools         |               | Editing         |               |
-|---------------|---------------|-----------------|---------------|
-| `V`           | Select        | `Ctrl+Z` / `Y`  | Undo / redo   |
-| `L`           | Connector     | `Ctrl+D`        | Duplicate     |
-| `R`           | Rectangle     | `Ctrl+A`        | Select all    |
-| `O`           | Rounded       | `Del`           | Delete        |
-| `E`           | Ellipse       | Double-click    | Edit label    |
-| `D`           | Decision      | `Esc`           | Cancel        |
-| `H`           | Hexagon       |                 |               |
-| `B`           | Database      | **File**        |               |
-| `C`           | Cloud         | `Ctrl+N`        | New diagram   |
-| `S`           | Server        | `Ctrl+O`        | Open          |
-| `P`           | User / Person | `Ctrl+S`        | Save          |
-| `T`           | Text          | `Ctrl+E`        | Export PNG    |
+| Tools          |                | Editing         |                 |
+|----------------|----------------|-----------------|-----------------|
+| `V`            | Select         | `Ctrl+Z` / `Y`  | Undo / Redo     |
+| `L`            | Connector      | `Ctrl+C` / `X` / `V` | Copy / Cut / Paste |
+| `R`            | Rectangle      | `Ctrl+D`        | Duplicate       |
+| `O`            | Rounded        | `Ctrl+A`        | Select all      |
+| `E`            | Ellipse        | `Del`           | Delete          |
+| `D`            | Decision       | Double-click    | Edit label      |
+| `H`            | Hexagon        | `Esc`           | Cancel          |
+| `B`            | Database       |                 |                 |
+| `C`            | Cloud          | **File**        |                 |
+| `S`            | Server         | `Ctrl+N`        | New diagram     |
+| `P`            | User / Person  | `Ctrl+O`        | Open            |
+| `T`            | Text           | `Ctrl+S`        | Save            |
+|                |                | `Ctrl+E`        | Export PNG      |
 
-**Pan:** hold `Space` and drag (or right-click and drag).
+**Pan:** hold `Space` and drag, right-click and drag, or just drag any empty area.
 **Zoom:** mouse wheel.
+**Marquee select:** hold `Shift` and drag empty area.
 
 ## Build & run
 
-Requires .NET 9 SDK with the Windows Desktop workload on Windows 10/11.
+Requires the .NET 9 SDK with the Windows Desktop workload on Windows 10/11.
 
 ```powershell
 dotnet build PictureThis/PictureThis.csproj
@@ -64,19 +75,22 @@ The output lands in `PictureThis/bin/Release/net9.0-windows/win-x64/publish/`.
 
 ```
 PictureThis/
-├── App.xaml                       — App shell + merged Theme.xaml
-├── MainWindow.xaml(.cs)           — Top bar, palette, status, hosts DiagramCanvas
+├── App.xaml(.cs)                  — App shell, merged Theme.xaml, global crash handler
+├── MainWindow.xaml(.cs)           — Top bar (menu + brand + zoom), tool strip, palette, status
 ├── Controls/
-│   ├── DiagramCanvas.cs           — Custom Canvas: selection, drag, resize, connect, pan/zoom, undo
-│   ├── ShapeFactory.cs            — Builds the WPF visuals for each shape kind + edge-intersect math
-│   └── ShapeIcons.cs              — 18×18 palette icons rendered in code
+│   ├── DiagramCanvas.cs           — Custom Canvas: selection, drag, resize, connect,
+│   │                                 pan / zoom, marquee, undo, clipboard, text edit
+│   ├── ShapeFactory.cs            — Builds the WPF visuals for each shape kind +
+│   │                                 edge-intersect math for connector snapping
+│   └── ShapeIcons.cs              — Palette icons rendered in code
 ├── Dialogs/
 │   ├── ModalWindow.xaml(.cs)      — Reusable modal (Info / Confirm)
-│   ├── HelpWindow.xaml(.cs)       — Keyboard shortcut reference
+│   ├── HelpWindow.xaml(.cs)       — Localized keyboard-shortcut reference
 │   └── TemplateGalleryWindow…     — Template picker with live previews
-├── Models/Models.cs               — DiagramModel, ShapeNode, Connection, enums, color palette
-├── Resources/Theme.xaml           — Brushes, button styles, fonts
+├── Models/Models.cs               — DiagramModel, ShapeNode, Connection, enums, palette
+├── Resources/Theme.xaml           — Brushes, button + menu styles, fonts
 └── Services/
+    ├── L10n.cs                    — Tiny string table + LanguageChanged event (EN / ES)
     ├── Persistence.cs             — JSON load / save
     ├── Templates.cs               — Built-in starter diagrams
     └── Exporter.cs                — PNG export via RenderTargetBitmap
@@ -84,4 +98,4 @@ PictureThis/
 
 ## License
 
-This is a personal tool. Use freely; no warranty.
+Personal project. Use freely; no warranty.
