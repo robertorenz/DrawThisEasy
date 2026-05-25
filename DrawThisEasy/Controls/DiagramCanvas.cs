@@ -18,7 +18,9 @@ public class DiagramCanvas : Canvas
     private readonly Canvas _world = new();
     private readonly Canvas _connLayer = new();
     private readonly Canvas _shapeLayer = new();
+    private readonly Canvas _guideLayer = new() { IsHitTestVisible = false };
     private readonly Canvas _overlayLayer = new() { IsHitTestVisible = false };
+    private (bool Horizontal, double Pos)? _guidePreview;
 
     private readonly MatrixTransform _worldTransform = new(Matrix.Identity);
 
@@ -53,6 +55,7 @@ public class DiagramCanvas : Canvas
     private bool _isEditingText;
     private bool _rightClickPending;
     private bool _rightClickConn;
+    private double? _snapX, _snapY;   // active alignment-guide coordinates while moving
 
     // ---- Undo/redo ----
     private readonly Stack<string> _undoStack = new();
@@ -105,6 +108,7 @@ public class DiagramCanvas : Canvas
         Children.Add(_world);
         _world.Children.Add(_connLayer);
         _world.Children.Add(_shapeLayer);
+        _world.Children.Add(_guideLayer);
         _world.Children.Add(_overlayLayer);
 
         MouseLeftButtonDown += OnMouseLeftDown;
@@ -145,7 +149,61 @@ public class DiagramCanvas : Canvas
             AddShapeVisual(s);
         foreach (var c in _model.Connections)
             AddConnectionVisual(c);
+        RebuildGuides();
         RebuildOverlay();
+    }
+
+    // ---------- Ruler guides ----------
+
+    public Point ToWorld(Point screen) => ScreenToWorld(screen);
+
+    public void AddGuide(bool horizontal, double pos)
+    {
+        Snapshot();
+        _model.Guides.Add(new Guide { Horizontal = horizontal, Position = pos });
+        _guidePreview = null;
+        RebuildGuides();
+    }
+
+    public void ClearGuides()
+    {
+        if (_model.Guides.Count == 0) return;
+        Snapshot();
+        _model.Guides.Clear();
+        RebuildGuides();
+    }
+
+    public void SetGuidePreview(bool horizontal, double pos)
+    {
+        _guidePreview = (horizontal, pos);
+        RebuildGuides();
+    }
+
+    public void ClearGuidePreview()
+    {
+        if (_guidePreview == null) return;
+        _guidePreview = null;
+        RebuildGuides();
+    }
+
+    private void RebuildGuides()
+    {
+        _guideLayer.Children.Clear();
+        var color = (Brush)new BrushConverter().ConvertFromString("#14B8A6")!;   // teal
+        foreach (var g in _model.Guides)
+            _guideLayer.Children.Add(MakeGuideLine(g.Horizontal, g.Position, color, dashed: false));
+        if (_guidePreview is { } p)
+            _guideLayer.Children.Add(MakeGuideLine(p.Horizontal, p.Pos, color, dashed: true));
+    }
+
+    private static Line MakeGuideLine(bool horizontal, double pos, Brush color, bool dashed)
+    {
+        const double far = 100000;
+        var line = new Line { Stroke = color, StrokeThickness = 1, IsHitTestVisible = false };
+        if (dashed) line.StrokeDashArray = new DoubleCollection(new[] { 4.0, 3.0 });
+        if (horizontal) { line.X1 = -far; line.X2 = far; line.Y1 = line.Y2 = pos; }
+        else { line.Y1 = -far; line.Y2 = far; line.X1 = line.X2 = pos; }
+        return line;
     }
 
     // ---------- Snapshot / undo ----------
@@ -711,6 +769,12 @@ public class DiagramCanvas : Canvas
         {
             var dx = world.X - _dragStartWorld.X;
             var dy = world.Y - _dragStartWorld.Y;
+
+            // Snap the selection's edges/centers to other shapes and guides (unless Alt held).
+            if (!Keyboard.Modifiers.HasFlag(ModifierKeys.Alt))
+                (dx, dy) = ComputeMoveSnap(dx, dy);
+            else { _snapX = null; _snapY = null; }
+
             foreach (var (id, origin) in _dragOrigins)
             {
                 var s = _model.FindShape(id);
@@ -725,6 +789,7 @@ public class DiagramCanvas : Canvas
                 RouteConnectionsFor(id);
             }
             RebuildOverlay();
+            DrawSnapGuides();
             return;
         }
 
@@ -832,6 +897,7 @@ public class DiagramCanvas : Canvas
         _dragOrigins.Clear();
         if (IsMouseCaptured) ReleaseMouseCapture();
         UpdateCursor();
+        if (_snapX != null || _snapY != null) { _snapX = null; _snapY = null; RebuildOverlay(); }
     }
 
     private void OnMouseRightDown(object sender, MouseButtonEventArgs e)
@@ -1418,6 +1484,67 @@ public class DiagramCanvas : Canvas
             if (v.HitPath.Data != null && v.HitPath.Data.StrokeContains(pen, world))
                 return id;
         return null;
+    }
+
+    // Snap the moving selection's edges/centers to other shapes and guides.
+    private (double dx, double dy) ComputeMoveSnap(double dx, double dy)
+    {
+        _snapX = null; _snapY = null;
+        if (_dragOrigins.Count == 0) return (dx, dy);
+
+        double minX = double.MaxValue, minY = double.MaxValue, maxX = double.MinValue, maxY = double.MinValue;
+        foreach (var (id, origin) in _dragOrigins)
+        {
+            var s = _model.FindShape(id); if (s == null) continue;
+            var x = origin.X + dx; var y = origin.Y + dy;
+            minX = Math.Min(minX, x); minY = Math.Min(minY, y);
+            maxX = Math.Max(maxX, x + s.Width); maxY = Math.Max(maxY, y + s.Height);
+        }
+        if (minX == double.MaxValue) return (dx, dy);
+
+        double cX = (minX + maxX) / 2, cY = (minY + maxY) / 2;
+        var movingXs = new[] { minX, cX, maxX };
+        var movingYs = new[] { minY, cY, maxY };
+
+        double thresh = 6.0 / Math.Max(Zoom, 0.0001);
+        double bestX = thresh, bestY = thresh, adjX = 0, adjY = 0;
+        double? snapX = null, snapY = null;
+
+        void ConsiderX(double target)
+        {
+            foreach (var m in movingXs) { var d = Math.Abs(m - target); if (d < bestX) { bestX = d; adjX = target - m; snapX = target; } }
+        }
+        void ConsiderY(double target)
+        {
+            foreach (var m in movingYs) { var d = Math.Abs(m - target); if (d < bestY) { bestY = d; adjY = target - m; snapY = target; } }
+        }
+
+        foreach (var s in _model.Shapes)
+        {
+            if (_dragOrigins.ContainsKey(s.Id)) continue;
+            ConsiderX(s.X); ConsiderX(s.X + s.Width / 2); ConsiderX(s.X + s.Width);
+            ConsiderY(s.Y); ConsiderY(s.Y + s.Height / 2); ConsiderY(s.Y + s.Height);
+        }
+        foreach (var g in _model.Guides)
+        {
+            if (g.Horizontal) ConsiderY(g.Position); else ConsiderX(g.Position);
+        }
+
+        _snapX = snapX; _snapY = snapY;
+        return (dx + adjX, dy + adjY);
+    }
+
+    private void DrawSnapGuides()
+    {
+        if (_snapX == null && _snapY == null) return;
+        var tl = ScreenToWorld(new Point(0, 0));
+        var br = ScreenToWorld(new Point(ActualWidth, ActualHeight));
+        var color = (Brush)new BrushConverter().ConvertFromString("#EF4444")!;
+        double t = 1.0 / Math.Max(Zoom, 0.4);
+        if (_snapX is double sx)
+            _overlayLayer.Children.Add(new Line { X1 = sx, Y1 = tl.Y, X2 = sx, Y2 = br.Y, Stroke = color, StrokeThickness = t, IsHitTestVisible = false, StrokeDashArray = new DoubleCollection(new[] { 4.0, 3.0 }) });
+        if (_snapY is double sy)
+            _overlayLayer.Children.Add(new Line { X1 = tl.X, Y1 = sy, X2 = br.X, Y2 = sy, Stroke = color, StrokeThickness = t, IsHitTestVisible = false, StrokeDashArray = new DoubleCollection(new[] { 4.0, 3.0 }) });
     }
 
     private void UpdateCursor()

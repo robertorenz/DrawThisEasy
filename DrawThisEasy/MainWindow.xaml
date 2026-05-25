@@ -63,6 +63,8 @@
             <MenuItem x:Name="MnuViewZoomIn"    Header="Zoom _In"      Click="BtnZoomIn_Click"/>
             <MenuItem x:Name="MnuViewZoomOut"   Header="Zoom _Out"     Click="BtnZoomOut_Click"/>
             <MenuItem x:Name="MnuViewZoomReset" Header="_Reset Zoom"   Click="BtnZoomReset_Click"/>
+            <Separator/>
+            <MenuItem x:Name="MnuViewClearGuides" Header="Clear _Guides" Click="MnuClearGuides_Click"/>
           </MenuItem>
           <MenuItem x:Name="MnuLang" Header="_Language" Style="{StaticResource TopMenuItem}">
             <MenuItem x:Name="MnuLangEn" Header="English" IsCheckable="True" Click="MnuLangEn_Click"/>
@@ -136,8 +138,31 @@
           </ScrollViewer>
         </Border>
 
-        <!-- Canvas host: every open diagram lives here; only the active one is visible -->
+        <!-- Rulers framing the canvas; drag from a ruler onto the canvas to drop a guide -->
         <Grid Grid.Row="1">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="18"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="18"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+
+          <Border Grid.Row="0" Grid.Column="0" Background="#FFF1F5F9" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,1"/>
+          <Border Grid.Row="0" Grid.Column="1" Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
+                  ClipToBounds="True" Cursor="SizeNS"
+                  MouseLeftButtonDown="RulerTop_MouseDown" MouseMove="Ruler_MouseMove" MouseLeftButtonUp="Ruler_MouseUp">
+            <Canvas x:Name="RulerTop" Background="Transparent"/>
+          </Border>
+          <Border Grid.Row="1" Grid.Column="0" Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0"
+                  ClipToBounds="True" Cursor="SizeWE"
+                  MouseLeftButtonDown="RulerLeft_MouseDown" MouseMove="Ruler_MouseMove" MouseLeftButtonUp="Ruler_MouseUp">
+            <Canvas x:Name="RulerLeft" Background="Transparent"/>
+          </Border>
+
+          <!-- Canvas host: every open diagram lives here; only the active one is visible -->
+          <Grid Grid.Row="1" Grid.Column="1">
           <Grid x:Name="CanvasHost"/>
 
           <!-- Scrollbars (wheel scrolls; these reflect/drive the canvas position) -->
@@ -190,6 +215,7 @@
             </UniformGrid>
           </StackPanel>
         </Border>
+          </Grid>
         </Grid>
       </Grid>
     </Grid>

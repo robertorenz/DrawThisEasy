@@ -67,7 +67,9 @@ public partial class MainWindow : Window
         BuildAddTabButton();
         NewDocument();      // first document — wires events, activates, syncs chrome
 
-        CanvasHost.SizeChanged += (s, e) => UpdateScrollBars();
+        CanvasHost.SizeChanged += (s, e) => { UpdateScrollBars(); DrawRulers(); };
+        RulerTop.SizeChanged += (s, e) => DrawRulers();
+        RulerLeft.SizeChanged += (s, e) => DrawRulers();
         ApplyLanguage();
     }
 
@@ -119,7 +121,7 @@ public partial class MainWindow : Window
         c.ModelDirty           += (s, e)    => { if (s is DiagramCanvas dc) MarkDirtyFor(dc); };
         c.ContextMenuRequested += (s, pt)   => { if (ReferenceEquals(s, _active.Canvas)) ShowShapeContextMenu(pt); };
         c.ConnectionContextRequested += (s, pt) => { if (ReferenceEquals(s, _active.Canvas)) ShowConnectionContextMenu(pt); };
-        c.ViewChanged          += (s, e)    => { if (_active != null && ReferenceEquals(s, _active.Canvas)) UpdateScrollBars(); };
+        c.ViewChanged          += (s, e)    => { if (_active != null && ReferenceEquals(s, _active.Canvas)) { UpdateScrollBars(); DrawRulers(); } };
     }
 
     private void ActivateDocument(DocTab tab)
@@ -139,6 +141,7 @@ public partial class MainWindow : Window
         UpdateZoomLabel();
         UpdateWindowTitle();
         UpdateScrollBars();
+        DrawRulers();
         tab.Canvas.Focus();
     }
 
@@ -261,6 +264,80 @@ public partial class MainWindow : Window
         bar.SmallChange = 40;
         bar.Value = Math.Min(Math.Max(value, bar.Minimum), bar.Maximum);
         bar.Visibility = (max - min) > viewport + 1 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    // ===== Rulers & guides =====
+
+    private bool? _rulerDrag;   // true = dragging a horizontal guide (top ruler), false = vertical (left ruler)
+
+    private void DrawRulers()
+    {
+        if (_active == null) return;
+        var (offX, offY) = Diagram.GetScrollOffsetWorld();
+        DrawRuler(RulerTop, horizontal: true, Diagram.Zoom, offX);
+        DrawRuler(RulerLeft, horizontal: false, Diagram.Zoom, offY);
+    }
+
+    private void DrawRuler(Canvas ruler, bool horizontal, double zoom, double originWorld)
+    {
+        ruler.Children.Clear();
+        double lengthPx = horizontal ? ruler.ActualWidth : ruler.ActualHeight;
+        if (lengthPx <= 0 || zoom <= 0) return;
+
+        var tickBrush = (Brush)FindResource("BorderBrush");
+        var textBrush = (Brush)FindResource("TextMutedBrush");
+
+        // A "nice" world step so labels land roughly every 64 px.
+        double rawStep = 64.0 / zoom;
+        double mag = Math.Pow(10, Math.Floor(Math.Log10(rawStep)));
+        double norm = rawStep / mag;
+        double step = (norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10) * mag;
+
+        double worldEnd = originWorld + lengthPx / zoom;
+        for (double w = Math.Floor(originWorld / step) * step; w <= worldEnd; w += step)
+        {
+            double p = (w - originWorld) * zoom;
+            if (p < 0 || p > lengthPx) continue;
+            var tick = new Line { Stroke = tickBrush, StrokeThickness = 1 };
+            if (horizontal) { tick.X1 = tick.X2 = p; tick.Y1 = 11; tick.Y2 = 18; }
+            else { tick.Y1 = tick.Y2 = p; tick.X1 = 11; tick.X2 = 18; }
+            ruler.Children.Add(tick);
+
+            var label = new TextBlock { Text = ((int)Math.Round(w)).ToString(), FontSize = 8, Foreground = textBrush };
+            if (horizontal) { Canvas.SetLeft(label, p + 2); Canvas.SetTop(label, 1); }
+            else { Canvas.SetLeft(label, 2); Canvas.SetTop(label, p + 1); }
+            ruler.Children.Add(label);
+        }
+    }
+
+    private void RulerTop_MouseDown(object sender, MouseButtonEventArgs e)  { _rulerDrag = true;  ((UIElement)sender).CaptureMouse(); UpdateGuidePreview(e); }
+    private void RulerLeft_MouseDown(object sender, MouseButtonEventArgs e) { _rulerDrag = false; ((UIElement)sender).CaptureMouse(); UpdateGuidePreview(e); }
+
+    private void Ruler_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_rulerDrag != null) UpdateGuidePreview(e);
+    }
+
+    private void Ruler_MouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_rulerDrag == null) return;
+        var horizontal = _rulerDrag.Value;
+        ((UIElement)sender).ReleaseMouseCapture();
+        var p = e.GetPosition(Diagram);
+        Diagram.ClearGuidePreview();
+        if (p.X >= 0 && p.Y >= 0 && p.X <= Diagram.ActualWidth && p.Y <= Diagram.ActualHeight)
+        {
+            var w = Diagram.ToWorld(p);
+            Diagram.AddGuide(horizontal, horizontal ? w.Y : w.X);
+        }
+        _rulerDrag = null;
+    }
+
+    private void UpdateGuidePreview(MouseEventArgs e)
+    {
+        if (_rulerDrag == null) return;
+        var w = Diagram.ToWorld(e.GetPosition(Diagram));
+        Diagram.SetGuidePreview(_rulerDrag.Value, _rulerDrag.Value ? w.Y : w.X);
     }
 
     // ===== Palette =====
@@ -1308,6 +1385,8 @@ public partial class MainWindow : Window
     private void BtnZoomOut_Click(object sender, RoutedEventArgs e) => Diagram.SetZoom(Diagram.Zoom / 1.2);
     private void BtnZoomReset_Click(object sender, RoutedEventArgs e) => Diagram.ResetView();
 
+    private void MnuClearGuides_Click(object sender, RoutedEventArgs e) => Diagram.ClearGuides();
+
     private void UpdateZoomLabel() => ZoomLabel.Text = $"{(int)Math.Round(Diagram.Zoom * 100)}%";
 
     private void BtnHelp_Click(object sender, RoutedEventArgs e)
@@ -1372,6 +1451,7 @@ public partial class MainWindow : Window
         MnuViewZoomIn.Header     = L10n.T("menu.view.zoomin");
         MnuViewZoomOut.Header    = L10n.T("menu.view.zoomout");
         MnuViewZoomReset.Header  = L10n.T("menu.view.zoomreset");
+        MnuViewClearGuides.Header = L10n.T("menu.view.clearguides");
 
         MnuLang.Header           = L10n.T("menu.lang");
         MnuLangEn.Header         = L10n.T("menu.lang.en");

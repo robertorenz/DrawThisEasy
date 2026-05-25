@@ -111,12 +111,20 @@ public class Connection
     public double CurveDY { get; set; }
 }
 
+/// A ruler guide line. Horizontal guides sit at a Y position; vertical guides at an X.
+public class Guide
+{
+    public bool Horizontal { get; set; }
+    public double Position { get; set; }
+}
+
 public class DiagramModel
 {
     public string Version { get; set; } = "1.0";
     public string Title { get; set; } = "Untitled diagram";
     public List<ShapeNode> Shapes { get; set; } = new();
     public List<Connection> Connections { get; set; } = new();
+    public List<Guide> Guides { get; set; } = new();
 
     public ShapeNode? FindShape(string id) => Shapes.Find(s => s.Id == id);
 }
