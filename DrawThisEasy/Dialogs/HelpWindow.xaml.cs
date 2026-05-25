@@ -66,9 +66,9 @@ public partial class HelpWindow : Window
         });
         ViewList.Content = MakeList(new (string, string)[]
         {
-            ("Space + drag",       L10n.T("help.action.pan.space")),
-            ("Right-click + drag", L10n.T("help.action.pan.right")),
-            ("Wheel",              L10n.T("help.action.zoom"))
+            ("Wheel",        L10n.T("help.action.scroll")),
+            ("Ctrl + Wheel", L10n.T("help.action.zoom")),
+            ("Space + drag", L10n.T("help.action.pan.space"))
         });
     }
 

@@ -64,6 +64,7 @@ public partial class MainWindow : Window
         BuildAddTabButton();
         NewDocument();      // first document — wires events, activates, syncs chrome
 
+        CanvasHost.SizeChanged += (s, e) => UpdateScrollBars();
         ApplyLanguage();
     }
 
@@ -114,6 +115,7 @@ public partial class MainWindow : Window
         c.ZoomChanged          += (s, e)    => { if (ReferenceEquals(s, _active.Canvas)) UpdateZoomLabel(); };
         c.ModelDirty           += (s, e)    => { if (s is DiagramCanvas dc) MarkDirtyFor(dc); };
         c.ContextMenuRequested += (s, pt)   => { if (ReferenceEquals(s, _active.Canvas)) ShowShapeContextMenu(pt); };
+        c.ViewChanged          += (s, e)    => { if (_active != null && ReferenceEquals(s, _active.Canvas)) UpdateScrollBars(); };
     }
 
     private void ActivateDocument(DocTab tab)
@@ -132,6 +134,7 @@ public partial class MainWindow : Window
         UpdateInspectorVisibility();
         UpdateZoomLabel();
         UpdateWindowTitle();
+        UpdateScrollBars();
         tab.Canvas.Focus();
     }
 
@@ -210,6 +213,50 @@ public partial class MainWindow : Window
     {
         var name = _active?.Title ?? "DrawThisEasy";
         Title = (_active?.Dirty == true ? "• " : "") + name + " — DrawThisEasy";
+    }
+
+    // ===== Scrollbars =====
+
+    private void VScroll_Scroll(object sender, ScrollEventArgs e)
+    {
+        if (_active == null) return;
+        var (x, _) = Diagram.GetScrollOffsetWorld();
+        Diagram.ScrollViewTo(x, VScroll.Value);
+    }
+
+    private void HScroll_Scroll(object sender, ScrollEventArgs e)
+    {
+        if (_active == null) return;
+        var (_, y) = Diagram.GetScrollOffsetWorld();
+        Diagram.ScrollViewTo(HScroll.Value, y);
+    }
+
+    private void UpdateScrollBars()
+    {
+        if (_active == null) return;
+        var vp = Diagram.GetViewportWorldSize();
+        if (vp.Width <= 0 || vp.Height <= 0) return;
+
+        var ext = Diagram.GetContentExtentWorld();
+        var (tlX, tlY) = Diagram.GetScrollOffsetWorld();
+
+        // Keep the current view inside the scrollable range.
+        double left = Math.Min(ext.Left, tlX), top = Math.Min(ext.Top, tlY);
+        double right = Math.Max(ext.Right, tlX + vp.Width), bottom = Math.Max(ext.Bottom, tlY + vp.Height);
+
+        SetBar(VScroll, top, bottom, vp.Height, tlY);
+        SetBar(HScroll, left, right, vp.Width, tlX);
+    }
+
+    private static void SetBar(ScrollBar bar, double min, double max, double viewport, double value)
+    {
+        bar.Minimum = min;
+        bar.Maximum = Math.Max(min, max - viewport);
+        bar.ViewportSize = viewport;
+        bar.LargeChange = viewport * 0.9;
+        bar.SmallChange = 40;
+        bar.Value = Math.Min(Math.Max(value, bar.Minimum), bar.Maximum);
+        bar.Visibility = (max - min) > viewport + 1 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     // ===== Palette =====

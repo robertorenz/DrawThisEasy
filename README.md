@@ -58,8 +58,9 @@ When you need to whiteboard *"how do the clients, load balancer, app servers, qu
 | `T`            | Text           | `Ctrl+S`        | Save            |
 |                |                | `Ctrl+E`        | Export PNG      |
 
+**Scroll:** mouse wheel (`Shift`+wheel for horizontal), or the scrollbars.
 **Pan:** hold `Space` and drag, right-click and drag, or just drag any empty area.
-**Zoom:** mouse wheel.
+**Zoom:** `Ctrl`+mouse wheel, or the zoom buttons.
 **Marquee select:** hold `Shift` and drag empty area.
 **Help:** `F1` opens the user manual; `?` opens the keyboard-shortcut reference.
 

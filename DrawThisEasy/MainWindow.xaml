@@ -139,6 +139,12 @@
         <Grid Grid.Row="1">
           <Grid x:Name="CanvasHost"/>
 
+          <!-- Scrollbars (wheel scrolls; these reflect/drive the canvas position) -->
+          <ScrollBar x:Name="VScroll" Orientation="Vertical" HorizontalAlignment="Right" VerticalAlignment="Stretch"
+                     Width="14" Margin="0,0,0,42" Scroll="VScroll_Scroll"/>
+          <ScrollBar x:Name="HScroll" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
+                     Height="14" Margin="0,0,14,28" Scroll="HScroll_Scroll"/>
+
         <!-- Status bar (bottom overlay) -->
         <Border VerticalAlignment="Bottom" Background="#F2FFFFFF" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Height="28">
           <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0">
@@ -151,7 +157,7 @@
         <!-- Inspector (top right floating) -->
         <Border x:Name="Inspector"
                 HorizontalAlignment="Right" VerticalAlignment="Top"
-                Margin="0,16,16,0"
+                Margin="0,16,22,0"
                 Background="White"
                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
                 CornerRadius="12"
