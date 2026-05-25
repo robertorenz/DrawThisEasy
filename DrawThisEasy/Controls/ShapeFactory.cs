@@ -3,9 +3,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using PictureThis.Models;
+using DrawThisEasy.Models;
 
-namespace PictureThis.Controls;
+namespace DrawThisEasy.Controls;
 
 /// Builds the visual for a single shape (geometry + label) inside a Canvas of size w x h.
 public static class ShapeFactory

@@ -4,11 +4,11 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using PictureThis.Controls;
-using PictureThis.Models;
-using PictureThis.Services;
+using DrawThisEasy.Controls;
+using DrawThisEasy.Models;
+using DrawThisEasy.Services;
 
-namespace PictureThis.Dialogs;
+namespace DrawThisEasy.Dialogs;
 
 public partial class TemplateGalleryWindow : Window
 {

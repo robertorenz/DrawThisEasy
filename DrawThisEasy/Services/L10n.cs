@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace PictureThis.Services;
+namespace DrawThisEasy.Services;
 
 public enum Language { En, Es }
 

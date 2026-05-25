@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using PictureThis.Models;
+using DrawThisEasy.Models;
 
-namespace PictureThis.Services;
+namespace DrawThisEasy.Services;
 
 public record DiagramTemplate(string Id, string TitleKey, string DescriptionKey, DiagramModel Builder)
 {

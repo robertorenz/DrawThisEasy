@@ -1,9 +1,9 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using PictureThis.Services;
+using DrawThisEasy.Services;
 
-namespace PictureThis.Dialogs;
+namespace DrawThisEasy.Dialogs;
 
 public partial class HelpWindow : Window
 {

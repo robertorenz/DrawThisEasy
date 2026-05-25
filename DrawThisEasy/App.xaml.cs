@@ -4,11 +4,11 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 
-namespace PictureThis;
+namespace DrawThisEasy;
 
 public partial class App : Application
 {
-    private const string CrashLogName = "picturethis-crash.log";
+    private const string CrashLogName = "DrawThisEasy-crash.log";
 
     public App()
     {
@@ -42,18 +42,18 @@ public partial class App : Application
         {
             var path = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "PictureThis", CrashLogName);
+                "DrawThisEasy", CrashLogName);
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.AppendAllText(path, msg);
             MessageBox.Show(
                 $"{ex.GetType().Name}: {ex.Message}\n\nFull details written to:\n{path}",
-                "PictureThis hit an error",
+                "DrawThisEasy hit an error",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
         catch
         {
-            MessageBox.Show(ex.ToString(), "PictureThis hit an error",
+            MessageBox.Show(ex.ToString(), "DrawThisEasy hit an error",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }

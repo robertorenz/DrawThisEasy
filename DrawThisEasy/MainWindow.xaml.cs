@@ -9,13 +9,13 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Microsoft.Win32;
-using PictureThis.Controls;
-using PictureThis.Models;
-using PictureThis.Services;
-using PictureThis.Dialogs;
+using DrawThisEasy.Controls;
+using DrawThisEasy.Models;
+using DrawThisEasy.Services;
+using DrawThisEasy.Dialogs;
 using IOPath = System.IO.Path;
 
-namespace PictureThis;
+namespace DrawThisEasy;
 
 public partial class MainWindow : Window
 {
@@ -407,7 +407,7 @@ public partial class MainWindow : Window
     {
         var dlg = new OpenFileDialog
         {
-            Filter = "PictureThis JSON (*.ptd.json;*.json)|*.ptd.json;*.json|All files (*.*)|*.*",
+            Filter = "DrawThisEasy JSON (*.ptd.json;*.json)|*.ptd.json;*.json|All files (*.*)|*.*",
             Title = "Open diagram"
         };
         if (dlg.ShowDialog(this) == true)
@@ -428,7 +428,7 @@ public partial class MainWindow : Window
     {
         var dlg = new SaveFileDialog
         {
-            Filter = "PictureThis JSON (*.ptd.json)|*.ptd.json|JSON (*.json)|*.json",
+            Filter = "DrawThisEasy JSON (*.ptd.json)|*.ptd.json|JSON (*.json)|*.json",
             FileName = SanitizeFilename(Diagram.Model.Title) + ".ptd.json",
             Title = L10n.T("topbar.save")
         };
@@ -506,8 +506,8 @@ public partial class MainWindow : Window
     private void MnuCopy_Click(object sender, RoutedEventArgs e)      => Diagram.Copy();
     private void MnuPaste_Click(object sender, RoutedEventArgs e)     => Diagram.Paste();
     private void MnuSelectAll_Click(object sender, RoutedEventArgs e) => Diagram.SelectAll();
-    private void MnuLangEn_Click(object sender, RoutedEventArgs e)    => L10n.Current = PictureThis.Services.Language.En;
-    private void MnuLangEs_Click(object sender, RoutedEventArgs e)    => L10n.Current = PictureThis.Services.Language.Es;
+    private void MnuLangEn_Click(object sender, RoutedEventArgs e)    => L10n.Current = DrawThisEasy.Services.Language.En;
+    private void MnuLangEs_Click(object sender, RoutedEventArgs e)    => L10n.Current = DrawThisEasy.Services.Language.Es;
 
     // ===== Re-translate every string in the window =====
 
@@ -540,8 +540,8 @@ public partial class MainWindow : Window
         MnuLang.Header           = L10n.T("menu.lang");
         MnuLangEn.Header         = L10n.T("menu.lang.en");
         MnuLangEs.Header         = L10n.T("menu.lang.es");
-        MnuLangEn.IsChecked      = L10n.Current == PictureThis.Services.Language.En;
-        MnuLangEs.IsChecked      = L10n.Current == PictureThis.Services.Language.Es;
+        MnuLangEn.IsChecked      = L10n.Current == DrawThisEasy.Services.Language.En;
+        MnuLangEs.IsChecked      = L10n.Current == DrawThisEasy.Services.Language.Es;
 
         MnuHelp.Header           = L10n.T("menu.help");
         MnuHelpShortcuts.Header  = L10n.T("menu.help.shortcuts");

@@ -4,7 +4,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace PictureThis.Services;
+namespace DrawThisEasy.Services;
 
 public static class Exporter
 {

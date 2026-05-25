@@ -1,4 +1,4 @@
-# PictureThis
+# DrawThisEasy
 
 A fast, native Windows app for sketching **org charts, architecture diagrams, and system flows**. Built with WPF on .NET 9.
 
@@ -8,7 +8,7 @@ Designed for speed: pick a tool, click the canvas, type a label. Drag from any s
 
 ## Why it exists
 
-When you need to whiteboard *"how do the clients, load balancer, app servers, queue, and database fit together"*, you don't want to wrestle with Visio or wait for a web app to load. PictureThis opens instantly, ships as a single `.exe`, and stays out of your way.
+When you need to whiteboard *"how do the clients, load balancer, app servers, queue, and database fit together"*, you don't want to wrestle with Visio or wait for a web app to load. DrawThisEasy opens instantly, ships as a single `.exe`, and stays out of your way.
 
 ## Features
 
@@ -23,13 +23,13 @@ When you need to whiteboard *"how do the clients, load balancer, app servers, qu
 - **Inline label editing** — double-click any shape, type, `Enter` to commit.
 - **Pan & zoom** — `Space` + drag, right-click + drag, or just drag empty area. Mouse wheel zooms.
 - **Inspector panel** for fill / stroke colors and layer ordering.
-- **Copy / Cut / Paste** (`Ctrl+C` / `Ctrl+X` / `Ctrl+V`) via the system clipboard, with connection edges preserved. Works between two open PictureThis instances.
+- **Copy / Cut / Paste** (`Ctrl+C` / `Ctrl+X` / `Ctrl+V`) via the system clipboard, with connection edges preserved. Works between two open DrawThisEasy instances.
 - **Templates** — Org chart, Web architecture, Client-server, Microservices, Data pipeline, Blank.
 - **Undo / Redo** (`Ctrl+Z` / `Ctrl+Y`).
 - **Save / Load** as JSON; **Export** as PNG (2× resolution).
 - **Modal dialogs** instead of system message boxes — clean, on-brand prompts.
 - **Bilingual UI** — English / Español, switchable live (no restart) from the Language menu or one-click EN/ES toggle in the top bar.
-- **Global crash handler** writes a diagnostic log to `%LOCALAPPDATA%\PictureThis\picturethis-crash.log` and shows a dialog instead of silently exiting.
+- **Global crash handler** writes a diagnostic log to `%LOCALAPPDATA%\DrawThisEasy\DrawThisEasy-crash.log` and shows a dialog instead of silently exiting.
 - Professional palette: slate / sky / teal / amber. **No purple.**
 
 ## Keyboard shortcuts
@@ -59,22 +59,22 @@ When you need to whiteboard *"how do the clients, load balancer, app servers, qu
 Requires the .NET 9 SDK with the Windows Desktop workload on Windows 10/11.
 
 ```powershell
-dotnet build PictureThis/PictureThis.csproj
-dotnet run --project PictureThis/PictureThis.csproj
+dotnet build DrawThisEasy/DrawThisEasy.csproj
+dotnet run --project DrawThisEasy/DrawThisEasy.csproj
 ```
 
 To produce a single self-contained `.exe`:
 
 ```powershell
-dotnet publish PictureThis/PictureThis.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+dotnet publish DrawThisEasy/DrawThisEasy.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
 ```
 
-The output lands in `PictureThis/bin/Release/net9.0-windows/win-x64/publish/`.
+The output lands in `DrawThisEasy/bin/Release/net9.0-windows/win-x64/publish/`.
 
 ## Project layout
 
 ```
-PictureThis/
+DrawThisEasy/
 ├── App.xaml(.cs)                  — App shell, merged Theme.xaml, global crash handler
 ├── MainWindow.xaml(.cs)           — Top bar (menu + brand + zoom), tool strip, palette, status
 ├── Controls/

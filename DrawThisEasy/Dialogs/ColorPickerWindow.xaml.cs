@@ -4,9 +4,9 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using PictureThis.Services;
+using DrawThisEasy.Services;
 
-namespace PictureThis.Dialogs;
+namespace DrawThisEasy.Dialogs;
 
 public partial class ColorPickerWindow : Window
 {

@@ -7,10 +7,10 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using PictureThis.Models;
-using PictureThis.Services;
+using DrawThisEasy.Models;
+using DrawThisEasy.Services;
 
-namespace PictureThis.Controls;
+namespace DrawThisEasy.Controls;
 
 public class DiagramCanvas : Canvas
 {
@@ -56,7 +56,7 @@ public class DiagramCanvas : Canvas
     private readonly Stack<string> _redoStack = new();
 
     // ---- Clipboard ----
-    private const string ClipboardFormat = "PictureThis.Clipboard.v1";
+    private const string ClipboardFormat = "DrawThisEasy.Clipboard.v1";
     private Point _lastMouseWorld;
     private bool _hasMouseWorld;
 

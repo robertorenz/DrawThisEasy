@@ -3,9 +3,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using PictureThis.Models;
+using DrawThisEasy.Models;
 
-namespace PictureThis.Controls;
+namespace DrawThisEasy.Controls;
 
 /// Small 18x18-ish icons used in the palette and template previews.
 public static class ShapeIcons

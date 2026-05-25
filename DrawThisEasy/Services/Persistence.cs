@@ -1,8 +1,8 @@
 using System.IO;
 using System.Text.Json;
-using PictureThis.Models;
+using DrawThisEasy.Models;
 
-namespace PictureThis.Services;
+namespace DrawThisEasy.Services;
 
 public static class Persistence
 {

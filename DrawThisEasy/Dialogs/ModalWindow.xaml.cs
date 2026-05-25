@@ -2,7 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace PictureThis.Dialogs;
+namespace DrawThisEasy.Dialogs;
 
 public partial class ModalWindow : Window
 {
@@ -18,7 +18,7 @@ public partial class ModalWindow : Window
         var w = new ModalWindow { Owner = owner };
         w.TitleText.Text = title;
         w.BodyText.Text = body;
-        w.AddButton(PictureThis.Services.L10n.T("modal.ok"), primary: true, click: () => w.Close());
+        w.AddButton(DrawThisEasy.Services.L10n.T("modal.ok"), primary: true, click: () => w.Close());
         w.ShowDialog();
     }
 
@@ -27,7 +27,7 @@ public partial class ModalWindow : Window
         var w = new ModalWindow { Owner = owner };
         w.TitleText.Text = title;
         w.BodyText.Text = body;
-        w.AddButton(PictureThis.Services.L10n.T("modal.cancel"), primary: false, click: () => w.Close());
+        w.AddButton(DrawThisEasy.Services.L10n.T("modal.cancel"), primary: false, click: () => w.Close());
         w.AddButton(confirmLabel, primary: true, click: () =>
         {
             w.Close();

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace PictureThis.Models;
+namespace DrawThisEasy.Models;
 
 public enum ShapeKind
 {
