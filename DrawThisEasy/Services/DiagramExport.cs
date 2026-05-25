@@ -124,19 +124,38 @@ public static class DiagramExport
         var rnd = new Random();
         long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
+        // Track each shape's element so we can fill in boundElements (bound label + arrows) afterward.
+        var shapeEls = new Dictionary<string, Dictionary<string, object?>>();
+        var bound = new Dictionary<string, List<object>>();
+
         foreach (var s in m.Shapes)
         {
-            elements.Add(ExcalidrawShape(s, rnd, now));
+            var el = ExcalidrawShape(s, rnd, now);
+            shapeEls[s.Id] = el;
+            bound[s.Id] = new List<object>();
+            elements.Add(el);
+
             if (!string.IsNullOrWhiteSpace(s.Label))
-                elements.Add(ExcalidrawLabel(s, rnd, now));
+            {
+                var textId = s.Id + "_t";
+                elements.Add(ExcalidrawLabel(s, textId, rnd, now));   // containerId bound to the shape
+                bound[s.Id].Add(new Dictionary<string, object?> { ["id"] = textId, ["type"] = "text" });
+            }
         }
+
         foreach (var c in m.Connections)
         {
             var from = m.FindShape(c.FromId);
             var to = m.FindShape(c.ToId);
             if (from == null || to == null) continue;
-            elements.Add(ExcalidrawArrow(from, to, c, rnd, now));
+            elements.Add(ExcalidrawArrow(from, to, c, rnd, now));     // start/end bound to the shapes
+            if (bound.TryGetValue(c.FromId, out var bf)) bf.Add(new Dictionary<string, object?> { ["id"] = c.Id, ["type"] = "arrow" });
+            if (bound.TryGetValue(c.ToId, out var bt)) bt.Add(new Dictionary<string, object?> { ["id"] = c.Id, ["type"] = "arrow" });
         }
+
+        // Attach the accumulated bindings to each shape (null when it has none).
+        foreach (var (id, el) in shapeEls)
+            el["boundElements"] = bound[id].Count > 0 ? bound[id] : null;
 
         var doc = new Dictionary<string, object?>
         {
@@ -203,12 +222,12 @@ public static class DiagramExport
         return el;
     }
 
-    private static Dictionary<string, object?> ExcalidrawLabel(ShapeNode s, Random rnd, long now)
+    private static Dictionary<string, object?> ExcalidrawLabel(ShapeNode s, string textId, Random rnd, long now)
     {
         const double fontSize = 16;
         double w = Math.Max(20, s.Width - 16);
         double h = fontSize * 1.25;
-        var el = ExcalidrawBase(s.Id + "_t", "text", s.X + (s.Width - w) / 2, s.Y + (s.Height - h) / 2, w, h, rnd, now);
+        var el = ExcalidrawBase(textId, "text", s.X + (s.Width - w) / 2, s.Y + (s.Height - h) / 2, w, h, rnd, now);
         el["strokeColor"] = "#1e1e1e";
         el["text"] = s.Label;
         el["originalText"] = s.Label;
@@ -217,7 +236,7 @@ public static class DiagramExport
         el["textAlign"] = "center";
         el["verticalAlign"] = "middle";
         el["baseline"] = fontSize * 0.85;
-        el["containerId"] = null;
+        el["containerId"] = s.Id;      // bind the label to its shape so it moves/edits as one
         el["lineHeight"] = 1.25;
         return el;
     }
@@ -234,8 +253,8 @@ public static class DiagramExport
         if (c.Dashed) el["strokeStyle"] = "dashed";
         el["points"] = new List<double[]> { new[] { sx - minX, sy - minY }, new[] { ex - minX, ey - minY } };
         el["lastCommittedPoint"] = null;
-        el["startBinding"] = null;
-        el["endBinding"] = null;
+        el["startBinding"] = new Dictionary<string, object?> { ["elementId"] = from.Id, ["focus"] = 0.0, ["gap"] = 1.0 };
+        el["endBinding"]   = new Dictionary<string, object?> { ["elementId"] = to.Id,   ["focus"] = 0.0, ["gap"] = 1.0 };
         el["startArrowhead"] = null;
         el["endArrowhead"] = "arrow";
         return el;

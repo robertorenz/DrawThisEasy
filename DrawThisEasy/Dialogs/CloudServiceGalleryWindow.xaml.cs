@@ -14,15 +14,16 @@ public partial class CloudServiceGalleryWindow : Window
 {
     public StencilDef? SelectedStencil { get; private set; }
 
-    public CloudServiceGalleryWindow()
+    public CloudServiceGalleryWindow(string? onlyProvider = null)
     {
         InitializeComponent();
-        TitleText.Text    = L10n.T("cloud.title");
+        TitleText.Text    = onlyProvider ?? L10n.T("cloud.title");
         SubtitleText.Text = L10n.T("cloud.subtitle");
         BtnCancel.Content = L10n.T("templates.cancel");
 
         foreach (var provider in Stencils.Providers)
         {
+            if (onlyProvider != null && provider != onlyProvider) continue;
             ProvidersStack.Children.Add(BuildProviderHeader(provider));
             var grid = new UniformGrid { Columns = 5, Margin = new Thickness(0, 0, 0, 6) };
             foreach (var def in Stencils.ForProvider(provider))
