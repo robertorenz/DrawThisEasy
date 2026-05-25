@@ -98,4 +98,4 @@ PictureThis/
 
 ## License
 
-Personal project. Use freely; no warranty.
+[MIT](LICENSE) © Roberto Renz.
