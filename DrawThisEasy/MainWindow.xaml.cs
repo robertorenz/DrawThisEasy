@@ -27,9 +27,9 @@ public partial class MainWindow : Window
     private readonly Dictionary<TextBlock, string>    _toolLabelTb  = new(); // palette TextBlock -> label key
     private readonly List<(TextBlock TextBlock, string Key)> _groupLabels = new();
     private TextBlock? _paletteHint;
-    // Toolbar action buttons that open the Templates / Cloud galleries (re-translated live).
-    private Button? _tmplStripBtn, _cloudStripBtn;
-    private TextBlock? _tmplStripLabel, _cloudStripLabel;
+    // Toolbar Templates button (re-translated live); cloud providers use proper-noun labels.
+    private Button? _tmplStripBtn;
+    private TextBlock? _tmplStripLabel;
 
     public MainWindow()
     {
@@ -155,7 +155,7 @@ public partial class MainWindow : Window
             Content = content,
             ToolTip = L10n.T("topbar.cloud.tip")
         };
-        btn.Click += (s, e) => OpenCloudGallery(provider);
+        btn.Click += (s, e) => ShowCloudFlyout((UIElement)s!, provider, PlacementMode.Right);
         PaletteStack.Children.Add(btn);
     }
 
@@ -220,20 +220,33 @@ public partial class MainWindow : Window
             if (g < groups.Length - 1) ToolStrip.Children.Add(BuildStripSeparator());
         }
 
-        // Labeled action buttons that open the Templates and Cloud Services galleries.
+        // Labeled Templates button, then a per-provider cloud button (each opens a service flyout).
         ToolStrip.Children.Add(BuildStripSeparator());
-        var (tBtn, tLbl) = MakeStripAction(BuildTemplatesIcon(), L10n.T("topbar.templates"), "topbar.templates.tip",
+        var (tBtn, tLbl) = MakeStripAction(BuildTemplatesIcon(), L10n.T("topbar.templates"), L10n.T("topbar.templates.tip"),
             (s, e) => BtnTemplates_Click(s, e));
         _tmplStripBtn = tBtn; _tmplStripLabel = tLbl;
         ToolStrip.Children.Add(tBtn);
 
-        var (cBtn, cLbl) = MakeStripAction(BuildCloudIcon(), L10n.T("topbar.cloud"), "topbar.cloud.tip",
-            (s, e) => OpenCloudGallery());
-        _cloudStripBtn = cBtn; _cloudStripLabel = cLbl;
-        ToolStrip.Children.Add(cBtn);
+        ToolStrip.Children.Add(BuildStripSeparator());
+        ToolStrip.Children.Add(BuildProviderStripButton("AWS",    Stencils.Aws,   Stencils.AwsColor));
+        ToolStrip.Children.Add(BuildProviderStripButton("Azure",  Stencils.Azure, Stencils.AzureColor));
+        ToolStrip.Children.Add(BuildProviderStripButton("Google", Stencils.Gcp,   Stencils.GcpColor));
     }
 
-    private (Button Button, TextBlock Label) MakeStripAction(UIElement icon, string label, string tipKey, RoutedEventHandler onClick)
+    private Button BuildProviderStripButton(string label, string provider, string colorHex)
+    {
+        var chip = new Border
+        {
+            Width = 14, Height = 14, CornerRadius = new CornerRadius(4),
+            Background = (Brush)new BrushConverter().ConvertFromString(colorHex)!,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        var (btn, _) = MakeStripAction(chip, label, provider,
+            (s, e) => ShowCloudFlyout((UIElement)s!, provider, PlacementMode.Bottom));
+        return btn;
+    }
+
+    private (Button Button, TextBlock Label) MakeStripAction(UIElement icon, string label, string tooltip, RoutedEventHandler onClick)
     {
         var lbl = new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center, FontSize = 13 };
         var content = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
@@ -243,7 +256,7 @@ public partial class MainWindow : Window
         {
             Style = (Style)FindResource("IconButton"),
             Content = content,
-            ToolTip = L10n.T(tipKey),
+            ToolTip = tooltip,
             Padding = new Thickness(10, 0, 10, 0),
             Margin = new Thickness(1, 0, 1, 0)
         };
@@ -261,24 +274,6 @@ public partial class MainWindow : Window
             Canvas.SetLeft(r, x); Canvas.SetTop(r, y); c.Children.Add(r);
         }
         Sq(1, 1); Sq(10, 1); Sq(1, 10); Sq(10, 10);
-        return c;
-    }
-
-    private UIElement BuildCloudIcon()
-    {
-        var brush = (Brush)FindResource("TextMutedBrush");
-        double sx = 18 / 100.0, sy = 12 / 60.0;
-        Point P(double x, double y) => new Point(x * sx, y * sy + 3);
-        var fig = new PathFigure { StartPoint = P(20, 55), IsClosed = true, IsFilled = true };
-        fig.Segments.Add(new BezierSegment(P(5, 55),   P(0, 40),  P(12, 32), true));
-        fig.Segments.Add(new BezierSegment(P(5, 18),   P(22, 12), P(32, 20), true));
-        fig.Segments.Add(new BezierSegment(P(35, 5),   P(60, 3),  P(68, 18), true));
-        fig.Segments.Add(new BezierSegment(P(82, 10),  P(96, 22), P(88, 36), true));
-        fig.Segments.Add(new BezierSegment(P(100, 42), P(92, 58), P(78, 55), true));
-        fig.Segments.Add(new BezierSegment(P(70, 62),  P(30, 62), P(20, 55), true));
-        var geom = new PathGeometry(); geom.Figures.Add(fig);
-        var c = new Canvas { Width = 18, Height = 18 };
-        c.Children.Add(new System.Windows.Shapes.Path { Fill = brush, Data = geom });
         return c;
     }
 
@@ -705,6 +700,83 @@ public partial class MainWindow : Window
             Diagram.AddServiceTile(def.Id, def.Name, def.Color);
     }
 
+    // ===== Cloud service flyout (sidebar + toolbar provider buttons) =====
+
+    private Popup? _cloudFlyout;
+
+    private void ShowCloudFlyout(UIElement target, string provider, PlacementMode placement)
+    {
+        CloseCloudFlyout();
+
+        var list = new StackPanel();
+        foreach (var def in Stencils.ForProvider(provider))
+            list.Children.Add(CloudFlyoutRow(def));
+
+        var card = new Border
+        {
+            Background = Brushes.White,
+            CornerRadius = new CornerRadius(10),
+            BorderBrush = (Brush)FindResource("BorderBrush"),
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(6),
+            Child = new ScrollViewer { Content = list, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = 460 },
+            Effect = new System.Windows.Media.Effects.DropShadowEffect
+            {
+                Color = (Color)ColorConverter.ConvertFromString("#0F172A"),
+                Opacity = 0.28, BlurRadius = 28, ShadowDepth = 5
+            }
+        };
+
+        _cloudFlyout = new Popup
+        {
+            Child = card,
+            StaysOpen = false,
+            AllowsTransparency = true,
+            PopupAnimation = PopupAnimation.Fade,
+            Placement = placement,
+            PlacementTarget = target
+        };
+        _cloudFlyout.IsOpen = true;
+    }
+
+    private void CloseCloudFlyout()
+    {
+        if (_cloudFlyout != null) { _cloudFlyout.IsOpen = false; _cloudFlyout = null; }
+    }
+
+    private UIElement CloudFlyoutRow(StencilDef def)
+    {
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Width = 210 };
+        row.Children.Add(new Border
+        {
+            Child = ShapeFactory.BuildServiceBadge(def.Id, 22, (Brush)new BrushConverter().ConvertFromString(def.Color)!),
+            Width = 22, Height = 22, Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center
+        });
+        row.Children.Add(new TextBlock
+        {
+            Text = def.Name, VerticalAlignment = VerticalAlignment.Center,
+            FontSize = 13, Foreground = (Brush)FindResource("TextBrush")
+        });
+
+        var b = new Border
+        {
+            Child = row,
+            Padding = new Thickness(8, 6, 12, 6),
+            CornerRadius = new CornerRadius(6),
+            Background = Brushes.Transparent,
+            Cursor = Cursors.Hand
+        };
+        var hover = (Brush)new BrushConverter().ConvertFromString("#FFF1F5F9")!;
+        b.MouseEnter += (s, e) => b.Background = hover;
+        b.MouseLeave += (s, e) => b.Background = Brushes.Transparent;
+        b.MouseLeftButtonUp += (s, e) =>
+        {
+            CloseCloudFlyout();
+            Diagram.AddServiceTile(def.Id, def.Name, def.Color);
+        };
+        return b;
+    }
+
     private void BtnOpen_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new OpenFileDialog
@@ -910,11 +982,9 @@ public partial class MainWindow : Window
         BtnLang.ToolTip = L10n.T("topbar.lang.tip");
         BtnHelp.ToolTip = L10n.T("topbar.help.tip");
 
-        // Toolbar action buttons (Templates + Cloud galleries)
+        // Toolbar Templates button (cloud-provider buttons use proper-noun labels)
         if (_tmplStripLabel != null) _tmplStripLabel.Text = L10n.T("topbar.templates");
-        if (_cloudStripLabel != null) _cloudStripLabel.Text = L10n.T("topbar.cloud");
         if (_tmplStripBtn != null) _tmplStripBtn.ToolTip = L10n.T("topbar.templates.tip");
-        if (_cloudStripBtn != null) _cloudStripBtn.ToolTip = L10n.T("topbar.cloud.tip");
 
         // Palette group labels
         foreach (var (tb, key) in _groupLabels)
