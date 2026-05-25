@@ -245,7 +245,7 @@
     <Setter Property="BorderThickness" Value="0"/>
   </Style>
 
-  <!-- Top-level menu header (File, Edit, …) -->
+  <!-- Top-level menu header (File, Edit, …). The Popup hosts the dropdown items. -->
   <Style x:Key="TopMenuItem" TargetType="MenuItem">
     <Setter Property="Padding" Value="10,6"/>
     <Setter Property="Background" Value="Transparent"/>
@@ -253,13 +253,34 @@
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="MenuItem">
-          <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
-            <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" VerticalAlignment="Center"/>
-            <Border.Resources>
-              <Style TargetType="Popup">
-                <Setter Property="AllowsTransparency" Value="True"/>
-              </Style>
-            </Border.Resources>
+          <Border x:Name="bd"
+                  Background="{TemplateBinding Background}"
+                  CornerRadius="6"
+                  Padding="{TemplateBinding Padding}">
+            <Grid>
+              <ContentPresenter ContentSource="Header"
+                                RecognizesAccessKey="True"
+                                VerticalAlignment="Center"/>
+              <Popup x:Name="PART_Popup"
+                     Placement="Bottom"
+                     IsOpen="{TemplateBinding IsSubmenuOpen}"
+                     AllowsTransparency="True"
+                     Focusable="False"
+                     PopupAnimation="Fade">
+                <Border Background="White"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="4"
+                        MinWidth="200"
+                        Margin="0,4,12,12">
+                  <Border.Effect>
+                    <DropShadowEffect Color="#0F172A" Opacity="0.18" BlurRadius="16" ShadowDepth="3"/>
+                  </Border.Effect>
+                  <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                </Border>
+              </Popup>
+            </Grid>
           </Border>
           <ControlTemplate.Triggers>
             <Trigger Property="IsHighlighted" Value="True">
