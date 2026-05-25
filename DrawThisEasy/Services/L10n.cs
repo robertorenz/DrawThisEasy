@@ -302,6 +302,7 @@ public static class L10n
             ["manual.shapes.h"]  = "Adding shapes",
             ["manual.shapes.p"]  = "Click a shape tool in the palette or top strip (or press its keyboard shortcut), then click the canvas to drop the shape where you clicked. After adding a shape the tool returns to Select automatically, so you can immediately move or edit it.",
             ["manual.shapes.p2"] = "Flow shapes include Process, Component, Start / End, Decision, Hexagon and Data. Infrastructure shapes include Database, Cloud, Server, User, Queue, sticky Note and plain Text.",
+            ["manual.shapes.p3"] = "You can also insert raster images (the toolbar Image button, the palette, or Edit ▸ Insert Image), and drop in cloud-provider service objects from the AWS / Azure / Google buttons in the toolbar and palette.",
 
             ["manual.connect.h"]  = "Connecting shapes",
             ["manual.connect.p"]  = "Switch to the Connector tool (press L), then drag from one shape to another. The connector snaps to the edge of each shape and automatically reroutes whenever you move either shape.",
@@ -332,8 +333,10 @@ public static class L10n
             ["manual.templates.p"] = "Start fast from a ready-made template — Org chart, Web architecture, Client-server, Microservices, Data pipeline, or a blank canvas. Open Templates from the toolbar or the File menu; everything stays fully editable afterwards.",
 
             ["manual.files.h"]        = "Saving, opening and exporting",
-            ["manual.files.b.save"]   = "Save and Open store diagrams as .ptd.json files you can reopen later.",
-            ["manual.files.b.export"] = "Export PNG writes a crisp 2× resolution image of your diagram.",
+            ["manual.files.b.save"]   = "Save and Open store diagrams as .ptd.json files you can reopen later; Open also takes several files at once.",
+            ["manual.files.b.recent"] = "Open Recent (File menu) lists your last five files for one-click reopening.",
+            ["manual.files.b.export"] = "Export PNG writes a crisp 2× resolution image; Export to Excalidraw, draw.io, or Mermaid sends your diagram to other tools.",
+            ["manual.files.b.import"] = "Open or import .excalidraw scenes (shapes, labels, images, and arrows come across).",
             ["manual.files.b.new"]    = "New (Ctrl+N, or the + tab) opens another diagram in its own tab; switch between open diagrams along the top.",
 
             ["manual.editing.h"] = "Copy, paste and undo",
@@ -608,6 +611,7 @@ public static class L10n
             ["manual.shapes.h"]  = "Agregar formas",
             ["manual.shapes.p"]  = "Haz clic en una herramienta de forma en la paleta o en la barra superior (o pulsa su atajo de teclado) y luego haz clic en el lienzo para colocar la forma donde hiciste clic. Después de agregar una forma, la herramienta vuelve a Seleccionar automáticamente para que puedas moverla o editarla enseguida.",
             ["manual.shapes.p2"] = "Las formas de flujo incluyen Proceso, Componente, Inicio / Fin, Decisión, Hexágono y Datos. Las de infraestructura incluyen Base de datos, Nube, Servidor, Usuario, Cola, Nota adhesiva y Texto simple.",
+            ["manual.shapes.p3"] = "También puedes insertar imágenes (el botón Imagen de la barra, la paleta, o Edición ▸ Insertar imagen) y agregar objetos de servicios en la nube con los botones AWS / Azure / Google de la barra y la paleta.",
 
             ["manual.connect.h"]  = "Conectar formas",
             ["manual.connect.p"]  = "Cambia a la herramienta Conector (pulsa L) y arrastra de una forma a otra. El conector se ajusta al borde de cada forma y se redibuja automáticamente cada vez que mueves cualquiera de ellas.",
@@ -638,8 +642,10 @@ public static class L10n
             ["manual.templates.p"] = "Empieza rápido con una plantilla lista: Organigrama, Arquitectura web, Cliente-servidor, Microservicios, Tubería de datos o un lienzo en blanco. Abre Plantillas desde la barra de herramientas o el menú Archivo; después puedes editarlo todo.",
 
             ["manual.files.h"]        = "Guardar, abrir y exportar",
-            ["manual.files.b.save"]   = "Guardar y Abrir almacenan los diagramas como archivos .ptd.json que puedes reabrir después.",
-            ["manual.files.b.export"] = "Exportar PNG genera una imagen nítida de tu diagrama al doble de resolución (2×).",
+            ["manual.files.b.save"]   = "Guardar y Abrir almacenan los diagramas como archivos .ptd.json que puedes reabrir después; Abrir también acepta varios archivos a la vez.",
+            ["manual.files.b.recent"] = "Abrir recientes (menú Archivo) muestra tus últimos cinco archivos para reabrirlos con un clic.",
+            ["manual.files.b.export"] = "Exportar PNG genera una imagen nítida al doble de resolución (2×); Exportar a Excalidraw, draw.io o Mermaid envía tu diagrama a otras herramientas.",
+            ["manual.files.b.import"] = "Abre o importa escenas .excalidraw (formas, etiquetas, imágenes y flechas se conservan).",
             ["manual.files.b.new"]    = "Nuevo (Ctrl+N, o la pestaña +) abre otro diagrama en su propia pestaña; cambia entre los diagramas abiertos en la parte superior.",
 
             ["manual.editing.h"] = "Copiar, pegar y deshacer",
