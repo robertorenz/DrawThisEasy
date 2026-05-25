@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using Microsoft.Win32;
 using DrawThisEasy.Controls;
@@ -993,6 +994,53 @@ public partial class MainWindow : Window
             ModalWindow.Info(this, L10n.T("modal.openfail.title"), string.Join("\n", errors));
     }
 
+    private void BtnInsertImage_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new OpenFileDialog
+        {
+            Filter = "Images (*.png;*.jpg;*.jpeg;*.gif;*.bmp)|*.png;*.jpg;*.jpeg;*.gif;*.bmp|All files (*.*)|*.*",
+            Title = L10n.T("menu.edit.insertimage")
+        };
+        if (dlg.ShowDialog(this) != true) return;
+        try
+        {
+            var bytes = File.ReadAllBytes(dlg.FileName);
+            var ext = IOPath.GetExtension(dlg.FileName).TrimStart('.').ToLowerInvariant();
+            var mime = ext switch
+            {
+                "jpg" or "jpeg" => "image/jpeg",
+                "gif" => "image/gif",
+                "bmp" => "image/bmp",
+                _ => "image/png"
+            };
+            var dataUrl = $"data:{mime};base64,{Convert.ToBase64String(bytes)}";
+
+            // Use the image's pixel size, scaled down to a sensible default.
+            double w = 200, h = 150;
+            try
+            {
+                var bmp = new BitmapImage();
+                using (var ms = new MemoryStream(bytes))
+                {
+                    bmp.BeginInit(); bmp.CacheOption = BitmapCacheOption.OnLoad; bmp.StreamSource = ms; bmp.EndInit();
+                }
+                if (bmp.PixelWidth > 0 && bmp.PixelHeight > 0)
+                {
+                    double scale = Math.Min(1.0, 320.0 / Math.Max(bmp.PixelWidth, bmp.PixelHeight));
+                    w = Math.Max(24, bmp.PixelWidth * scale);
+                    h = Math.Max(24, bmp.PixelHeight * scale);
+                }
+            }
+            catch { /* keep the default size */ }
+
+            Diagram.AddImage(dataUrl, w, h);
+        }
+        catch (Exception ex)
+        {
+            ModalWindow.Info(this, L10n.T("modal.openfail.title"), ex.Message);
+        }
+    }
+
     private void BtnSave_Click(object sender, RoutedEventArgs e) => SaveDiagram();
 
     /// Runs the Save dialog. Returns true only if the diagram was written to disk.
@@ -1152,6 +1200,7 @@ public partial class MainWindow : Window
         MnuEditDup.Header        = L10n.T("menu.edit.duplicate");
         MnuEditDelete.Header     = L10n.T("menu.edit.delete");
         MnuEditSelectAll.Header  = L10n.T("menu.edit.selectall");
+        MnuEditInsertImage.Header = L10n.T("menu.edit.insertimage");
 
         MnuView.Header           = L10n.T("menu.view");
         MnuViewZoomIn.Header     = L10n.T("menu.view.zoomin");
@@ -1294,7 +1343,7 @@ public partial class MainWindow : Window
             var c = new ShapeNode
             {
                 Kind = s.Kind, X = s.X, Y = s.Y, Width = s.Width, Height = s.Height,
-                Label = s.Label, Fill = s.Fill, Stroke = s.Stroke, Stencil = s.Stencil, ZIndex = s.ZIndex
+                Label = s.Label, Fill = s.Fill, Stroke = s.Stroke, Stencil = s.Stencil, Image = s.Image, ZIndex = s.ZIndex
             };
             idMap[s.Id] = c.Id;
             clone.Shapes.Add(c);

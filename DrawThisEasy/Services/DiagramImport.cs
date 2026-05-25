@@ -22,6 +22,15 @@ public static class DiagramImport
         var arrows = new List<ArrowRef>();
         int z = 1;
 
+        // Image bytes live in a separate "files" map keyed by fileId.
+        var files = new Dictionary<string, string>();
+        if (doc.RootElement.TryGetProperty("files", out var filesEl) && filesEl.ValueKind == JsonValueKind.Object)
+            foreach (var f in filesEl.EnumerateObject())
+            {
+                var url = GetStr(f.Value, "dataURL");
+                if (!string.IsNullOrEmpty(url)) files[f.Name] = url!;
+            }
+
         foreach (var e in els.EnumerateArray())
         {
             if (GetBool(e, "isDeleted")) continue;
@@ -82,6 +91,24 @@ public static class DiagramImport
                         sx, sy, ex, ey,
                         SanitizeColor(GetStr(e, "strokeColor")) ?? "#334155",
                         GetStr(e, "strokeStyle") == "dashed"));
+                    break;
+                }
+                case "image":
+                {
+                    var fileId = GetStr(e, "fileId");
+                    var node = new ShapeNode
+                    {
+                        Kind = ShapeKind.Image,
+                        Image = fileId != null && files.TryGetValue(fileId, out var url) ? url : null,
+                        X = GetD(e, "x"), Y = GetD(e, "y"),
+                        Width = Math.Max(10, GetD(e, "width")),
+                        Height = Math.Max(10, GetD(e, "height")),
+                        Label = "",
+                        ZIndex = z++
+                    };
+                    var id = GetStr(e, "id");
+                    if (id != null) idMap[id] = node;
+                    model.Shapes.Add(node);
                     break;
                 }
             }

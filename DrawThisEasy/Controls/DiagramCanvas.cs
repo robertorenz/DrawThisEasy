@@ -230,6 +230,28 @@ public class DiagramCanvas : Canvas
         return node;
     }
 
+    /// Drops an image (data URL) at the current viewport center, at the given size.
+    public ShapeNode AddImage(string dataUrl, double w, double h)
+    {
+        Snapshot();
+        var center = (ActualWidth > 0 && ActualHeight > 0)
+            ? ScreenToWorld(new Point(ActualWidth / 2, ActualHeight / 2))
+            : new Point(0, 0);
+        var node = new ShapeNode
+        {
+            Kind = ShapeKind.Image,
+            Image = dataUrl,
+            X = center.X - w / 2, Y = center.Y - h / 2,
+            Width = w, Height = h,
+            Label = "",
+            ZIndex = _nextZ++
+        };
+        _model.Shapes.Add(node);
+        AddShapeVisual(node);
+        SelectOnly(node.Id);
+        return node;
+    }
+
     private static (double, double) DefaultSize(ShapeKind k) => k switch
     {
         ShapeKind.Ellipse       => (140, 70),
@@ -243,6 +265,7 @@ public class DiagramCanvas : Canvas
         ShapeKind.Note          => (130, 100),
         ShapeKind.Text          => (120, 30),
         ShapeKind.ServiceTile   => (120, 96),
+        ShapeKind.Image         => (160, 120),
         _                       => (140, 70)
     };
 
@@ -914,6 +937,7 @@ public class DiagramCanvas : Canvas
                 Width = s.Width, Height = s.Height,
                 Label = s.Label, Fill = s.Fill, Stroke = s.Stroke,
                 Stencil = s.Stencil,
+                Image = s.Image,
                 ZIndex = _nextZ++
             };
             _model.Shapes.Add(copy);
@@ -945,6 +969,7 @@ public class DiagramCanvas : Canvas
                 X = s.X, Y = s.Y, Width = s.Width, Height = s.Height,
                 Label = s.Label, Fill = s.Fill, Stroke = s.Stroke,
                 Stencil = s.Stencil,
+                Image = s.Image,
                 ZIndex = s.ZIndex
             });
         }
@@ -1032,6 +1057,7 @@ public class DiagramCanvas : Canvas
                 Width = s.Width, Height = s.Height,
                 Label = s.Label, Fill = s.Fill, Stroke = s.Stroke,
                 Stencil = s.Stencil,
+                Image = s.Image,
                 ZIndex = _nextZ++
             };
             idMap[s.Id] = copy.Id;
@@ -1358,7 +1384,7 @@ public class ShapeVisual
 
         var fill = (Brush)new BrushConverter().ConvertFromString(Node.Fill)!;
         var stroke = (Brush)new BrushConverter().ConvertFromString(Node.Stroke)!;
-        var (body, styled) = ShapeFactory.BuildBody(Node.Kind, Node.Width, Node.Height, fill, stroke, Node.Stencil);
+        var (body, styled) = ShapeFactory.BuildBody(Node.Kind, Node.Width, Node.Height, fill, stroke, Node.Stencil, Node.Image);
         _body = body;
         _styledParts = styled;
         Element.Children.Add(body);

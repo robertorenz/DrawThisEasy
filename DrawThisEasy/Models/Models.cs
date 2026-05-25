@@ -19,7 +19,8 @@ public enum ShapeKind
     Queue,
     Note,
     Text,
-    ServiceTile   // cloud-provider service object; see Stencil + Services/Stencils.cs
+    ServiceTile,  // cloud-provider service object; see Stencil + Services/Stencils.cs
+    Image         // raster image; bytes held in ShapeNode.Image as a data URL
 }
 
 public enum ToolMode
@@ -78,6 +79,9 @@ public class ShapeNode
 
     /// For ShapeKind.ServiceTile: the cloud-service stencil id (e.g. "aws-lambda"). Null otherwise.
     public string? Stencil { get; set; }
+
+    /// For ShapeKind.Image: the image as a data URL ("data:image/png;base64,..."). Null otherwise.
+    public string? Image { get; set; }
 
     [JsonIgnore]
     public double CenterX => X + Width / 2.0;

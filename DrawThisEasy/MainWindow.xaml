@@ -55,6 +55,8 @@
             <MenuItem x:Name="MnuEditDelete"    Header="De_lete"    InputGestureText="Del"    Click="BtnDel_Click"/>
             <Separator/>
             <MenuItem x:Name="MnuEditSelectAll" Header="Select _All" InputGestureText="Ctrl+A" Click="MnuSelectAll_Click"/>
+            <Separator/>
+            <MenuItem x:Name="MnuEditInsertImage" Header="Insert _Image..." Click="BtnInsertImage_Click"/>
           </MenuItem>
           <MenuItem x:Name="MnuView" Header="_View" Style="{StaticResource TopMenuItem}">
             <MenuItem x:Name="MnuViewZoomIn"    Header="Zoom _In"      Click="BtnZoomIn_Click"/>

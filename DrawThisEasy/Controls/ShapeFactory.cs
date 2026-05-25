@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using DrawThisEasy.Models;
 using DrawThisEasy.Services;
@@ -14,12 +15,13 @@ public static class ShapeFactory
     public const double StrokeThickness = 1.6;
 
     /// Renders the shape body into the supplied panel. Returns a list of shapes whose Fill/Stroke should be updated when colors change.
-    public static (UIElement Container, System.Windows.Shapes.Shape[] StyledParts) BuildBody(ShapeKind kind, double w, double h, Brush fill, Brush stroke, string? stencil = null)
+    public static (UIElement Container, System.Windows.Shapes.Shape[] StyledParts) BuildBody(ShapeKind kind, double w, double h, Brush fill, Brush stroke, string? stencil = null, string? image = null)
     {
         var canvas = new Canvas { Width = w, Height = h, IsHitTestVisible = true, Background = Brushes.Transparent };
 
         return kind switch
         {
+            ShapeKind.Image         => BuildImage(canvas, w, h, image),
             ShapeKind.ServiceTile   => BuildServiceTile(canvas, w, h, fill, stroke, stencil),
             ShapeKind.Rectangle     => BuildRect(canvas, w, h, fill, stroke, 0),
             ShapeKind.Rounded       => BuildRect(canvas, w, h, fill, stroke, 10),
@@ -266,6 +268,43 @@ public static class ShapeFactory
         };
         c.Children.Add(hit);
         return (c, new System.Windows.Shapes.Shape[] { hit });
+    }
+
+    private static (UIElement, System.Windows.Shapes.Shape[]) BuildImage(Canvas c, double w, double h, string? dataUrl)
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(dataUrl))
+            {
+                var comma = dataUrl.IndexOf(',');
+                var b64 = comma >= 0 ? dataUrl.Substring(comma + 1) : dataUrl;
+                var bytes = Convert.FromBase64String(b64);
+                var bmp = new BitmapImage();
+                using (var ms = new System.IO.MemoryStream(bytes))
+                {
+                    bmp.BeginInit();
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;
+                    bmp.StreamSource = ms;
+                    bmp.EndInit();
+                }
+                bmp.Freeze();
+                c.Children.Add(new Image { Source = bmp, Width = w, Height = h, Stretch = Stretch.Fill });
+                return (c, Array.Empty<System.Windows.Shapes.Shape>());
+            }
+        }
+        catch { /* fall through to a placeholder */ }
+
+        // Missing or undecodable image: dashed placeholder box.
+        var rect = new System.Windows.Shapes.Rectangle
+        {
+            Width = w, Height = h,
+            Fill = (Brush)new BrushConverter().ConvertFromString("#F1F5F9")!,
+            Stroke = (Brush)new BrushConverter().ConvertFromString("#CBD5E1")!,
+            StrokeThickness = StrokeThickness,
+            StrokeDashArray = new DoubleCollection(new[] { 4.0, 3.0 })
+        };
+        c.Children.Add(rect);
+        return (c, new System.Windows.Shapes.Shape[] { rect });
     }
 
     private static (UIElement, System.Windows.Shapes.Shape[]) BuildServiceTile(Canvas c, double w, double h, Brush fill, Brush stroke, string? stencil)
