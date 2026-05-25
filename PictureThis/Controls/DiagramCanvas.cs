@@ -55,6 +55,11 @@ public class DiagramCanvas : Canvas
     private readonly Stack<string> _undoStack = new();
     private readonly Stack<string> _redoStack = new();
 
+    // ---- Clipboard ----
+    private const string ClipboardFormat = "PictureThis.Clipboard.v1";
+    private Point _lastMouseWorld;
+    private bool _hasMouseWorld;
+
     // ---- Events ----
     public event EventHandler? SelectionChanged;
     public event EventHandler<ToolMode>? ToolChanged;
@@ -562,6 +567,8 @@ public class DiagramCanvas : Canvas
     {
         var screen = e.GetPosition(this);
         var world = ScreenToWorld(screen);
+        _lastMouseWorld = world;
+        _hasMouseWorld = true;
 
         if (_drag == DragMode.Pan)
         {
@@ -669,7 +676,8 @@ public class DiagramCanvas : Canvas
             if (_dragLine != null) _overlayLayer.Children.Remove(_dragLine);
             _dragLine = null;
             _connectFromId = null;
-            CurrentTool = ToolMode.Select;
+            // Stay in connector mode so several shapes can be linked back-to-back.
+            // Press Esc (or V) to leave.
         }
 
         if (_drag == DragMode.Marquee && _marqueeRect != null)
@@ -726,6 +734,9 @@ public class DiagramCanvas : Canvas
             if (e.Key == Key.Y) { Redo(); e.Handled = true; return; }
             if (e.Key == Key.D) { DuplicateSelection(); e.Handled = true; return; }
             if (e.Key == Key.A) { SelectAll(); e.Handled = true; return; }
+            if (e.Key == Key.C) { Copy();  e.Handled = true; return; }
+            if (e.Key == Key.X) { Cut();   e.Handled = true; return; }
+            if (e.Key == Key.V) { Paste(); e.Handled = true; return; }
             return;
         }
 
@@ -817,6 +828,137 @@ public class DiagramCanvas : Canvas
             newIds.Add(copy.Id);
         }
         _selected.Clear();
+        foreach (var id in newIds) _selected.Add(id);
+        ApplySelectionStyles();
+        RebuildOverlay();
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    // ---------- Clipboard ----------
+
+    public void Copy()
+    {
+        if (_selected.Count == 0) return;
+
+        var snippet = new DiagramModel { Title = "clipboard" };
+        foreach (var id in _selected)
+        {
+            var s = _model.FindShape(id);
+            if (s == null) continue;
+            // Keep original ids so connections can reference them inside the snippet
+            snippet.Shapes.Add(new ShapeNode
+            {
+                Id = s.Id, Kind = s.Kind,
+                X = s.X, Y = s.Y, Width = s.Width, Height = s.Height,
+                Label = s.Label, Fill = s.Fill, Stroke = s.Stroke,
+                ZIndex = s.ZIndex
+            });
+        }
+        // Include connections whose endpoints are both in the selection
+        foreach (var c in _model.Connections)
+        {
+            if (_selected.Contains(c.FromId) && _selected.Contains(c.ToId))
+                snippet.Connections.Add(new Connection
+                {
+                    FromId = c.FromId, ToId = c.ToId,
+                    Label = c.Label, Stroke = c.Stroke, Dashed = c.Dashed
+                });
+        }
+
+        try
+        {
+            var json = Persistence.ToJson(snippet);
+            var data = new System.Windows.DataObject();
+            data.SetData(ClipboardFormat, json);
+            data.SetData(System.Windows.DataFormats.UnicodeText, json);
+            System.Windows.Clipboard.SetDataObject(data, copy: true);
+        }
+        catch (Exception) { /* the clipboard is sometimes briefly unavailable — never crash */ }
+    }
+
+    public void Cut()
+    {
+        if (_selected.Count == 0) return;
+        Copy();
+        DeleteSelection();
+    }
+
+    public void Paste()
+    {
+        string? json = null;
+        try
+        {
+            if (System.Windows.Clipboard.ContainsData(ClipboardFormat))
+                json = System.Windows.Clipboard.GetData(ClipboardFormat) as string;
+        }
+        catch (Exception) { return; }
+
+        if (string.IsNullOrWhiteSpace(json)) return;
+
+        DiagramModel? snippet;
+        try
+        {
+            snippet = JsonSerializer.Deserialize<DiagramModel>(json,
+                new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+        }
+        catch { return; }
+
+        if (snippet == null || snippet.Shapes.Count == 0) return;
+
+        Snapshot();
+
+        // Compute snippet's bounding-box centroid
+        var minX = snippet.Shapes.Min(s => s.X);
+        var minY = snippet.Shapes.Min(s => s.Y);
+        var maxX = snippet.Shapes.Max(s => s.X + s.Width);
+        var maxY = snippet.Shapes.Max(s => s.Y + s.Height);
+        var cx = (minX + maxX) / 2.0;
+        var cy = (minY + maxY) / 2.0;
+
+        // Target paste center: cursor if it's over the canvas, otherwise viewport center.
+        Point target;
+        if (IsMouseOver && _hasMouseWorld)
+            target = _lastMouseWorld;
+        else if (ActualWidth > 0 && ActualHeight > 0)
+            target = ScreenToWorld(new Point(ActualWidth / 2, ActualHeight / 2));
+        else
+            target = new Point(cx + 24, cy + 24);
+
+        var dx = target.X - cx;
+        var dy = target.Y - cy;
+
+        var idMap = new Dictionary<string, string>();
+        var newIds = new List<string>();
+        foreach (var s in snippet.Shapes)
+        {
+            var copy = new ShapeNode
+            {
+                Kind = s.Kind,
+                X = s.X + dx, Y = s.Y + dy,
+                Width = s.Width, Height = s.Height,
+                Label = s.Label, Fill = s.Fill, Stroke = s.Stroke,
+                ZIndex = _nextZ++
+            };
+            idMap[s.Id] = copy.Id;
+            _model.Shapes.Add(copy);
+            AddShapeVisual(copy);
+            newIds.Add(copy.Id);
+        }
+        foreach (var c in snippet.Connections)
+        {
+            if (!idMap.TryGetValue(c.FromId, out var fromId) ||
+                !idMap.TryGetValue(c.ToId,   out var toId)) continue;
+            var conn = new Connection
+            {
+                FromId = fromId, ToId = toId,
+                Label = c.Label, Stroke = c.Stroke, Dashed = c.Dashed
+            };
+            _model.Connections.Add(conn);
+            AddConnectionVisual(conn);
+        }
+
+        _selected.Clear();
+        _selectedConnectionId = null;
         foreach (var id in newIds) _selected.Add(id);
         ApplySelectionStyles();
         RebuildOverlay();

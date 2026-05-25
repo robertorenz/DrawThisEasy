@@ -199,6 +199,43 @@
     </Setter>
   </Style>
 
+  <!-- Compact icon-only toggle button used in the top tool strip -->
+  <Style x:Key="StripToolButton" TargetType="ToggleButton">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderBrush" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+    <Setter Property="Width" Value="34"/>
+    <Setter Property="Height" Value="32"/>
+    <Setter Property="Margin" Value="1,0"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ToggleButton">
+          <Border x:Name="bd"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="6">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="bd" Property="Background" Value="#FFF1F5F9"/>
+              <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            </Trigger>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="bd" Property="Background" Value="{StaticResource AccentSoftBrush}"/>
+              <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+              <Setter Property="Foreground" Value="{StaticResource AccentStrongBrush}"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
   <!-- Group label in palette -->
   <Style x:Key="GroupLabel" TargetType="TextBlock">
     <Setter Property="FontFamily" Value="{StaticResource UiFont}"/>

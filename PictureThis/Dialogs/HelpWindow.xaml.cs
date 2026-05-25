@@ -42,10 +42,13 @@ public partial class HelpWindow : Window
         {
             ("Ctrl+Z", "Undo"),
             ("Ctrl+Y", "Redo"),
+            ("Ctrl+C", "Copy"),
+            ("Ctrl+X", "Cut"),
+            ("Ctrl+V", "Paste"),
             ("Ctrl+D", "Duplicate"),
             ("Ctrl+A", "Select all"),
             ("Del", "Delete selection"),
-            ("Double-click", "Edit shape label")
+            ("Double-click", "Edit label")
         });
         FileList.Content = MakeList(new (string, string)[]
         {

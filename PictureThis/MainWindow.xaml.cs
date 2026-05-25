@@ -19,11 +19,13 @@ namespace PictureThis;
 
 public partial class MainWindow : Window
 {
-    private readonly Dictionary<ToolMode, ToggleButton> _toolButtons = new();
+    // Multiple ToggleButtons can represent the same tool (palette + top strip).
+    private readonly Dictionary<ToolMode, List<ToggleButton>> _toolButtons = new();
 
     public MainWindow()
     {
         InitializeComponent();
+        BuildToolStrip();
         BuildPalette();
         BuildSwatches();
 
@@ -124,14 +126,96 @@ public partial class MainWindow : Window
             // Disallow unchecking by re-click
             if (btn.IsChecked != true) btn.IsChecked = true;
         };
-        _toolButtons[def.Mode] = btn;
+        RegisterToolButton(def.Mode, btn);
         PaletteStack.Children.Add(btn);
     }
 
+    private void RegisterToolButton(ToolMode mode, ToggleButton btn)
+    {
+        if (!_toolButtons.TryGetValue(mode, out var list))
+        {
+            list = new List<ToggleButton>();
+            _toolButtons[mode] = list;
+        }
+        list.Add(btn);
+    }
+
+    // ----- Top tool strip (compact icon row) -----
+
+    private void BuildToolStrip()
+    {
+        ToolMode[][] groups =
+        {
+            new[] { ToolMode.Select, ToolMode.Connect, ToolMode.Pan },
+            new[] { ToolMode.AddRectangle, ToolMode.AddRounded, ToolMode.AddEllipse,
+                    ToolMode.AddDiamond,   ToolMode.AddHexagon, ToolMode.AddParallelogram },
+            new[] { ToolMode.AddCylinder, ToolMode.AddCloud, ToolMode.AddServer,
+                    ToolMode.AddPerson,   ToolMode.AddQueue, ToolMode.AddNote, ToolMode.AddText },
+        };
+
+        for (int g = 0; g < groups.Length; g++)
+        {
+            foreach (var mode in groups[g]) ToolStrip.Children.Add(BuildStripButton(mode));
+            if (g < groups.Length - 1) ToolStrip.Children.Add(BuildStripSeparator());
+        }
+    }
+
+    private ToggleButton BuildStripButton(ToolMode mode)
+    {
+        var btn = new ToggleButton
+        {
+            Style = (Style)FindResource("StripToolButton"),
+            Tag = mode,
+            ToolTip = StripTooltip(mode),
+            Content = ShapeIcons.GetIcon(mode, (Brush)FindResource("TextMutedBrush"))
+        };
+        btn.Checked += (s, e) => Diagram.CurrentTool = (ToolMode)btn.Tag;
+        btn.Click += (s, e) =>
+        {
+            if (btn.IsChecked != true) btn.IsChecked = true;
+        };
+        RegisterToolButton(mode, btn);
+        return btn;
+    }
+
+    private static UIElement BuildStripSeparator()
+    {
+        return new Border
+        {
+            Width = 1, Height = 20,
+            Margin = new Thickness(6, 0, 6, 0),
+            Background = (Brush)new BrushConverter().ConvertFromString("#FFE2E8F0")!,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+    }
+
+    private static string StripTooltip(ToolMode mode) => mode switch
+    {
+        ToolMode.Select               => "Select (V)",
+        ToolMode.Connect              => "Connector (L)",
+        ToolMode.Pan                  => "Pan (Space + drag)",
+        ToolMode.AddRectangle         => "Rectangle / Process (R)",
+        ToolMode.AddRounded           => "Rounded / Component (O)",
+        ToolMode.AddEllipse           => "Ellipse / Start-End (E)",
+        ToolMode.AddDiamond           => "Decision (D)",
+        ToolMode.AddHexagon           => "Hexagon (H)",
+        ToolMode.AddParallelogram     => "Data",
+        ToolMode.AddCylinder          => "Database (B)",
+        ToolMode.AddCloud             => "Cloud (C)",
+        ToolMode.AddServer            => "Server (S)",
+        ToolMode.AddPerson            => "User / Person (P)",
+        ToolMode.AddQueue             => "Queue",
+        ToolMode.AddNote              => "Sticky note",
+        ToolMode.AddText              => "Text (T)",
+        _ => mode.ToString()
+    };
+
     private void SyncToolButtons()
     {
-        foreach (var (mode, btn) in _toolButtons)
-            btn.IsChecked = (mode == Diagram.CurrentTool);
+        foreach (var (mode, list) in _toolButtons)
+            foreach (var btn in list)
+                btn.IsChecked = (mode == Diagram.CurrentTool);
+
         StatusTool.Text = ToolDisplayName(Diagram.CurrentTool);
         StatusHint.Text = HintForTool(Diagram.CurrentTool);
     }
