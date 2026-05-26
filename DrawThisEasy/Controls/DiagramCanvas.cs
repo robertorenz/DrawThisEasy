@@ -653,9 +653,18 @@ public class DiagramCanvas : Canvas
         var addKind = ToolModeMap.ShapeForTool(_tool);
         if (addKind.HasValue)
         {
-            AddShape(addKind.Value, world.X, world.Y);
-            // After adding, revert to select tool for fast iteration
-            CurrentTool = ToolMode.Select;
+            // Clicking an existing object switches to Select and selects it;
+            // clicking empty space stamps another shape and stays in this tool.
+            var hitForAdd = HitTestShape(world);
+            if (hitForAdd != null)
+            {
+                CurrentTool = ToolMode.Select;
+                SelectOnly(hitForAdd.Id);
+            }
+            else
+            {
+                AddShape(addKind.Value, world.X, world.Y);
+            }
             e.Handled = true;
             return;
         }
