@@ -171,6 +171,16 @@ public static class L10n
             ["template.cicd.desc"]          = "Commit → build → test → deploy to production, with an artifact registry.",
             ["template.eventdriven"]        = "Event-driven",
             ["template.eventdriven.desc"]   = "Producer → message queue → consumers writing to data stores.",
+            ["template.frontendbackend"]      = "Frontend & Backend",
+            ["template.frontendbackend.desc"] = "SPA frontend → backend API with auth middleware, cache, and database.",
+            ["template.middleware"]           = "Message middleware",
+            ["template.middleware.desc"]      = "Apps publish to a message broker; consumer services write to data stores.",
+            ["template.dbcluster"]            = "Database cluster",
+            ["template.dbcluster.desc"]       = "App servers → primary database with read replicas and a backup.",
+            ["template.fullstack"]            = "Full-stack web",
+            ["template.fullstack.desc"]       = "Browser / mobile → CDN & web frontend → API gateway → backend with cache and database.",
+            ["template.caching"]              = "Caching layer",
+            ["template.caching.desc"]         = "Client → app server → cache-aside in front of the database.",
 
             // Help dialog
             ["help.title"]   = "Keyboard shortcuts",
@@ -502,6 +512,16 @@ public static class L10n
             ["template.cicd.desc"]          = "Commit → compilar → probar → desplegar a producción, con registro de artefactos.",
             ["template.eventdriven"]        = "Orientado a eventos",
             ["template.eventdriven.desc"]   = "Productor → cola de mensajes → consumidores que escriben en almacenes.",
+            ["template.frontendbackend"]      = "Frontend y Backend",
+            ["template.frontendbackend.desc"] = "Frontend SPA → API backend con middleware de autenticación, caché y base de datos.",
+            ["template.middleware"]           = "Middleware de mensajería",
+            ["template.middleware.desc"]      = "Las apps publican en un broker de mensajes; los servicios consumidores escriben en almacenes.",
+            ["template.dbcluster"]            = "Clúster de base de datos",
+            ["template.dbcluster.desc"]       = "Servidores de aplicación → base de datos principal con réplicas de lectura y copia de seguridad.",
+            ["template.fullstack"]            = "Web full-stack",
+            ["template.fullstack.desc"]       = "Navegador / móvil → CDN y frontend web → pasarela API → backend con caché y base de datos.",
+            ["template.caching"]              = "Capa de caché",
+            ["template.caching.desc"]         = "Cliente → servidor de aplicación → caché (cache-aside) frente a la base de datos.",
 
             // Help dialog
             ["help.title"]   = "Atajos de teclado",
