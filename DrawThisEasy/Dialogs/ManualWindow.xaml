@@ -7,7 +7,7 @@
         Background="Transparent"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
-        Width="720" SizeToContent="Height">
+        Width="860" SizeToContent="Height">
   <Border Background="White" CornerRadius="12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
     <Border.Effect>
       <DropShadowEffect Color="#0F172A" Opacity="0.35" BlurRadius="40" ShadowDepth="6"/>
@@ -33,9 +33,23 @@
         </Grid>
       </Border>
 
-      <ScrollViewer Grid.Row="1" MaxHeight="560" VerticalScrollBarVisibility="Auto">
-        <StackPanel x:Name="ManualStack" Margin="24,18,24,22"/>
-      </ScrollViewer>
+      <Grid Grid.Row="1">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="184"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Chapter navigation -->
+        <Border Grid.Column="0" Background="#FFF8FAFC" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
+          <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="560">
+            <StackPanel x:Name="TocStack" Margin="10,14,8,14"/>
+          </ScrollViewer>
+        </Border>
+
+        <ScrollViewer x:Name="BodyScroll" Grid.Column="1" MaxHeight="560" VerticalScrollBarVisibility="Auto">
+          <StackPanel x:Name="ManualStack" Margin="24,18,24,22"/>
+        </ScrollViewer>
+      </Grid>
 
       <Border Grid.Row="2" Background="#FFF8FAFC" CornerRadius="0,0,12,12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="12,10">

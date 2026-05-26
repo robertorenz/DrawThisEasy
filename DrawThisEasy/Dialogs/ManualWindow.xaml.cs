@@ -13,6 +13,10 @@ public partial class ManualWindow : Window
     private static readonly Brush BodyBrush    = Brush("#334155");
     private static readonly Brush AccentBrush  = Brush("#0EA5E9");
 
+    // Chapter navigation: heading key (in order) → its heading element, for scroll-to.
+    private readonly System.Collections.Generic.List<string> _chapterKeys = new();
+    private readonly System.Collections.Generic.Dictionary<string, FrameworkElement> _anchors = new();
+
     public ManualWindow()
     {
         InitializeComponent();
@@ -108,6 +112,12 @@ public partial class ManualWindow : Window
 
         Heading("manual.shortcuts.h");
         Para("manual.shortcuts.p");
+
+        Heading("manual.faq.h");
+        for (int i = 1; i <= 10; i++)
+            Faq($"manual.faq.q{i}", $"manual.faq.a{i}");
+
+        BuildToc();
     }
 
     // ---------- content builders ----------
@@ -122,6 +132,55 @@ public partial class ManualWindow : Window
             FontWeight = FontWeights.SemiBold, Foreground = HeadingBrush, VerticalAlignment = VerticalAlignment.Center
         });
         ManualStack.Children.Add(panel);
+        _chapterKeys.Add(key);
+        _anchors[key] = panel;
+    }
+
+    // ---------- chapter navigation + FAQ ----------
+
+    private void BuildToc()
+    {
+        foreach (var key in _chapterKeys)
+        {
+            var hoverBrush = Brush("#FFEAF0F6");
+            var item = new Border
+            {
+                Padding = new Thickness(8, 5, 8, 5),
+                CornerRadius = new CornerRadius(6),
+                Background = Brushes.Transparent,
+                Cursor = System.Windows.Input.Cursors.Hand,
+                Child = new TextBlock { Text = L10n.T(key), FontSize = 12, Foreground = BodyBrush, TextWrapping = TextWrapping.Wrap }
+            };
+            var captured = key;
+            item.MouseEnter += (s, e) => item.Background = hoverBrush;
+            item.MouseLeave += (s, e) => item.Background = Brushes.Transparent;
+            item.MouseLeftButtonUp += (s, e) => ScrollTo(captured);
+            TocStack.Children.Add(item);
+        }
+    }
+
+    private void ScrollTo(string key)
+    {
+        if (_anchors.TryGetValue(key, out var el))
+        {
+            var top = el.TranslatePoint(new Point(0, 0), ManualStack).Y;
+            BodyScroll.ScrollToVerticalOffset(top);
+        }
+    }
+
+    private void Faq(string qKey, string aKey)
+    {
+        ManualStack.Children.Add(new TextBlock
+        {
+            Text = L10n.T(qKey), FontFamily = new FontFamily("Segoe UI"), FontSize = 13,
+            FontWeight = FontWeights.SemiBold, Foreground = HeadingBrush, TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(13, 9, 0, 3)
+        });
+        ManualStack.Children.Add(new TextBlock
+        {
+            Text = L10n.T(aKey), FontFamily = new FontFamily("Segoe UI"), FontSize = 13,
+            Foreground = BodyBrush, TextWrapping = TextWrapping.Wrap, LineHeight = 19, Margin = new Thickness(13, 0, 0, 5)
+        });
     }
 
     private void Para(string key) => ManualStack.Children.Add(new TextBlock

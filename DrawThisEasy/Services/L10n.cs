@@ -389,6 +389,28 @@ public static class L10n
 
             ["manual.shortcuts.h"] = "Keyboard shortcuts",
             ["manual.shortcuts.p"] = "Prefer the keyboard? Open Help ▸ Keyboard Shortcuts (or press ?) for the full list of shortcuts. Press F1 anytime to reopen this manual.",
+
+            ["manual.faq.h"]  = "FAQ",
+            ["manual.faq.q1"] = "How do I connect two shapes?",
+            ["manual.faq.a1"] = "Pick the Connector tool (L), then drag from one shape to another. The arrow snaps to each shape's edge and reroutes automatically when you move them.",
+            ["manual.faq.q2"] = "How do I make a connector curved or dashed?",
+            ["manual.faq.a2"] = "Right-click the connector and choose its routing (straight, curved, or elbow) and line style (solid, dashed, or dotted). Set a default for new connectors in Edit ▸ Preferences.",
+            ["manual.faq.q3"] = "How do I keep adding the same shape?",
+            ["manual.faq.a3"] = "Shape tools stay active — keep clicking empty canvas to stamp more. Click an existing object, or press V (the Select tool), to go back to selecting.",
+            ["manual.faq.q4"] = "How do I add a guide, and how do I remove it?",
+            ["manual.faq.a4"] = "Drag from the top or left ruler onto the canvas to drop a guide. To remove one, drag it back onto its ruler; View ▸ Clear Guides removes all of them.",
+            ["manual.faq.q5"] = "How do I turn off snapping?",
+            ["manual.faq.a5"] = "Hold Alt while moving a shape to bypass it once, or turn snapping off entirely in Edit ▸ Preferences.",
+            ["manual.faq.q6"] = "Can I work on several diagrams at once?",
+            ["manual.faq.a6"] = "Yes — each diagram opens in its own tab. Use the + tab or Ctrl+N for a new one, and File ▸ Open can open several files at once.",
+            ["manual.faq.q7"] = "How do I add an image?",
+            ["manual.faq.a7"] = "Use the Image button in the toolbar or the left palette, or Edit ▸ Insert Image. Images are stored inside the saved .ptd.json file.",
+            ["manual.faq.q8"] = "Can I import an Excalidraw drawing?",
+            ["manual.faq.a8"] = "Yes. Use File ▸ Import from Excalidraw, or just open a .excalidraw file with File ▸ Open. Shapes, labels, images, and bound arrows come across.",
+            ["manual.faq.q9"] = "How do I export to other tools?",
+            ["manual.faq.a9"] = "File ▸ Export to Excalidraw, draw.io, or Mermaid sends your diagram to those editors; Export PNG saves a 2× image.",
+            ["manual.faq.q10"] = "How do I change the ruler units?",
+            ["manual.faq.a10"] = "Open Edit ▸ Preferences and pick the ruler units — pixels, centimeters, inches, or picas.",
         },
 
         [Language.Es] = new()
@@ -740,6 +762,28 @@ public static class L10n
 
             ["manual.shortcuts.h"] = "Atajos de teclado",
             ["manual.shortcuts.p"] = "¿Prefieres el teclado? Abre Ayuda ▸ Atajos de teclado (o pulsa ?) para ver la lista completa de atajos. Pulsa F1 en cualquier momento para volver a abrir este manual.",
+
+            ["manual.faq.h"]  = "Preguntas frecuentes",
+            ["manual.faq.q1"] = "¿Cómo conecto dos formas?",
+            ["manual.faq.a1"] = "Elige la herramienta Conector (L) y arrastra de una forma a otra. La flecha se ajusta al borde de cada forma y se redibuja al moverlas.",
+            ["manual.faq.q2"] = "¿Cómo hago un conector curvo o discontinuo?",
+            ["manual.faq.a2"] = "Haz clic derecho en el conector y elige su trazado (recta, curva o en codo) y su línea (sólida, discontinua o punteada). Define un valor predeterminado en Edición ▸ Preferencias.",
+            ["manual.faq.q3"] = "¿Cómo sigo agregando la misma forma?",
+            ["manual.faq.a3"] = "Las herramientas de forma permanecen activas: sigue haciendo clic en el lienzo vacío para colocar más. Haz clic en un objeto, o pulsa V (la herramienta Seleccionar), para volver a seleccionar.",
+            ["manual.faq.q4"] = "¿Cómo agrego una guía y cómo la quito?",
+            ["manual.faq.a4"] = "Arrastra desde la regla superior o izquierda hasta el lienzo para soltar una guía. Para quitarla, arrástrala de vuelta a su regla; Vista ▸ Borrar guías las elimina todas.",
+            ["manual.faq.q5"] = "¿Cómo desactivo el ajuste?",
+            ["manual.faq.a5"] = "Mantén Alt al mover una forma para omitirlo una vez, o desactiva el ajuste por completo en Edición ▸ Preferencias.",
+            ["manual.faq.q6"] = "¿Puedo trabajar en varios diagramas a la vez?",
+            ["manual.faq.a6"] = "Sí: cada diagrama se abre en su propia pestaña. Usa la pestaña + o Ctrl+N para uno nuevo, y Archivo ▸ Abrir puede abrir varios archivos a la vez.",
+            ["manual.faq.q7"] = "¿Cómo agrego una imagen?",
+            ["manual.faq.a7"] = "Usa el botón Imagen de la barra o de la paleta, o Edición ▸ Insertar imagen. Las imágenes se guardan dentro del archivo .ptd.json.",
+            ["manual.faq.q8"] = "¿Puedo importar un dibujo de Excalidraw?",
+            ["manual.faq.a8"] = "Sí. Usa Archivo ▸ Importar de Excalidraw, o simplemente abre un archivo .excalidraw con Archivo ▸ Abrir. Se traen formas, etiquetas, imágenes y flechas enlazadas.",
+            ["manual.faq.q9"] = "¿Cómo exporto a otras herramientas?",
+            ["manual.faq.a9"] = "Archivo ▸ Exportar a Excalidraw, draw.io o Mermaid envía tu diagrama a esos editores; Exportar PNG guarda una imagen a 2×.",
+            ["manual.faq.q10"] = "¿Cómo cambio las unidades de la regla?",
+            ["manual.faq.a10"] = "Abre Edición ▸ Preferencias y elige las unidades de la regla: píxeles, centímetros, pulgadas o picas.",
         }
     };
 }
