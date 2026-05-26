@@ -332,7 +332,7 @@ public static class L10n
             ["manual.workspace.b.status"]   = "Status bar — shows the active tool and a short hint about what to do next.",
 
             ["manual.shapes.h"]  = "Adding shapes",
-            ["manual.shapes.p"]  = "Click a shape tool in the palette or top strip (or press its keyboard shortcut), then click the canvas to drop the shape where you clicked. After adding a shape the tool returns to Select automatically, so you can immediately move or edit it.",
+            ["manual.shapes.p"]  = "Click a shape tool in the palette or top strip (or press its keyboard shortcut), then click the canvas to drop the shape. The tool stays active so you can keep stamping shapes; click an existing object — or the Select tool (V) — to go back to selecting.",
             ["manual.shapes.p2"] = "Flow shapes include Process, Component, Start / End, Decision, Hexagon and Data. Infrastructure shapes include Database, Cloud, Server, User, Queue, sticky Note and plain Text.",
             ["manual.shapes.p3"] = "You can also insert raster images (the toolbar Image button, the palette, or Edit ▸ Insert Image), and drop in cloud-provider service objects from the AWS / Azure / Google buttons in the toolbar and palette.",
 
@@ -673,7 +673,7 @@ public static class L10n
             ["manual.workspace.b.status"]   = "Barra de estado: muestra la herramienta activa y una breve sugerencia de qué hacer.",
 
             ["manual.shapes.h"]  = "Agregar formas",
-            ["manual.shapes.p"]  = "Haz clic en una herramienta de forma en la paleta o en la barra superior (o pulsa su atajo de teclado) y luego haz clic en el lienzo para colocar la forma donde hiciste clic. Después de agregar una forma, la herramienta vuelve a Seleccionar automáticamente para que puedas moverla o editarla enseguida.",
+            ["manual.shapes.p"]  = "Haz clic en una herramienta de forma en la paleta o en la barra superior (o pulsa su atajo) y luego haz clic en el lienzo para colocar la forma. La herramienta permanece activa para seguir colocando formas; haz clic en un objeto existente — o en la herramienta Seleccionar (V) — para volver a seleccionar.",
             ["manual.shapes.p2"] = "Las formas de flujo incluyen Proceso, Componente, Inicio / Fin, Decisión, Hexágono y Datos. Las de infraestructura incluyen Base de datos, Nube, Servidor, Usuario, Cola, Nota adhesiva y Texto simple.",
             ["manual.shapes.p3"] = "También puedes insertar imágenes (el botón Imagen de la barra, la paleta, o Edición ▸ Insertar imagen) y agregar objetos de servicios en la nube con los botones AWS / Azure / Google de la barra y la paleta.",
 
