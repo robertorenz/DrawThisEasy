@@ -88,7 +88,7 @@ public partial class ManualWindow : Window
         Para("manual.colors.p");
 
         Heading("manual.rulers.h");
-        Bullets("manual.rulers.b.show", "manual.rulers.b.drag", "manual.rulers.b.snap", "manual.rulers.b.clear");
+        Bullets("manual.rulers.b.show", "manual.rulers.b.drag", "manual.rulers.b.move", "manual.rulers.b.snap", "manual.rulers.b.clear");
 
         Heading("manual.view.h");
         Bullets("manual.view.b.pan", "manual.view.b.zoom", "manual.view.b.reset");
