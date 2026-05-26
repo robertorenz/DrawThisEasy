@@ -25,6 +25,11 @@ public static class Templates
         new("kubernetes",    "template.kubernetes",    "template.kubernetes.desc",    BuildKubernetes()),
         new("cicd",          "template.cicd",          "template.cicd.desc",          BuildCicd()),
         new("event-driven",  "template.eventdriven",   "template.eventdriven.desc",   BuildEventDriven()),
+        new("frontend-backend","template.frontendbackend","template.frontendbackend.desc", BuildFrontendBackend()),
+        new("middleware",    "template.middleware",    "template.middleware.desc",    BuildMessageMiddleware()),
+        new("db-cluster",    "template.dbcluster",     "template.dbcluster.desc",     BuildDatabaseCluster()),
+        new("full-stack",    "template.fullstack",     "template.fullstack.desc",     BuildFullStack()),
+        new("caching",       "template.caching",       "template.caching.desc",       BuildCaching()),
     };
 
     private static ShapeNode N(ShapeKind k, double x, double y, double w, double h, string label, string? fill = null)
@@ -232,6 +237,83 @@ public static class Templates
         m.Shapes.AddRange(new[] { producer, queue, c1, c2, db, lake });
         Link(m, producer, queue); Link(m, queue, c1); Link(m, queue, c2);
         Link(m, c1, db); Link(m, c2, lake);
+        Z(m);
+        return m;
+    }
+
+    private static DiagramModel BuildFrontendBackend()
+    {
+        var m = new DiagramModel { Title = "Frontend & Backend" };
+        var spa   = N(ShapeKind.Rounded,  40, 180, 150, 70,  "SPA Frontend", "#DBEAFE");
+        var api   = N(ShapeKind.Server,   250, 150, 110, 130, "Backend API", "#FEF3C7");
+        var auth  = N(ShapeKind.Hexagon,  430, 60,  160, 70,  "Auth Middleware", "#FFE4E6");
+        var cache = N(ShapeKind.Cylinder, 440, 175, 120, 90,  "Redis Cache", "#FFEDD5");
+        var db    = N(ShapeKind.Cylinder, 640, 170, 130, 100, "Database", "#CCFBF1");
+        m.Shapes.AddRange(new[] { spa, api, auth, cache, db });
+        Link(m, spa, api); Link(m, api, auth); Link(m, api, cache); Link(m, api, db);
+        Z(m);
+        return m;
+    }
+
+    private static DiagramModel BuildMessageMiddleware()
+    {
+        var m = new DiagramModel { Title = "Message middleware" };
+        var p1     = N(ShapeKind.Rounded,  40, 90,  150, 60,  "Orders App", "#DBEAFE");
+        var p2     = N(ShapeKind.Rounded,  40, 220, 150, 60,  "Inventory App", "#DBEAFE");
+        var broker = N(ShapeKind.Queue,    250, 150, 180, 60, "Message Broker", "#FEF3C7");
+        var c1     = N(ShapeKind.Rounded,  500, 70,  150, 60, "Billing Service", "#DBEAFE");
+        var c2     = N(ShapeKind.Rounded,  500, 200, 150, 60, "Email Service", "#DBEAFE");
+        var db     = N(ShapeKind.Cylinder, 710, 70,  120, 90, "Orders DB", "#CCFBF1");
+        var lake   = N(ShapeKind.Cylinder, 710, 200, 120, 90, "Data Lake", "#CCFBF1");
+        m.Shapes.AddRange(new[] { p1, p2, broker, c1, c2, db, lake });
+        Link(m, p1, broker); Link(m, p2, broker);
+        Link(m, broker, c1); Link(m, broker, c2);
+        Link(m, c1, db); Link(m, c2, lake);
+        Z(m);
+        return m;
+    }
+
+    private static DiagramModel BuildDatabaseCluster()
+    {
+        var m = new DiagramModel { Title = "Database cluster" };
+        var app     = N(ShapeKind.Server,   40, 150, 110, 130, "App Servers", "#DBEAFE");
+        var primary = N(ShapeKind.Cylinder, 240, 165, 130, 100, "Primary DB", "#CCFBF1");
+        var r1      = N(ShapeKind.Cylinder, 470, 50,  130, 90,  "Read Replica 1", "#D1FAE5");
+        var r2      = N(ShapeKind.Cylinder, 470, 170, 130, 90,  "Read Replica 2", "#D1FAE5");
+        var backup  = N(ShapeKind.Cylinder, 470, 290, 130, 90,  "Backup", "#F1F5F9");
+        m.Shapes.AddRange(new[] { app, primary, r1, r2, backup });
+        Link(m, app, primary); Link(m, primary, r1); Link(m, primary, r2); Link(m, primary, backup);
+        Z(m);
+        return m;
+    }
+
+    private static DiagramModel BuildFullStack()
+    {
+        var m = new DiagramModel { Title = "Full-stack web" };
+        var browser = N(ShapeKind.Rounded,  30, 90,  130, 60,  "Browser", "#DBEAFE");
+        var mobile  = N(ShapeKind.Rounded,  30, 220, 130, 60,  "Mobile", "#DBEAFE");
+        var cdn     = N(ShapeKind.Cloud,    210, 50,  140, 80,  "CDN", "#E0F2FE");
+        var web     = N(ShapeKind.Server,   210, 165, 100, 120, "Web Frontend", "#FEF3C7");
+        var gw      = N(ShapeKind.Hexagon,  380, 175, 150, 70,  "API Gateway", "#FFE4E6");
+        var backend = N(ShapeKind.Server,   580, 80,  100, 120, "Backend Service", "#DBEAFE");
+        var cache   = N(ShapeKind.Cylinder, 580, 230, 120, 80,  "Cache", "#FFEDD5");
+        var db      = N(ShapeKind.Cylinder, 740, 150, 130, 100, "Database", "#CCFBF1");
+        m.Shapes.AddRange(new[] { browser, mobile, cdn, web, gw, backend, cache, db });
+        Link(m, browser, cdn); Link(m, browser, web); Link(m, mobile, web);
+        Link(m, web, gw); Link(m, gw, backend); Link(m, backend, cache); Link(m, backend, db);
+        Z(m);
+        return m;
+    }
+
+    private static DiagramModel BuildCaching()
+    {
+        var m = new DiagramModel { Title = "Caching layer" };
+        var client = N(ShapeKind.Person,   40, 170, 90, 110, "Client");
+        var app    = N(ShapeKind.Server,   200, 150, 110, 130, "App Server", "#DBEAFE");
+        var cache  = N(ShapeKind.Cylinder, 410, 80,  130, 90,  "Redis Cache", "#FFEDD5");
+        var db     = N(ShapeKind.Cylinder, 410, 220, 130, 100, "Database", "#CCFBF1");
+        m.Shapes.AddRange(new[] { client, app, cache, db });
+        Link(m, client, app); Link(m, app, cache); Link(m, app, db); Link(m, cache, db);
         Z(m);
         return m;
     }
