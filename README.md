@@ -24,7 +24,7 @@ When you need to whiteboard *"how do the clients, load balancer, app servers, qu
 - **Inline label editing** — double-click any shape, type, `Enter` to commit.
 - **Pan & zoom** — `Space` + drag, right-click + drag, or just drag empty area. Mouse wheel zooms.
 - **Inspector panel** for fill / stroke colors and layer ordering.
-- **Rulers, guides & snapping** — rulers along the top and left; **drag from a ruler** onto the canvas to drop a guide line. Moving shapes **snap** to other shapes' edges/centers and to guides, with live red alignment lines; hold `Alt` to move freely. **View → Clear Guides** removes them.
+- **Rulers, guides & snapping** — rulers along the top and left; **drag from a ruler** onto the canvas to drop a guide line. Drag a guide to reposition it, or **drag it back onto its ruler to remove it** (**View → Clear Guides** clears all). Moving shapes **snap** to other shapes' edges/centers and to guides, with live red alignment lines; hold `Alt` to move freely.
 - **Preferences** (Edit → Preferences) — set the **default connector** routing & line style for new connectors, toggle **snapping**, and choose **ruler units** (pixels, cm, inches, picas). Saved to `%LOCALAPPDATA%\DrawThisEasy\preferences.json`.
 - **Right-click context menu** on any shape — a polished popup to edit text, apply fill / stroke swatches (or pick a custom color), reorder layers, duplicate, copy, and delete. Right-drag empty space still pans.
 - **Copy / Cut / Paste** (`Ctrl+C` / `Ctrl+X` / `Ctrl+V`) via the system clipboard, with connection edges preserved. Works between two open DrawThisEasy instances.

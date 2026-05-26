@@ -38,8 +38,9 @@ public class DiagramCanvas : Canvas
     private ToolMode _tool = ToolMode.Select;
 
     // ---- Interaction state ----
-    private enum DragMode { None, Pan, MoveShape, ResizeShape, ConnectDrag, Marquee, ConnCurve }
+    private enum DragMode { None, Pan, MoveShape, ResizeShape, ConnectDrag, Marquee, ConnCurve, GuideMove }
     private DragMode _drag = DragMode.None;
+    private Guide? _dragGuide;
     private Point _dragStartScreen;
     private Point _dragStartWorld;
     private readonly Dictionary<string, (double X, double Y)> _dragOrigins = new();
@@ -729,6 +730,17 @@ public class DiagramCanvas : Canvas
                 return;
             }
 
+            // Empty space, Select tool: grab a nearby guide to move/remove it.
+            if (_tool == ToolMode.Select && HitTestGuide(world) is { } guide)
+            {
+                _dragGuide = guide;
+                _drag = DragMode.GuideMove;
+                Snapshot();
+                CaptureMouse();
+                e.Handled = true;
+                return;
+            }
+
             // Empty space:
             //   Shift + drag → marquee selection (kept available for multi-select)
             //   default      → pan canvas
@@ -794,6 +806,13 @@ public class DiagramCanvas : Canvas
                 RouteConnection(c);
                 RebuildOverlay();
             }
+            return;
+        }
+
+        if (_drag == DragMode.GuideMove && _dragGuide != null)
+        {
+            _dragGuide.Position = _dragGuide.Horizontal ? world.Y : world.X;
+            RebuildGuides();
             return;
         }
 
@@ -879,11 +898,27 @@ public class DiagramCanvas : Canvas
             ApplySelectionStyles();
             return;
         }
+
+        // Hover feedback: show a move cursor over a draggable guide (Select tool, no drag).
+        if (_drag == DragMode.None && _tool == ToolMode.Select && _model.Guides.Count > 0
+            && HitTestShape(world) == null && HitTestGuide(world) is { } hg)
+            Cursor = hg.Horizontal ? Cursors.SizeNS : Cursors.SizeWE;
+        else if (_drag == DragMode.None)
+            UpdateCursor();
     }
 
     private void OnMouseLeftUp(object sender, MouseButtonEventArgs e)
     {
         var world = ScreenToWorld(e.GetPosition(this));
+
+        if (_drag == DragMode.GuideMove && _dragGuide != null)
+        {
+            // Dropped back over the ruler (off the canvas edge) → remove the guide.
+            var sp = e.GetPosition(this);
+            bool removed = _dragGuide.Horizontal ? sp.Y < 0 : sp.X < 0;
+            if (removed) _model.Guides.Remove(_dragGuide);
+            RebuildGuides();
+        }
 
         if (_drag == DragMode.ConnectDrag && _connectFromId != null)
         {
@@ -926,6 +961,7 @@ public class DiagramCanvas : Canvas
         _drag = DragMode.None;
         _resizeShapeId = null;
         _curveConnId = null;
+        _dragGuide = null;
         _dragOrigins.Clear();
         if (IsMouseCaptured) ReleaseMouseCapture();
         UpdateCursor();
@@ -1516,6 +1552,19 @@ public class DiagramCanvas : Canvas
             if (v.HitPath.Data != null && v.HitPath.Data.StrokeContains(pen, world))
                 return id;
         return null;
+    }
+
+    private Guide? HitTestGuide(Point world)
+    {
+        double thresh = 5.0 / Math.Max(Zoom, 0.0001);
+        Guide? best = null;
+        double bestD = thresh;
+        foreach (var g in _model.Guides)
+        {
+            double d = g.Horizontal ? Math.Abs(world.Y - g.Position) : Math.Abs(world.X - g.Position);
+            if (d < bestD) { bestD = d; best = g; }
+        }
+        return best;
     }
 
     // Snap the moving selection's edges/centers to other shapes and guides.

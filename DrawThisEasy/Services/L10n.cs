@@ -343,7 +343,8 @@ public static class L10n
             ["manual.rulers.b.show"]  = "Rulers along the top and left show positions in your chosen units — pixels, centimeters, inches or picas (set in Preferences).",
             ["manual.rulers.b.drag"]  = "Drag from a ruler onto the canvas to drop a guide: the top ruler makes a horizontal guide, the left ruler a vertical one.",
             ["manual.rulers.b.snap"]  = "While you move shapes, their edges and centers snap to other shapes and to guides, showing red alignment lines.",
-            ["manual.rulers.b.clear"] = "Hold Alt to move without snapping. View ▸ Clear Guides removes all guides; snapping can be turned off in Preferences.",
+            ["manual.rulers.b.move"]  = "Drag a guide to reposition it; drag it back onto its ruler to remove it. View ▸ Clear Guides removes all of them at once.",
+            ["manual.rulers.b.clear"] = "Hold Alt to move shapes without snapping; snapping can also be turned off in Preferences.",
 
             ["manual.connect.h"]  = "Connecting shapes",
             ["manual.connect.p"]  = "Switch to the Connector tool (press L), then drag from one shape to another. The connector snaps to the edge of each shape and automatically reroutes whenever you move either shape.",
@@ -693,7 +694,8 @@ public static class L10n
             ["manual.rulers.b.show"]  = "Las reglas superior e izquierda muestran posiciones en las unidades elegidas: píxeles, centímetros, pulgadas o picas (en Preferencias).",
             ["manual.rulers.b.drag"]  = "Arrastra desde una regla hasta el lienzo para soltar una guía: la regla superior crea una guía horizontal y la izquierda una vertical.",
             ["manual.rulers.b.snap"]  = "Al mover formas, sus bordes y centros se ajustan a otras formas y a las guías, mostrando líneas de alineación rojas.",
-            ["manual.rulers.b.clear"] = "Mantén Alt para mover sin ajuste. Vista ▸ Borrar guías elimina todas; el ajuste se puede desactivar en Preferencias.",
+            ["manual.rulers.b.move"]  = "Arrastra una guía para reposicionarla; arrástrala de vuelta a su regla para quitarla. Vista ▸ Borrar guías las elimina todas a la vez.",
+            ["manual.rulers.b.clear"] = "Mantén Alt para mover sin ajuste; el ajuste también se puede desactivar en Preferencias.",
 
             ["manual.connect.h"]  = "Conectar formas",
             ["manual.connect.p"]  = "Cambia a la herramienta Conector (pulsa L) y arrastra de una forma a otra. El conector se ajusta al borde de cada forma y se redibuja automáticamente cada vez que mueves cualquiera de ellas.",
