@@ -1,18 +1,14 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using DrawThisEasy.Controls;
+using DrawThisEasy.Models;
 using DrawThisEasy.Services;
 
 namespace DrawThisEasy.Dialogs;
 
 public partial class ManualWindow : Window
 {
-    // A manual section is a heading plus an ordered list of blocks.
-    private abstract record Block;
-    private sealed record Para(string Key) : Block;
-    private sealed record Bullets(string[] Keys) : Block;
-    private sealed record Section(string TitleKey, Block[] Blocks);
-
     private static readonly Brush HeadingBrush = Brush("#0F172A");
     private static readonly Brush BodyBrush    = Brush("#334155");
     private static readonly Brush AccentBrush  = Brush("#0EA5E9");
@@ -34,186 +30,174 @@ public partial class ManualWindow : Window
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
 
-    private static readonly Section[] Sections =
+    // The three core tools (icon + name + description, reusing the palette strings).
+    private static readonly (ToolMode Mode, string Name, string Desc)[] CoreTools =
     {
-        new("manual.overview.h", new Block[]
-        {
-            new Para("manual.overview.p"),
-        }),
-        new("manual.workspace.h", new Block[]
-        {
-            new Para("manual.workspace.p"),
-            new Bullets(new[]
-            {
-                "manual.workspace.b.strip",
-                "manual.workspace.b.palette",
-                "manual.workspace.b.canvas",
-                "manual.workspace.b.inspector",
-                "manual.workspace.b.status",
-            }),
-        }),
-        new("manual.shapes.h", new Block[]
-        {
-            new Para("manual.shapes.p"),
-            new Para("manual.shapes.p2"),
-            new Para("manual.shapes.p3"),
-        }),
-        new("manual.connect.h", new Block[]
-        {
-            new Para("manual.connect.p"),
-            new Para("manual.connect.p2"),
-        }),
-        new("manual.select.h", new Block[]
-        {
-            new Bullets(new[]
-            {
-                "manual.select.b.click",
-                "manual.select.b.multi",
-                "manual.select.b.marquee",
-                "manual.select.b.pan",
-                "manual.select.b.resize",
-            }),
-        }),
-        new("manual.labels.h", new Block[]
-        {
-            new Para("manual.labels.p"),
-        }),
-        new("manual.colors.h", new Block[]
-        {
-            new Para("manual.colors.p"),
-        }),
-        new("manual.layers.h", new Block[]
-        {
-            new Para("manual.layers.p"),
-        }),
-        new("manual.view.h", new Block[]
-        {
-            new Bullets(new[]
-            {
-                "manual.view.b.pan",
-                "manual.view.b.zoom",
-                "manual.view.b.reset",
-            }),
-        }),
-        new("manual.templates.h", new Block[]
-        {
-            new Para("manual.templates.p"),
-        }),
-        new("manual.files.h", new Block[]
-        {
-            new Bullets(new[]
-            {
-                "manual.files.b.save",
-                "manual.files.b.recent",
-                "manual.files.b.export",
-                "manual.files.b.import",
-                "manual.files.b.new",
-            }),
-        }),
-        new("manual.editing.h", new Block[]
-        {
-            new Para("manual.editing.p"),
-        }),
-        new("manual.language.h", new Block[]
-        {
-            new Para("manual.language.p"),
-        }),
-        new("manual.shortcuts.h", new Block[]
-        {
-            new Para("manual.shortcuts.p"),
-        }),
+        (ToolMode.Select,  "tool.select",  "tip.select"),
+        (ToolMode.Connect, "tool.connect", "tip.connect"),
+        (ToolMode.Pan,     "tool.pan",     "tip.pan"),
+    };
+
+    // The palette shapes, rendered as live previews in the gallery.
+    private static readonly (ShapeKind Kind, string Name, double W, double H)[] Shapes =
+    {
+        (ShapeKind.Rectangle,     "tool.process",   84, 44),
+        (ShapeKind.Rounded,       "tool.component", 84, 44),
+        (ShapeKind.Ellipse,       "tool.startend",  84, 46),
+        (ShapeKind.Diamond,       "tool.decision",  70, 52),
+        (ShapeKind.Hexagon,       "tool.hexagon",   88, 46),
+        (ShapeKind.Parallelogram, "tool.data",      84, 44),
+        (ShapeKind.Cylinder,      "tool.database",  60, 50),
+        (ShapeKind.Cloud,         "tool.cloud",     82, 50),
+        (ShapeKind.Server,        "tool.server",    52, 58),
+        (ShapeKind.Person,        "tool.user",      46, 58),
+        (ShapeKind.Queue,         "tool.queue",     90, 36),
+        (ShapeKind.Note,          "tool.note",      58, 52),
+        (ShapeKind.Text,          "tool.text",      72, 30),
     };
 
     private void Build()
     {
-        bool first = true;
-        foreach (var section in Sections)
+        Heading("manual.overview.h", first: true);
+        Para("manual.overview.p");
+
+        Heading("manual.workspace.h");
+        Para("manual.workspace.p");
+        Bullets("manual.workspace.b.strip", "manual.workspace.b.palette", "manual.workspace.b.canvas",
+                "manual.workspace.b.inspector", "manual.workspace.b.status");
+
+        Heading("manual.tools.h");
+        Para("manual.tools.p");
+        foreach (var (mode, name, desc) in CoreTools)
+            ManualStack.Children.Add(MakeToolRow(mode, name, desc));
+
+        Heading("manual.shapes.h");
+        Para("manual.shapes.p");
+        ManualStack.Children.Add(MakeShapeGallery());
+        Para("manual.shapes.p3");
+
+        Heading("manual.connect.h");
+        Para("manual.connect.p");
+        Para("manual.connect.p2");
+
+        Heading("manual.select.h");
+        Bullets("manual.select.b.click", "manual.select.b.multi", "manual.select.b.marquee",
+                "manual.select.b.pan", "manual.select.b.resize");
+
+        Heading("manual.colors.h");
+        Para("manual.colors.p");
+
+        Heading("manual.rulers.h");
+        Bullets("manual.rulers.b.show", "manual.rulers.b.drag", "manual.rulers.b.snap", "manual.rulers.b.clear");
+
+        Heading("manual.view.h");
+        Bullets("manual.view.b.pan", "manual.view.b.zoom", "manual.view.b.reset");
+
+        Heading("manual.templates.h");
+        Para("manual.templates.p");
+
+        Heading("manual.files.h");
+        Bullets("manual.files.b.save", "manual.files.b.recent", "manual.files.b.export",
+                "manual.files.b.import", "manual.files.b.new");
+
+        Heading("manual.editing.h");
+        Para("manual.editing.p");
+
+        Heading("manual.language.h");
+        Para("manual.language.p");
+
+        Heading("manual.shortcuts.h");
+        Para("manual.shortcuts.p");
+    }
+
+    // ---------- content builders ----------
+
+    private void Heading(string key, bool first = false)
+    {
+        var panel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, first ? 0 : 22, 0, 9) };
+        panel.Children.Add(new Border { Width = 3, Background = AccentBrush, CornerRadius = new CornerRadius(2), Margin = new Thickness(0, 1, 10, 1) });
+        panel.Children.Add(new TextBlock
         {
-            ManualStack.Children.Add(MakeHeading(L10n.T(section.TitleKey), first));
-            first = false;
-            foreach (var block in section.Blocks)
-            {
-                switch (block)
-                {
-                    case Para p:
-                        ManualStack.Children.Add(MakeParagraph(L10n.T(p.Key)));
-                        break;
-                    case Bullets b:
-                        foreach (var key in b.Keys)
-                            ManualStack.Children.Add(MakeBullet(L10n.T(key)));
-                        break;
-                }
-            }
+            Text = L10n.T(key), FontFamily = new FontFamily("Segoe UI"), FontSize = 15,
+            FontWeight = FontWeights.SemiBold, Foreground = HeadingBrush, VerticalAlignment = VerticalAlignment.Center
+        });
+        ManualStack.Children.Add(panel);
+    }
+
+    private void Para(string key) => ManualStack.Children.Add(new TextBlock
+    {
+        Text = L10n.T(key), FontFamily = new FontFamily("Segoe UI"), FontSize = 13,
+        Foreground = BodyBrush, TextWrapping = TextWrapping.Wrap, LineHeight = 19, Margin = new Thickness(13, 0, 0, 9)
+    });
+
+    private void Bullets(params string[] keys)
+    {
+        foreach (var key in keys)
+        {
+            var row = new Grid { Margin = new Thickness(13, 0, 0, 7) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var dot = new TextBlock { Text = "•", FontSize = 14, Foreground = AccentBrush, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Top };
+            Grid.SetColumn(dot, 0);
+            var body = new TextBlock { Text = L10n.T(key), FontFamily = new FontFamily("Segoe UI"), FontSize = 13, Foreground = BodyBrush, TextWrapping = TextWrapping.Wrap, LineHeight = 19 };
+            Grid.SetColumn(body, 1);
+            row.Children.Add(dot); row.Children.Add(body);
+            ManualStack.Children.Add(row);
         }
     }
 
-    private static UIElement MakeHeading(string text, bool first)
+    private UIElement MakeToolRow(ToolMode mode, string nameKey, string descKey)
     {
-        var panel = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Margin = new Thickness(0, first ? 0 : 20, 0, 8),
-        };
-        panel.Children.Add(new Border
-        {
-            Width = 3,
-            Background = AccentBrush,
-            CornerRadius = new CornerRadius(2),
-            Margin = new Thickness(0, 1, 10, 1),
-        });
-        panel.Children.Add(new TextBlock
-        {
-            Text = text,
-            FontFamily = new FontFamily("Segoe UI"),
-            FontSize = 15,
-            FontWeight = FontWeights.SemiBold,
-            Foreground = HeadingBrush,
-            VerticalAlignment = VerticalAlignment.Center,
-        });
-        return panel;
-    }
-
-    private static UIElement MakeParagraph(string text) => new TextBlock
-    {
-        Text = text,
-        FontFamily = new FontFamily("Segoe UI"),
-        FontSize = 13,
-        Foreground = BodyBrush,
-        TextWrapping = TextWrapping.Wrap,
-        LineHeight = 19,
-        Margin = new Thickness(13, 0, 0, 9),
-    };
-
-    private static UIElement MakeBullet(string text)
-    {
-        var row = new Grid { Margin = new Thickness(13, 0, 0, 7) };
+        var row = new Grid { Margin = new Thickness(13, 0, 0, 9) };
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-        var dot = new TextBlock
+        var badge = new Border
         {
-            Text = "•",
-            FontSize = 14,
-            Foreground = AccentBrush,
-            Margin = new Thickness(0, 0, 8, 0),
+            Width = 32, Height = 32, CornerRadius = new CornerRadius(8),
+            Background = Brush("#F1F5F9"), Margin = new Thickness(0, 0, 12, 0),
             VerticalAlignment = VerticalAlignment.Top,
+            Child = new Viewbox { Width = 18, Height = 18, Child = ShapeIcons.GetIcon(mode, HeadingBrush) }
         };
-        Grid.SetColumn(dot, 0);
+        Grid.SetColumn(badge, 0);
 
-        var body = new TextBlock
-        {
-            Text = text,
-            FontFamily = new FontFamily("Segoe UI"),
-            FontSize = 13,
-            Foreground = BodyBrush,
-            TextWrapping = TextWrapping.Wrap,
-            LineHeight = 19,
-        };
-        Grid.SetColumn(body, 1);
+        var text = new StackPanel();
+        Grid.SetColumn(text, 1);
+        text.Children.Add(new TextBlock { Text = L10n.T(nameKey), FontSize = 13, FontWeight = FontWeights.SemiBold, Foreground = HeadingBrush });
+        text.Children.Add(new TextBlock { Text = L10n.T(descKey), FontSize = 12.5, Foreground = BodyBrush, TextWrapping = TextWrapping.Wrap, LineHeight = 18 });
 
-        row.Children.Add(dot);
-        row.Children.Add(body);
+        row.Children.Add(badge); row.Children.Add(text);
         return row;
+    }
+
+    private UIElement MakeShapeGallery()
+    {
+        var wrap = new WrapPanel { Margin = new Thickness(13, 4, 0, 6), MaxWidth = 632 };
+        var fill = Brush("#FFFFFF");
+        var stroke = Brush("#334155");
+
+        foreach (var (kind, nameKey, w, h) in Shapes)
+        {
+            var (body, _) = ShapeFactory.BuildBody(kind, w, h, fill, stroke);
+            if (body is FrameworkElement fe) { fe.HorizontalAlignment = HorizontalAlignment.Center; fe.VerticalAlignment = VerticalAlignment.Center; }
+
+            var holder = new Grid { Width = 104, Height = 64 };
+            holder.Children.Add(body);
+
+            var card = new StackPanel { Width = 104, Margin = new Thickness(0, 0, 8, 8) };
+            card.Children.Add(new Border
+            {
+                Child = holder, Background = Brush("#F8FAFC"), BorderBrush = Brush("#E2E8F0"),
+                BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8)
+            });
+            card.Children.Add(new TextBlock
+            {
+                Text = L10n.T(nameKey), FontSize = 11, Foreground = BodyBrush,
+                TextAlignment = TextAlignment.Center, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 3, 0, 0)
+            });
+            wrap.Children.Add(card);
+        }
+        return wrap;
     }
 
     private static Brush Brush(string hex) => (Brush)new BrushConverter().ConvertFromString(hex)!;

@@ -336,6 +336,15 @@ public static class L10n
             ["manual.shapes.p2"] = "Flow shapes include Process, Component, Start / End, Decision, Hexagon and Data. Infrastructure shapes include Database, Cloud, Server, User, Queue, sticky Note and plain Text.",
             ["manual.shapes.p3"] = "You can also insert raster images (the toolbar Image button, the palette, or Edit ▸ Insert Image), and drop in cloud-provider service objects from the AWS / Azure / Google buttons in the toolbar and palette.",
 
+            ["manual.tools.h"] = "Tools",
+            ["manual.tools.p"] = "The top toolbar and the left palette share the same tools — click one (or press its keyboard shortcut), then act on the canvas. The three core tools are:",
+
+            ["manual.rulers.h"]       = "Rulers & guides",
+            ["manual.rulers.b.show"]  = "Rulers along the top and left show positions in your chosen units — pixels, centimeters, inches or picas (set in Preferences).",
+            ["manual.rulers.b.drag"]  = "Drag from a ruler onto the canvas to drop a guide: the top ruler makes a horizontal guide, the left ruler a vertical one.",
+            ["manual.rulers.b.snap"]  = "While you move shapes, their edges and centers snap to other shapes and to guides, showing red alignment lines.",
+            ["manual.rulers.b.clear"] = "Hold Alt to move without snapping. View ▸ Clear Guides removes all guides; snapping can be turned off in Preferences.",
+
             ["manual.connect.h"]  = "Connecting shapes",
             ["manual.connect.p"]  = "Switch to the Connector tool (press L), then drag from one shape to another. The connector snaps to the edge of each shape and automatically reroutes whenever you move either shape.",
             ["manual.connect.p2"] = "Connector mode is sticky — you can wire shape to shape to shape without re-selecting the tool. A single click on a shape (with no drag) simply selects it instead of starting a connection.",
@@ -676,6 +685,15 @@ public static class L10n
             ["manual.shapes.p"]  = "Haz clic en una herramienta de forma en la paleta o en la barra superior (o pulsa su atajo) y luego haz clic en el lienzo para colocar la forma. La herramienta permanece activa para seguir colocando formas; haz clic en un objeto existente — o en la herramienta Seleccionar (V) — para volver a seleccionar.",
             ["manual.shapes.p2"] = "Las formas de flujo incluyen Proceso, Componente, Inicio / Fin, Decisión, Hexágono y Datos. Las de infraestructura incluyen Base de datos, Nube, Servidor, Usuario, Cola, Nota adhesiva y Texto simple.",
             ["manual.shapes.p3"] = "También puedes insertar imágenes (el botón Imagen de la barra, la paleta, o Edición ▸ Insertar imagen) y agregar objetos de servicios en la nube con los botones AWS / Azure / Google de la barra y la paleta.",
+
+            ["manual.tools.h"] = "Herramientas",
+            ["manual.tools.p"] = "La barra superior y la paleta izquierda comparten las mismas herramientas: haz clic en una (o pulsa su atajo) y luego actúa en el lienzo. Las tres herramientas principales son:",
+
+            ["manual.rulers.h"]       = "Reglas y guías",
+            ["manual.rulers.b.show"]  = "Las reglas superior e izquierda muestran posiciones en las unidades elegidas: píxeles, centímetros, pulgadas o picas (en Preferencias).",
+            ["manual.rulers.b.drag"]  = "Arrastra desde una regla hasta el lienzo para soltar una guía: la regla superior crea una guía horizontal y la izquierda una vertical.",
+            ["manual.rulers.b.snap"]  = "Al mover formas, sus bordes y centros se ajustan a otras formas y a las guías, mostrando líneas de alineación rojas.",
+            ["manual.rulers.b.clear"] = "Mantén Alt para mover sin ajuste. Vista ▸ Borrar guías elimina todas; el ajuste se puede desactivar en Preferencias.",
 
             ["manual.connect.h"]  = "Conectar formas",
             ["manual.connect.p"]  = "Cambia a la herramienta Conector (pulsa L) y arrastra de una forma a otra. El conector se ajusta al borde de cada forma y se redibuja automáticamente cada vez que mueves cualquiera de ellas.",
