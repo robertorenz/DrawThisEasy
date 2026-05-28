@@ -67,7 +67,7 @@ public partial class ManualWindow : Window
 
         Heading("manual.workspace.h");
         Para("manual.workspace.p");
-        Bullets("manual.workspace.b.strip", "manual.workspace.b.palette", "manual.workspace.b.canvas",
+        Bullets("manual.workspace.b.strip", "manual.workspace.b.favorites", "manual.workspace.b.palette", "manual.workspace.b.canvas",
                 "manual.workspace.b.inspector", "manual.workspace.b.status");
 
         Heading("manual.tools.h");
@@ -100,6 +100,10 @@ public partial class ManualWindow : Window
         Heading("manual.toolbars.h");
         Para("manual.toolbars.p");
         Bullets("manual.toolbars.b.pin", "manual.toolbars.b.customize", "manual.toolbars.b.hide", "manual.toolbars.b.reset");
+
+        Heading("manual.prefs.h");
+        Para("manual.prefs.p");
+        Bullets("manual.prefs.b.connector", "manual.prefs.b.snap", "manual.prefs.b.units", "manual.prefs.b.autosave", "manual.prefs.b.restore");
 
         Heading("manual.templates.h");
         Para("manual.templates.p");
