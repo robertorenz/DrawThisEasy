@@ -1,8 +1,21 @@
 # DrawThisEasy
 
+[![Latest release](https://img.shields.io/github/v/release/robertorenz/DrawThisEasy?label=download&color=0EA5E9)](https://github.com/robertorenz/DrawThisEasy/releases/latest)
+
 A fast, native Windows app for sketching **org charts, architecture diagrams, and system flows**. Built with WPF on .NET 9.
 
 Designed for speed: pick a tool, click the canvas, type a label. Drag from any shape to another to connect them. Keyboard shortcuts for everything.
+
+---
+
+## Download
+
+Grab the latest build from the **[Releases page](https://github.com/robertorenz/DrawThisEasy/releases/latest)**:
+
+- **[DrawThisEasy-Setup.exe](https://github.com/robertorenz/DrawThisEasy/releases/latest)** — Windows installer (Start-menu entry, optional desktop shortcut, uninstaller). Recommended.
+- **[DrawThisEasy.exe](https://github.com/robertorenz/DrawThisEasy/releases/latest)** — portable single-file build; no install, just download and run.
+
+Both are self-contained — the .NET 9 runtime is bundled, nothing else to install. Windows 10/11, 64-bit. The exes aren't code-signed, so SmartScreen may show an "unknown publisher" prompt on first run (*More info → Run anyway*).
 
 ---
 
