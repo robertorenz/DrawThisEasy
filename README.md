@@ -15,6 +15,7 @@ When you need to whiteboard *"how do the clients, load balancer, app servers, qu
 - **Multiple documents in tabs** — open several diagrams at once and switch between them along the top of the canvas. Each tab keeps its own zoom, selection, and unsaved-changes state; the `+` (or `Ctrl+N`) opens a new one, and closing a tab with unsaved edits prompts you to save.
 - **Menu bar** (File / Edit / View / Language / Help) with full keyboard accelerators.
 - **Top tool strip** and **left palette** for fast tool switching.
+- **Customizable Favorites toolbar** — pin your most-used tools (right-click any toolbar button → *Add to Favorites*, or **View → Toolbars → Customize Favorites...**) to a second toolbar row. Hide the main toolbar, hide the favorites toolbar, reorder favorite items, or **Reset Toolbars to Defaults** from the View menu at any time.
 - **Shape palette** tailored to systems work:
   - Process, Component, Start / End, Decision, Hexagon, Data
   - Database (cylinder), Cloud, Server stack, User, Queue, Sticky note, Text

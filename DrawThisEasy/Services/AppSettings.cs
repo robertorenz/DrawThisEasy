@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -18,6 +19,14 @@ public class AppSettings
     public bool AutosaveEnabled { get; set; } = false;
     public int AutosaveIntervalSeconds { get; set; } = 60;
     public bool RestoreOpenFilesOnStartup { get; set; } = false;
+
+    // Toolbar customization. ShowMainToolbar hides the built-in icon strip;
+    // ShowFavoritesToolbar shows a second, user-curated row of buttons.
+    // FavoriteToolbarItems holds short ids: ToolMode names ("AddRectangle"), or
+    // the actions "Templates", "Image", "Cloud.AWS", "Cloud.Azure", "Cloud.Gcp".
+    public bool ShowMainToolbar { get; set; } = true;
+    public bool ShowFavoritesToolbar { get; set; } = false;
+    public List<string> FavoriteToolbarItems { get; set; } = new();
 
     [JsonIgnore]
     public static AppSettings Current { get; private set; } = Load();

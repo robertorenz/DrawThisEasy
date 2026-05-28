@@ -63,6 +63,8 @@ public partial class MainWindow : Window
         BuildToolStrip();
         BuildPalette();
         BuildSwatches();
+        BuildFavoritesStrip();
+        ApplyToolbarVisibility();
 
         Closing += Window_Closing;
         L10n.LanguageChanged += (s, e) => ApplyLanguage();
@@ -597,11 +599,13 @@ public partial class MainWindow : Window
         var (tBtn, tLbl) = MakeStripAction(BuildTemplatesIcon(), L10n.T("topbar.templates"), L10n.T("topbar.templates.tip"),
             (s, e) => BtnTemplates_Click(s, e));
         _tmplStripBtn = tBtn; _tmplStripLabel = tLbl;
+        AttachFavoritesContextMenu(tBtn, "Templates");
         ToolStrip.Children.Add(tBtn);
 
         var (iBtn, iLbl) = MakeStripAction(BuildImageIcon((Brush)FindResource("TextMutedBrush")), L10n.T("topbar.image"), L10n.T("topbar.image.tip"),
             (s, e) => BtnInsertImage_Click(s, e));
         _imgStripBtn = iBtn; _imgStripLabel = iLbl;
+        AttachFavoritesContextMenu(iBtn, "Image");
         ToolStrip.Children.Add(iBtn);
 
         ToolStrip.Children.Add(BuildStripSeparator());
@@ -620,7 +624,183 @@ public partial class MainWindow : Window
         };
         var (btn, _) = MakeStripAction(chip, label, provider,
             (s, e) => ShowCloudFlyout((UIElement)s!, provider, PlacementMode.Bottom));
+        AttachFavoritesContextMenu(btn, $"Cloud.{provider}");
         return btn;
+    }
+
+    // ===== Favorites toolbar =====
+
+    /// All toolbar items the user can pin to the Favorites strip, in the order shown
+    /// in the Customize dialog. Cloud entries use the Stencils.* provider names.
+    public static IReadOnlyList<string> AllFavoriteIds { get; } = new[]
+    {
+        // Tools
+        "Select", "Connect", "Pan",
+        // Shapes
+        "AddRectangle", "AddRounded", "AddEllipse", "AddDiamond", "AddHexagon", "AddParallelogram",
+        // Infrastructure
+        "AddCylinder", "AddCloud", "AddServer", "AddPerson", "AddQueue", "AddNote", "AddText",
+        // Actions
+        "Templates", "Image",
+        // Cloud provider flyouts
+        "Cloud.AWS", "Cloud.Azure", "Cloud.Google Cloud",
+    };
+
+    /// Display label for a favorite id (localized for tools/actions; proper-noun for cloud).
+    public static string FavoriteLabel(string id) => id switch
+    {
+        "Templates"        => L10n.T("topbar.templates"),
+        "Image"            => L10n.T("topbar.image"),
+        "Cloud.AWS"        => Stencils.Aws,
+        "Cloud.Azure"      => Stencils.Azure,
+        "Cloud.Google Cloud" => Stencils.Gcp,
+        _ when Enum.TryParse<ToolMode>(id, out var m) => L10n.T(LabelKeyForTool(m)),
+        _ => id,
+    };
+
+    private void BuildFavoritesStrip()
+    {
+        FavoritesStrip.Children.Clear();
+        // The favorites list is owned by AppSettings; rebuild reads it fresh each time.
+        foreach (var id in AppSettings.Current.FavoriteToolbarItems)
+        {
+            var item = BuildFavoriteItem(id);
+            if (item != null) FavoritesStrip.Children.Add(item);
+        }
+        if (FavoritesStripLabel != null) FavoritesStripLabel.Text = L10n.T("toolbar.favorites").ToUpper();
+        if (BtnCustomizeFavorites != null) BtnCustomizeFavorites.ToolTip = L10n.T("toolbar.customize.tip");
+    }
+
+    /// Build a single button for a favorite id. Tool-mode favorites share the
+    /// same toggle group as the main strip, so the active tool stays in sync.
+    private UIElement? BuildFavoriteItem(string id)
+    {
+        switch (id)
+        {
+            case "Templates":
+            {
+                var (btn, _) = MakeStripAction(BuildTemplatesIcon(), L10n.T("topbar.templates"), L10n.T("topbar.templates.tip"),
+                    (s, e) => BtnTemplates_Click(s, e));
+                AttachFavoritesContextMenu(btn, id);
+                return btn;
+            }
+            case "Image":
+            {
+                var (btn, _) = MakeStripAction(BuildImageIcon((Brush)FindResource("TextMutedBrush")), L10n.T("topbar.image"), L10n.T("topbar.image.tip"),
+                    (s, e) => BtnInsertImage_Click(s, e));
+                AttachFavoritesContextMenu(btn, id);
+                return btn;
+            }
+            case "Cloud.AWS":   return BuildProviderStripButton("AWS",    Stencils.Aws,   Stencils.AwsColor);
+            case "Cloud.Azure": return BuildProviderStripButton("Azure",  Stencils.Azure, Stencils.AzureColor);
+            case "Cloud.Google Cloud": return BuildProviderStripButton("Google", Stencils.Gcp, Stencils.GcpColor);
+            default:
+                if (Enum.TryParse<ToolMode>(id, out var mode))
+                    return BuildStripButton(mode);
+                return null;
+        }
+    }
+
+    /// Right-click a toolbar button to add/remove it from Favorites. Cheap UX
+    /// alternative to opening the Customize dialog for one-off pins.
+    private void AttachFavoritesContextMenu(FrameworkElement btn, string id)
+    {
+        btn.ContextMenu = null; // lazy-build on open so the label reflects current state
+        btn.MouseRightButtonUp += (s, e) =>
+        {
+            e.Handled = true;
+            var menu = new ContextMenu();
+            var isFav = AppSettings.Current.FavoriteToolbarItems.Contains(id);
+            var item = new MenuItem
+            {
+                Header = isFav ? L10n.T("favorites.remove") : L10n.T("favorites.add")
+            };
+            item.Click += (_, _) => ToggleFavorite(id);
+            menu.Items.Add(item);
+            menu.PlacementTarget = btn;
+            menu.IsOpen = true;
+        };
+    }
+
+    private void ToggleFavorite(string id)
+    {
+        var s = AppSettings.Current;
+        var list = new List<string>(s.FavoriteToolbarItems);
+        if (list.Remove(id))
+        {
+            // removed
+        }
+        else
+        {
+            list.Add(id);
+        }
+        SaveAndApplyFavorites(list, showFavorites: list.Count > 0 ? true : s.ShowFavoritesToolbar, showMain: s.ShowMainToolbar);
+    }
+
+    /// Persist favorites + visibility, then rebuild the strip and re-apply visibility.
+    /// Centralizing the write keeps AppSettings.Current and the UI from drifting.
+    private void SaveAndApplyFavorites(List<string> favorites, bool showFavorites, bool showMain)
+    {
+        var s = AppSettings.Current;
+        new AppSettings
+        {
+            DefaultRouting = s.DefaultRouting,
+            DefaultStroke  = s.DefaultStroke,
+            SnapEnabled    = s.SnapEnabled,
+            Units          = s.Units,
+            AutosaveEnabled = s.AutosaveEnabled,
+            AutosaveIntervalSeconds = s.AutosaveIntervalSeconds,
+            RestoreOpenFilesOnStartup = s.RestoreOpenFilesOnStartup,
+            ShowMainToolbar = showMain,
+            ShowFavoritesToolbar = showFavorites,
+            FavoriteToolbarItems = favorites,
+        }.Save();
+        BuildFavoritesStrip();
+        ApplyToolbarVisibility();
+        SyncToolButtons(); // refresh checked state for any tool buttons in the new strip
+    }
+
+    private void ApplyToolbarVisibility()
+    {
+        var s = AppSettings.Current;
+        MainToolStripBorder.Visibility = s.ShowMainToolbar ? Visibility.Visible : Visibility.Collapsed;
+        // Hide the favorites strip if the user disabled it OR has nothing pinned (no point
+        // showing an empty bar). Either of these states is recoverable via the View menu.
+        bool showFav = s.ShowFavoritesToolbar && AppSettings.Current.FavoriteToolbarItems.Count > 0;
+        FavoritesStripBorder.Visibility = showFav ? Visibility.Visible : Visibility.Collapsed;
+        if (MnuViewShowMain      != null) MnuViewShowMain.IsChecked      = s.ShowMainToolbar;
+        if (MnuViewShowFavorites != null) MnuViewShowFavorites.IsChecked = s.ShowFavoritesToolbar;
+    }
+
+    private void MnuToggleMainToolbar_Click(object sender, RoutedEventArgs e)
+    {
+        var s = AppSettings.Current;
+        SaveAndApplyFavorites(new List<string>(s.FavoriteToolbarItems),
+            showFavorites: s.ShowFavoritesToolbar,
+            showMain: !s.ShowMainToolbar);
+    }
+
+    private void MnuToggleFavoritesToolbar_Click(object sender, RoutedEventArgs e)
+    {
+        var s = AppSettings.Current;
+        SaveAndApplyFavorites(new List<string>(s.FavoriteToolbarItems),
+            showFavorites: !s.ShowFavoritesToolbar,
+            showMain: s.ShowMainToolbar);
+    }
+
+    private void MnuResetToolbars_Click(object sender, RoutedEventArgs e)
+    {
+        // Restore the out-of-box state: main strip on, favorites off and empty.
+        SaveAndApplyFavorites(new List<string>(), showFavorites: false, showMain: true);
+    }
+
+    private void BtnCustomizeFavorites_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new CustomizeToolbarWindow { Owner = this };
+        if (dlg.ShowDialog() == true)
+        {
+            SaveAndApplyFavorites(dlg.Selected, showFavorites: dlg.ShowFavorites, showMain: dlg.ShowMain);
+        }
     }
 
     private (Button Button, TextBlock Label) MakeStripAction(UIElement icon, string label, string tooltip, RoutedEventHandler onClick)
@@ -692,6 +872,7 @@ public partial class MainWindow : Window
         };
         RegisterToolButton(mode, btn);
         _toolTipKey[btn] = tipKey;
+        AttachFavoritesContextMenu(btn, mode.ToString());
         return btn;
     }
 
@@ -1530,6 +1711,13 @@ public partial class MainWindow : Window
         MnuViewZoomOut.Header    = L10n.T("menu.view.zoomout");
         MnuViewZoomReset.Header  = L10n.T("menu.view.zoomreset");
         MnuViewClearGuides.Header = L10n.T("menu.view.clearguides");
+        MnuViewToolbars.Header           = L10n.T("menu.view.toolbars");
+        MnuViewShowMain.Header           = L10n.T("menu.view.show.main");
+        MnuViewShowFavorites.Header      = L10n.T("menu.view.show.favorites");
+        MnuViewCustomizeFavorites.Header = L10n.T("menu.view.customize");
+        MnuViewResetToolbars.Header      = L10n.T("menu.view.reset.toolbars");
+        if (FavoritesStripLabel != null) FavoritesStripLabel.Text = L10n.T("toolbar.favorites").ToUpper();
+        if (BtnCustomizeFavorites != null) BtnCustomizeFavorites.ToolTip = L10n.T("toolbar.customize.tip");
 
         MnuLang.Header           = L10n.T("menu.lang");
         MnuLangEn.Header         = L10n.T("menu.lang.en");

@@ -1,0 +1,66 @@
+<Window x:Class="DrawThisEasy.Dialogs.CustomizeToolbarWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        AllowsTransparency="True"
+        Background="Transparent"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Width="520" Height="560">
+  <Border Background="White" CornerRadius="12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+    <Border.Effect>
+      <DropShadowEffect Color="#0F172A" Opacity="0.35" BlurRadius="40" ShadowDepth="6"/>
+    </Border.Effect>
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+        <RowDefinition Height="Auto"/>
+      </Grid.RowDefinitions>
+
+      <Border Grid.Row="0" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+        <Grid Margin="18,14">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0">
+            <TextBlock x:Name="TitleText" Text="Customize toolbars" FontFamily="Segoe UI" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+            <TextBlock x:Name="SubtitleText" Text="Choose which items appear in your Favorites toolbar." FontSize="12" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0"/>
+          </StackPanel>
+          <Button Grid.Column="1" Style="{StaticResource IconButton}" Click="Close_Click" Content="✕" FontSize="14" Foreground="{StaticResource TextMutedBrush}"/>
+        </Grid>
+      </Border>
+
+      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="18,14,18,16">
+        <StackPanel>
+          <TextBlock x:Name="LblToolbars" Text="TOOLBARS" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,6"/>
+          <CheckBox x:Name="ChkShowMain"      Content="Show main toolbar"      Foreground="{StaticResource TextBrush}" Margin="0,0,0,6"/>
+          <CheckBox x:Name="ChkShowFavorites" Content="Show favorites toolbar" Foreground="{StaticResource TextBrush}"/>
+
+          <Border Background="{StaticResource BorderBrush}" Height="1" Margin="0,14"/>
+
+          <TextBlock x:Name="LblItems" Text="FAVORITE ITEMS" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,6"/>
+          <TextBlock x:Name="LblItemsHint" Text="Check an item to pin it to your Favorites toolbar. Drag from the list to reorder." FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,10"/>
+          <StackPanel x:Name="ItemsHost"/>
+        </StackPanel>
+      </ScrollViewer>
+
+      <Border Grid.Row="2" Background="#FFF8FAFC" CornerRadius="0,0,12,12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0">
+        <Grid Margin="12,10">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <Button Grid.Column="0" x:Name="BtnReset"  Content="Reset" Style="{StaticResource GhostButton}" Click="Reset_Click" MinWidth="92" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"/>
+          <StackPanel Grid.Column="2" Orientation="Horizontal">
+            <Button x:Name="BtnCancel" Content="Cancel" Style="{StaticResource GhostButton}" Click="Close_Click" MinWidth="92" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="0,0,8,0"/>
+            <Button x:Name="BtnSave"   Content="Save"   Style="{StaticResource PrimaryButton}" Click="Save_Click" MinWidth="92"/>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </Grid>
+  </Border>
+</Window>

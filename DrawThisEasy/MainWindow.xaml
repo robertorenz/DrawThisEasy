@@ -13,7 +13,8 @@
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="52"/>
-      <RowDefinition Height="44"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
       <RowDefinition Height="*"/>
     </Grid.RowDefinitions>
 
@@ -67,6 +68,14 @@
             <MenuItem x:Name="MnuViewZoomReset" Header="_Reset Zoom"   Click="BtnZoomReset_Click"/>
             <Separator/>
             <MenuItem x:Name="MnuViewClearGuides" Header="Clear _Guides" Click="MnuClearGuides_Click"/>
+            <Separator/>
+            <MenuItem x:Name="MnuViewToolbars" Header="_Toolbars">
+              <MenuItem x:Name="MnuViewShowMain" Header="Show _Main Toolbar" IsCheckable="True" Click="MnuToggleMainToolbar_Click"/>
+              <MenuItem x:Name="MnuViewShowFavorites" Header="Show _Favorites Toolbar" IsCheckable="True" Click="MnuToggleFavoritesToolbar_Click"/>
+              <Separator/>
+              <MenuItem x:Name="MnuViewCustomizeFavorites" Header="_Customize Favorites..." Click="BtnCustomizeFavorites_Click"/>
+              <MenuItem x:Name="MnuViewResetToolbars" Header="_Reset Toolbars to Defaults" Click="MnuResetToolbars_Click"/>
+            </MenuItem>
           </MenuItem>
           <MenuItem x:Name="MnuLang" Header="_Language" Style="{StaticResource TopMenuItem}">
             <MenuItem x:Name="MnuLangEn" Header="English" IsCheckable="True" Click="MnuLangEn_Click"/>
@@ -106,14 +115,33 @@
     </Border>
 
     <!-- ====== Tool strip (secondary toolbar) ====== -->
-    <Border Grid.Row="1" Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+    <Border x:Name="MainToolStripBorder" Grid.Row="1" Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Height="44">
       <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Padding="12,0">
         <StackPanel x:Name="ToolStrip" Orientation="Horizontal" VerticalAlignment="Center"/>
       </ScrollViewer>
     </Border>
 
+    <!-- ====== Favorites strip (user-curated toolbar; collapses when empty/disabled) ====== -->
+    <Border x:Name="FavoritesStripBorder" Grid.Row="2" Background="#FFF8FAFC" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Height="40" Visibility="Collapsed">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock x:Name="FavoritesStripLabel" Grid.Column="0" Text="Favorites" VerticalAlignment="Center" Margin="14,0,10,0"
+                   FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}"/>
+        <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Padding="0,0,8,0">
+          <StackPanel x:Name="FavoritesStrip" Orientation="Horizontal" VerticalAlignment="Center"/>
+        </ScrollViewer>
+        <Button x:Name="BtnCustomizeFavorites" Grid.Column="2" Style="{StaticResource IconButton}"
+                Content="⚙" FontSize="13" Margin="0,0,10,0"
+                Click="BtnCustomizeFavorites_Click"/>
+      </Grid>
+    </Border>
+
     <!-- ====== Body: palette + canvas ====== -->
-    <Grid Grid.Row="2">
+    <Grid Grid.Row="3">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="220"/>
         <ColumnDefinition Width="*"/>
