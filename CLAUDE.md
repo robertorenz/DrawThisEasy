@@ -13,11 +13,14 @@ dotnet build DrawThisEasy/DrawThisEasy.csproj
 dotnet run --project DrawThisEasy/DrawThisEasy.csproj
 ```
 
-Single self-contained `.exe` (output in `DrawThisEasy/bin/Release/net9.0-windows/win-x64/publish/`):
+Single self-contained `.exe` (output in `DrawThisEasy/bin/Release/net9.0-windows/win-x64/publish/`, then copied to `run/DrawThisEasy.exe` — that's the folder the user actually launches from):
 
 ```powershell
-dotnet publish DrawThisEasy/DrawThisEasy.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+dotnet publish DrawThisEasy/DrawThisEasy.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
+cp DrawThisEasy/bin/Release/net9.0-windows/win-x64/publish/DrawThisEasy.exe run/DrawThisEasy.exe
 ```
+
+`EnableCompressionInSingleFile` is mandatory — it cuts the exe from ~134 MB to ~63 MB and the user expects the compressed build.
 
 Requires the .NET 9 SDK with the Windows Desktop workload. There is no lint config and no test project, so `dotnet build` is the only quality gate — treat build warnings as the signal.
 

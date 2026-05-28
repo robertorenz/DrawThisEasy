@@ -76,10 +76,10 @@ dotnet build DrawThisEasy/DrawThisEasy.csproj
 dotnet run --project DrawThisEasy/DrawThisEasy.csproj
 ```
 
-To produce a single self-contained `.exe`:
+To produce a single self-contained, compressed `.exe` (~63 MB):
 
 ```powershell
-dotnet publish DrawThisEasy/DrawThisEasy.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+dotnet publish DrawThisEasy/DrawThisEasy.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
 ```
 
 The output lands in `DrawThisEasy/bin/Release/net9.0-windows/win-x64/publish/`.
