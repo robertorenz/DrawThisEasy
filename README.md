@@ -23,6 +23,10 @@ Both are self-contained — the .NET 9 runtime is bundled, nothing else to insta
 
 When you need to whiteboard *"how do the clients, load balancer, app servers, queue, and database fit together"*, you don't want to wrestle with Visio or wait for a web app to load. DrawThisEasy opens instantly, ships as a single `.exe`, and stays out of your way.
 
+I created this as an easy-to-use drawing app — with simple shapes, so you can quickly show how something works. I took ideas from Excalidraw, but also from programs I've used in the past, like PageMaker and CorelDRAW; the use of rulers and guides, for example, comes from those.
+
+The main push to create it was watching my good friend **Alejandro Elías** always trying to use Windows Paint to show how something works, or should work — drawing boxes and lines, then moving them, deleting, retrying, and so on. My idea was: *I think I can make something easier for him to use and to teach with.*
+
 ## Features
 
 - **Multiple documents in tabs** — open several diagrams at once and switch between them along the top of the canvas. Each tab keeps its own zoom, selection, and unsaved-changes state; the `+` (or `Ctrl+N`) opens a new one, and closing a tab with unsaved edits prompts you to save.
