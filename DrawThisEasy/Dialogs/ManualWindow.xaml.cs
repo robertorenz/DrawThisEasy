@@ -97,6 +97,10 @@ public partial class ManualWindow : Window
         Heading("manual.view.h");
         Bullets("manual.view.b.pan", "manual.view.b.zoom", "manual.view.b.reset");
 
+        Heading("manual.toolbars.h");
+        Para("manual.toolbars.p");
+        Bullets("manual.toolbars.b.pin", "manual.toolbars.b.customize", "manual.toolbars.b.hide", "manual.toolbars.b.reset");
+
         Heading("manual.templates.h");
         Para("manual.templates.p");
 
@@ -114,7 +118,7 @@ public partial class ManualWindow : Window
         Para("manual.shortcuts.p");
 
         Heading("manual.faq.h");
-        for (int i = 1; i <= 10; i++)
+        for (int i = 1; i <= 11; i++)
             Faq($"manual.faq.q{i}", $"manual.faq.a{i}");
 
         BuildToc();

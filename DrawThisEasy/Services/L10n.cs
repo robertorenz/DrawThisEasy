@@ -391,6 +391,13 @@ public static class L10n
             ["manual.view.b.zoom"]  = "Zoom: hold Ctrl and scroll the mouse wheel, or use the zoom buttons in the top bar.",
             ["manual.view.b.reset"] = "Reset zoom returns the view to 100%.",
 
+            ["manual.toolbars.h"]         = "Customizing toolbars",
+            ["manual.toolbars.p"]         = "DrawThisEasy ships with a main toolbar across the top. You can also turn on a second Favorites toolbar with the buttons you reach for most, hide either toolbar, or reset both to defaults.",
+            ["manual.toolbars.b.pin"]     = "Pin a button: right-click any toolbar button and choose Add to Favorites (right-click again to remove).",
+            ["manual.toolbars.b.customize"] = "Customize Favorites: View ▸ Toolbars ▸ Customize Favorites... opens a dialog with every tool, action, and cloud-provider flyout — tick the ones you want and use the arrows to reorder.",
+            ["manual.toolbars.b.hide"]    = "Hide a toolbar: View ▸ Toolbars ▸ Show Main Toolbar / Show Favorites Toolbar each toggle their bar on or off.",
+            ["manual.toolbars.b.reset"]   = "Reset: View ▸ Toolbars ▸ Reset Toolbars to Defaults restores the main toolbar and clears your Favorites.",
+
             ["manual.templates.h"] = "Templates",
             ["manual.templates.p"] = "Start fast from a ready-made template — Org chart, Web architecture, Client-server, Microservices, Data pipeline, or a blank canvas. Open Templates from the toolbar or the File menu; everything stays fully editable afterwards.",
 
@@ -431,6 +438,8 @@ public static class L10n
             ["manual.faq.a9"] = "File ▸ Export to Excalidraw, draw.io, or Mermaid sends your diagram to those editors; Export PNG saves a 2× image.",
             ["manual.faq.q10"] = "How do I change the ruler units?",
             ["manual.faq.a10"] = "Open Edit ▸ Preferences and pick the ruler units — pixels, centimeters, inches, or picas.",
+            ["manual.faq.q11"] = "How do I make my own toolbar with just my favorite tools?",
+            ["manual.faq.a11"] = "Right-click any toolbar button and choose Add to Favorites — your pinned buttons appear in a second toolbar row. Use View ▸ Toolbars ▸ Customize Favorites... to pick and reorder items, hide the main toolbar from View ▸ Toolbars ▸ Show Main Toolbar, or use Reset Toolbars to Defaults to start over.",
         },
 
         [Language.Es] = new()
@@ -784,6 +793,13 @@ public static class L10n
             ["manual.view.b.zoom"]  = "Zoom: mantén Ctrl y gira la rueda del ratón, o usa los botones de zoom de la barra superior.",
             ["manual.view.b.reset"] = "Restablecer zoom devuelve la vista al 100%.",
 
+            ["manual.toolbars.h"]         = "Personalizar barras de herramientas",
+            ["manual.toolbars.p"]         = "DrawThisEasy incluye una barra principal en la parte superior. También puedes activar una segunda barra de Favoritos con los botones que más usas, ocultar cualquiera de las dos o restaurarlas a sus valores predeterminados.",
+            ["manual.toolbars.b.pin"]     = "Fijar un botón: haz clic derecho en cualquier botón de la barra y elige Añadir a favoritos (clic derecho de nuevo para quitarlo).",
+            ["manual.toolbars.b.customize"] = "Personalizar favoritos: Vista ▸ Barras de herramientas ▸ Personalizar favoritos... abre un cuadro con todas las herramientas, acciones y nubes — marca las que quieras y reordénalas con las flechas.",
+            ["manual.toolbars.b.hide"]    = "Ocultar una barra: Vista ▸ Barras de herramientas ▸ Mostrar barra principal / Mostrar barra de favoritos las muestra u oculta.",
+            ["manual.toolbars.b.reset"]   = "Restaurar: Vista ▸ Barras de herramientas ▸ Restaurar barras predeterminadas vuelve a mostrar la barra principal y vacía tus favoritos.",
+
             ["manual.templates.h"] = "Plantillas",
             ["manual.templates.p"] = "Empieza rápido con una plantilla lista: Organigrama, Arquitectura web, Cliente-servidor, Microservicios, Tubería de datos o un lienzo en blanco. Abre Plantillas desde la barra de herramientas o el menú Archivo; después puedes editarlo todo.",
 
@@ -824,6 +840,8 @@ public static class L10n
             ["manual.faq.a9"] = "Archivo ▸ Exportar a Excalidraw, draw.io o Mermaid envía tu diagrama a esos editores; Exportar PNG guarda una imagen a 2×.",
             ["manual.faq.q10"] = "¿Cómo cambio las unidades de la regla?",
             ["manual.faq.a10"] = "Abre Edición ▸ Preferencias y elige las unidades de la regla: píxeles, centímetros, pulgadas o picas.",
+            ["manual.faq.q11"] = "¿Cómo creo mi propia barra solo con mis herramientas favoritas?",
+            ["manual.faq.a11"] = "Haz clic derecho en cualquier botón de la barra y elige Añadir a favoritos: tus botones fijados aparecen en una segunda barra. Usa Vista ▸ Barras de herramientas ▸ Personalizar favoritos... para elegir y reordenar, oculta la barra principal desde Vista ▸ Barras de herramientas ▸ Mostrar barra principal, o usa Restaurar barras predeterminadas para empezar de nuevo.",
         }
     };
 }
