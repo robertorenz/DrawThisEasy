@@ -44,12 +44,15 @@ public partial class MainWindow : Window
         public TextBlock DirtyDot = null!;
         public string Title = "Untitled";
         public bool Dirty;
+        // Disk path the document was loaded from / last saved to. Null = unsaved (Untitled).
+        public string? FilePath;
     }
 
     private readonly List<DocTab> _docs = new();
     private DocTab _active = null!;
     private Button _addTabButton = null!;
     private int _newDocSeq;
+    private System.Windows.Threading.DispatcherTimer? _autosaveTimer;
 
     // All chrome (toolbar, palette, inspector, keyboard) acts on the active document's canvas.
     private DiagramCanvas Diagram => _active.Canvas;
@@ -71,6 +74,63 @@ public partial class MainWindow : Window
         RulerTop.SizeChanged += (s, e) => DrawRulers();
         RulerLeft.SizeChanged += (s, e) => DrawRulers();
         ApplyLanguage();
+
+        Loaded += (_, _) => RestoreSessionIfEnabled();
+        ApplyAutosaveSetting();
+    }
+
+    /// Reopens documents persisted from the prior session if the preference is on.
+    /// Runs after Loaded so any failing opens can still show their dialog over a visible window.
+    private void RestoreSessionIfEnabled()
+    {
+        if (!AppSettings.Current.RestoreOpenFilesOnStartup) return;
+        var paths = SessionState.Load().Where(File.Exists).ToList();
+        if (paths.Count == 0) return;
+
+        // Remember the initial blank tab; drop it if the restore actually opened something.
+        var initial = _docs.Count == 1 && !_docs[0].Dirty && _docs[0].FilePath == null ? _docs[0] : null;
+        int beforeCount = _docs.Count;
+        OpenPaths(paths);
+        if (initial != null && _docs.Count > beforeCount)
+        {
+            TabStrip.Children.Remove(initial.Header);
+            CanvasHost.Children.Remove(initial.Canvas);
+            _docs.Remove(initial);
+            if (_active == initial) ActivateDocument(_docs[^1]);
+        }
+    }
+
+    /// Starts (or restarts/stops) the autosave timer to match current settings.
+    private void ApplyAutosaveSetting()
+    {
+        _autosaveTimer?.Stop();
+        _autosaveTimer = null;
+        if (!AppSettings.Current.AutosaveEnabled) return;
+
+        int seconds = Math.Max(10, AppSettings.Current.AutosaveIntervalSeconds);
+        _autosaveTimer = new System.Windows.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(seconds)
+        };
+        _autosaveTimer.Tick += (_, _) => RunAutosave();
+        _autosaveTimer.Start();
+    }
+
+    /// Writes every dirty tab that has a known file path back to disk; untitled docs are skipped.
+    private void RunAutosave()
+    {
+        foreach (var tab in _docs)
+        {
+            if (!tab.Dirty || string.IsNullOrEmpty(tab.FilePath)) continue;
+            try
+            {
+                Persistence.Save(tab.Canvas.Model, tab.FilePath);
+                tab.Dirty = false;
+                UpdateTabHeader(tab);
+                if (tab == _active) UpdateWindowTitle();
+            }
+            catch { /* best-effort; user will be prompted on close if save still fails */ }
+        }
     }
 
     // ===== Documents (tabs) =====
@@ -1179,8 +1239,11 @@ public partial class MainWindow : Window
             try
             {
                 var text = File.ReadAllText(file);
-                var model = IsExcalidraw(file, text) ? DiagramImport.FromExcalidraw(text) : Persistence.Load(file);
-                NewDocument(model, IOPath.GetFileNameWithoutExtension(file));
+                bool excalidraw = IsExcalidraw(file, text);
+                var model = excalidraw ? DiagramImport.FromExcalidraw(text) : Persistence.Load(file);
+                var tab = NewDocument(model, IOPath.GetFileNameWithoutExtension(file));
+                // Excalidraw is an import (.excalidraw can't be saved back as DTE), so don't anchor a file path.
+                if (!excalidraw) tab.FilePath = file;
                 RecentFiles.Add(file);
             }
             catch (Exception ex)
@@ -1302,6 +1365,7 @@ public partial class MainWindow : Window
         {
             Persistence.Save(Diagram.Model, dlg.FileName);
             _active.Title = IOPath.GetFileNameWithoutExtension(dlg.FileName);
+            _active.FilePath = dlg.FileName;
             MarkSaved();
             RecentFiles.Add(dlg.FileName);
             RebuildRecentMenu();
@@ -1394,7 +1458,10 @@ public partial class MainWindow : Window
     private void BtnPreferences_Click(object sender, RoutedEventArgs e)
     {
         if (PreferencesWindow.Show(this))
-            DrawRulers();   // ruler units may have changed
+        {
+            DrawRulers();           // ruler units may have changed
+            ApplyAutosaveSetting(); // autosave toggle may have changed
+        }
     }
 
     private void UpdateZoomLabel() => ZoomLabel.Text = $"{(int)Math.Round(Diagram.Zoom * 100)}%";
@@ -1539,6 +1606,9 @@ public partial class MainWindow : Window
 
     private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        // If autosave is on, flush dirty saved tabs silently before the unsaved-changes prompt.
+        if (AppSettings.Current.AutosaveEnabled) RunAutosave();
+
         // Prompt for each document that has unsaved changes.
         foreach (var tab in _docs.FindAll(d => d.Dirty))
         {
@@ -1554,6 +1624,12 @@ public partial class MainWindow : Window
             if (choice == ModalWindow.UnsavedChoice.Save && !SaveDiagram(notify: false)) { e.Cancel = true; return; }
             tab.Dirty = false;
         }
+
+        // Snapshot the set of open files so the next launch can reopen them (only saved docs have a path).
+        if (AppSettings.Current.RestoreOpenFilesOnStartup)
+            SessionState.Save(_docs.Where(d => !string.IsNullOrEmpty(d.FilePath)).Select(d => d.FilePath!));
+        else
+            SessionState.Clear();
     }
 
     // ===== Keyboard =====

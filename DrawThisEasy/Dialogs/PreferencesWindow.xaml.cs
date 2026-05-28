@@ -16,6 +16,9 @@ public partial class PreferencesWindow : Window
         LblStroke.Text   = L10n.T("conn.stroke");
         ChkSnap.Content  = L10n.T("pref.snap");
         LblUnits.Text    = L10n.T("pref.units");
+        LblFilesHeader.Text = L10n.T("pref.files").ToUpperInvariant();
+        ChkAutosave.Content = L10n.T("pref.autosave");
+        ChkRestoreSession.Content = L10n.T("pref.restore.session");
         BtnCancel.Content = L10n.T("modal.cancel");
         BtnSave.Content  = L10n.T("topbar.save");
 
@@ -37,6 +40,8 @@ public partial class PreferencesWindow : Window
         CmbStroke.SelectedIndex  = (int)s.DefaultStroke;
         CmbUnits.SelectedIndex   = (int)s.Units;
         ChkSnap.IsChecked        = s.SnapEnabled;
+        ChkAutosave.IsChecked    = s.AutosaveEnabled;
+        ChkRestoreSession.IsChecked = s.RestoreOpenFilesOnStartup;
     }
 
     /// Shows the dialog; returns true if the user saved changes.
@@ -55,7 +60,10 @@ public partial class PreferencesWindow : Window
             DefaultRouting = (ConnectorRouting)System.Math.Max(0, CmbRouting.SelectedIndex),
             DefaultStroke  = (StrokeStyle)System.Math.Max(0, CmbStroke.SelectedIndex),
             Units          = (RulerUnit)System.Math.Max(0, CmbUnits.SelectedIndex),
-            SnapEnabled    = ChkSnap.IsChecked == true
+            SnapEnabled    = ChkSnap.IsChecked == true,
+            AutosaveEnabled = ChkAutosave.IsChecked == true,
+            AutosaveIntervalSeconds = AppSettings.Current.AutosaveIntervalSeconds,
+            RestoreOpenFilesOnStartup = ChkRestoreSession.IsChecked == true
         }.Save();
 
         DialogResult = true;

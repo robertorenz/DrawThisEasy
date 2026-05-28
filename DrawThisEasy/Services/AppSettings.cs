@@ -15,6 +15,9 @@ public class AppSettings
     public StrokeStyle DefaultStroke { get; set; } = StrokeStyle.Solid;
     public bool SnapEnabled { get; set; } = true;
     public RulerUnit Units { get; set; } = RulerUnit.Pixels;
+    public bool AutosaveEnabled { get; set; } = false;
+    public int AutosaveIntervalSeconds { get; set; } = 60;
+    public bool RestoreOpenFilesOnStartup { get; set; } = false;
 
     [JsonIgnore]
     public static AppSettings Current { get; private set; } = Load();
