@@ -51,6 +51,12 @@
           <TextBlock x:Name="LblUnits" Text="Ruler units" Width="110" VerticalAlignment="Center" Foreground="{StaticResource TextBrush}"/>
           <ComboBox x:Name="CmbUnits"/>
         </DockPanel>
+
+        <Border Background="{StaticResource BorderBrush}" Height="1" Margin="0,14"/>
+
+        <TextBlock x:Name="LblFilesHeader" Text="FILES" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,6"/>
+        <CheckBox x:Name="ChkAutosave" Content="Autosave changes" Foreground="{StaticResource TextBrush}" Margin="0,0,0,8"/>
+        <CheckBox x:Name="ChkRestoreSession" Content="Reopen files on startup" Foreground="{StaticResource TextBrush}"/>
       </StackPanel>
 
       <Border Grid.Row="2" Background="#FFF8FAFC" CornerRadius="0,0,12,12" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0">
