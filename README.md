@@ -19,6 +19,11 @@ Both are self-contained — the .NET 9 runtime is bundled, nothing else to insta
 
 ---
 
+## What's new in 1.2.0
+
+- **Presentation mode** — mark numbered screens, reorder them in a queue, choose a background color, and **Start Presenting** for a fullscreen slideshow that flies between screens with a smooth zoom-out/zoom-in transition. Navigate with arrows / Space / Enter; Esc exits.
+- **Go to Free Space** now finds an empty gap and auto-adds it as the next presentation screen.
+
 ## What's new in 1.1.0
 
 - **Rich Text shape** — a formatted text card with mixed fonts, sizes, **bold / italic / underline**, colors, and alignment in one block.
@@ -50,7 +55,8 @@ The main push to create it was watching my good friend **Alejandro Elías** alwa
 - **Inline label editing** — double-click any shape, type, `Enter` to commit.
 - **Rich Text shape** — a formatted text card you edit in place (double-click): mix fonts, sizes, **bold / italic / underline**, colors, and alignment within one block using the Inspector controls or `Ctrl+B/I/U`. Pasting formatted text from PowerPoint/Word into the canvas creates one of these with its formatting intact. Stored as RTF in the `.ptd.json`.
 - **Pan & zoom** — `Space` + drag, right-click + drag, or just drag empty area. Mouse wheel zooms.
-- **Go to Free Space** — a toolbar button (also **View → Go to Free Space**) that pans to a blank area just past your existing shapes, so you can lay out another scene on the same canvas without overlapping what's already there.
+- **Go to Free Space** — a toolbar button (also **View → Go to Free Space**) that finds an empty gap on the canvas, marks it as the next numbered **presentation screen**, and pans there — so you can lay out another scene without overlapping existing content.
+- **Presentation mode** — turn a diagram into a slideshow. **Present** opens a panel where you mark screens (capture the current view, or auto-add empty ones), reorder them in a numbered queue, and pick a background color. **Start Presenting** goes fullscreen and flies between screens with a smooth *zoom-out-to-overview, then zoom-into-the-next* transition. Navigate with arrow keys (**↑/← back**, **↓/→ forward**), **Space/Enter** (forward), **Home/End** (first/last); **Esc** exits.
 - **Inspector panel** for fill / stroke colors, **label typography** (font family, size, **bold / italic / underline**, alignment, and text color — applied to every selected shape), and layer ordering.
 - **Rulers, guides & snapping** — rulers along the top and left; **drag from a ruler** onto the canvas to drop a guide line. Drag a guide to reposition it, or **drag it back onto its ruler to remove it** (**View → Clear Guides** clears all). Moving shapes **snap** to other shapes' edges/centers and to guides, with live red alignment lines; hold `Alt` to move freely.
 - **Preferences** (Edit → Preferences) — set the **default connector** routing & line style for new connectors, toggle **snapping**, choose **ruler units** (pixels, cm, inches, picas), turn on **autosave** (silently writes every dirty tab that has a file path), and **reopen files on startup** (remembers the set of open documents and reopens them on next launch). Saved to `%LOCALAPPDATA%\DrawThisEasy\preferences.json`; the open-files list lives next to it in `session.json`.

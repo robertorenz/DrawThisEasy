@@ -36,6 +36,8 @@ public partial class MainWindow : Window
     private TextBlock? _imgPaletteLabel;
     private Button? _freeSpaceStripBtn;
     private TextBlock? _freeSpaceStripLabel;
+    private Button? _presentStripBtn;
+    private TextBlock? _presentStripLabel;
 
     // ===== Open documents (tabs) =====
     private sealed class DocTab
@@ -183,7 +185,7 @@ public partial class MainWindow : Window
         c.ToolChanged          += (s, mode) => { if (ReferenceEquals(s, _active.Canvas)) SyncToolButtons(); };
         c.SelectionChanged     += (s, e)    => { if (ReferenceEquals(s, _active.Canvas)) UpdateInspectorVisibility(); };
         c.ZoomChanged          += (s, e)    => { if (ReferenceEquals(s, _active.Canvas)) UpdateZoomLabel(); };
-        c.ModelDirty           += (s, e)    => { if (s is DiagramCanvas dc) MarkDirtyFor(dc); };
+        c.ModelDirty           += (s, e)    => { if (s is DiagramCanvas dc) MarkDirtyFor(dc); if (ReferenceEquals(s, _active?.Canvas) && PresentPanel != null && PresentPanel.Visibility == Visibility.Visible) RefreshPresentPanel(); };
         c.ContextMenuRequested += (s, pt)   => { if (ReferenceEquals(s, _active.Canvas)) ShowShapeContextMenu(pt); };
         c.ConnectionContextRequested += (s, pt) => { if (ReferenceEquals(s, _active.Canvas)) ShowConnectionContextMenu(pt); };
         c.ViewChanged          += (s, e)    => { if (_active != null && ReferenceEquals(s, _active.Canvas)) { UpdateScrollBars(); DrawRulers(); } };
@@ -207,6 +209,7 @@ public partial class MainWindow : Window
         UpdateWindowTitle();
         UpdateScrollBars();
         DrawRulers();
+        if (PresentPanel != null && PresentPanel.Visibility == Visibility.Visible) RefreshPresentPanel();
         tab.Canvas.Focus();
     }
 
@@ -615,9 +618,15 @@ public partial class MainWindow : Window
 
         var (fBtn, fLbl) = MakeStripAction(BuildFreeSpaceIcon((Brush)FindResource("TextMutedBrush")),
             L10n.T("topbar.freespace"), L10n.T("topbar.freespace.tip"),
-            (s, e) => Diagram.GoToFreeSpace());
+            (s, e) => GoToFreeSpaceAndMark());
         _freeSpaceStripBtn = fBtn; _freeSpaceStripLabel = fLbl;
         ToolStrip.Children.Add(fBtn);
+
+        var (pBtn, pLbl) = MakeStripAction(BuildPresentIcon((Brush)FindResource("TextMutedBrush")),
+            L10n.T("topbar.present"), L10n.T("topbar.present.tip"),
+            (s, e) => TogglePresentPanel());
+        _presentStripBtn = pBtn; _presentStripLabel = pLbl;
+        ToolStrip.Children.Add(pBtn);
 
         ToolStrip.Children.Add(BuildStripSeparator());
         ToolStrip.Children.Add(BuildProviderStripButton("AWS",    Stencils.Aws,   Stencils.AwsColor));
@@ -884,6 +893,24 @@ public partial class MainWindow : Window
         {
             Fill = brush,
             Points = new PointCollection { new Point(14, 6), new Point(17, 9), new Point(14, 12) }
+        });
+        return c;
+    }
+
+    // A "play" triangle inside a screen frame — the presentation panel toggle.
+    private UIElement BuildPresentIcon(Brush brush)
+    {
+        var c = new Canvas { Width = 18, Height = 18 };
+        var frame = new System.Windows.Shapes.Rectangle
+        {
+            Width = 16, Height = 12, RadiusX = 2, RadiusY = 2,
+            Stroke = brush, StrokeThickness = 1.4, Fill = null
+        };
+        Canvas.SetLeft(frame, 1); Canvas.SetTop(frame, 3); c.Children.Add(frame);
+        c.Children.Add(new System.Windows.Shapes.Polygon
+        {
+            Fill = brush,
+            Points = new PointCollection { new Point(7, 6), new Point(12, 9), new Point(7, 12) }
         });
         return c;
     }
@@ -1842,7 +1869,259 @@ public partial class MainWindow : Window
     private void BtnZoomOut_Click(object sender, RoutedEventArgs e) => Diagram.SetZoom(Diagram.Zoom / 1.2);
     private void BtnZoomReset_Click(object sender, RoutedEventArgs e) => Diagram.ResetView();
 
-    private void BtnGoToFreeSpace_Click(object sender, RoutedEventArgs e) => Diagram.GoToFreeSpace();
+    private void BtnGoToFreeSpace_Click(object sender, RoutedEventArgs e) => GoToFreeSpaceAndMark();
+
+    // ===== Presentation =====
+
+    private bool _presenting;
+    private int _presentIndex;
+    private static readonly string[] PresentBgChoices = { "#FFFFFF", "#F8FAFC", "#0F172A", "#0EA5E9", "#FEF3C7" };
+
+    private void TogglePresentPanel()
+    {
+        PresentPanel.Visibility = PresentPanel.Visibility == Visibility.Visible
+            ? Visibility.Collapsed : Visibility.Visible;
+        if (PresentPanel.Visibility == Visibility.Visible) RefreshPresentPanel();
+    }
+
+    private void BtnClosePresentPanel_Click(object sender, RoutedEventArgs e)
+        => PresentPanel.Visibility = Visibility.Collapsed;
+
+    // Find an empty gap, mark it as the next numbered screen, pan there, and show the panel.
+    private void GoToFreeSpaceAndMark()
+    {
+        Diagram.GoToFreeSpace();
+        PresentPanel.Visibility = Visibility.Visible;
+        RefreshPresentPanel();
+    }
+
+    private void BtnAddFreeScreen_Click(object sender, RoutedEventArgs e) => GoToFreeSpaceAndMark();
+
+    private void BtnMarkScreen_Click(object sender, RoutedEventArgs e)
+    {
+        Diagram.AddFrame(Diagram.CurrentViewWorldRect());
+        RefreshPresentPanel();
+    }
+
+    private void RefreshPresentPanel()
+    {
+        if (PresentList == null) return;
+        PresentList.Children.Clear();
+        var frames = Diagram.Model.Frames.OrderBy(f => f.Order).ToList();
+        PresentEmptyHint.Visibility = frames.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        foreach (var f in frames) PresentList.Children.Add(BuildPresentRow(f));
+        if (PresentBgSwatches.Children.Count == 0) BuildPresentBgSwatches();
+        BtnStartPresent.IsEnabled = frames.Count > 0;
+    }
+
+    private UIElement BuildPresentRow(PresentationFrame f)
+    {
+        var grid = new Grid { Margin = new Thickness(0, 0, 0, 3) };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var badge = new Border
+        {
+            Width = 22, Height = 22, CornerRadius = new CornerRadius(11),
+            Background = (Brush)FindResource("AccentBrush"),
+            Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center,
+            Child = new TextBlock
+            {
+                Text = f.Order.ToString(), Foreground = Brushes.White, FontSize = 11, FontWeight = FontWeights.SemiBold,
+                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center
+            }
+        };
+        Grid.SetColumn(badge, 0);
+
+        var label = new TextBlock
+        {
+            Text = $"{L10n.T("present.screen")} {f.Order}", VerticalAlignment = VerticalAlignment.Center,
+            FontSize = 12, Foreground = (Brush)FindResource("TextBrush")
+        };
+        Grid.SetColumn(label, 1);
+
+        var btns = new StackPanel { Orientation = Orientation.Horizontal };
+        Grid.SetColumn(btns, 2);
+        btns.Children.Add(MiniIcon("▲", "present.up",     () => { Diagram.MoveFrame(f.Id, -1); RefreshPresentPanel(); }));
+        btns.Children.Add(MiniIcon("▼", "present.down",   () => { Diagram.MoveFrame(f.Id,  1); RefreshPresentPanel(); }));
+        btns.Children.Add(MiniIcon("✕", "present.delete", () => { Diagram.RemoveFrame(f.Id);   RefreshPresentPanel(); }));
+
+        grid.Children.Add(badge); grid.Children.Add(label); grid.Children.Add(btns);
+
+        var card = new Border
+        {
+            Child = grid, Padding = new Thickness(6, 3, 4, 3), CornerRadius = new CornerRadius(6),
+            Background = Brushes.Transparent, Cursor = Cursors.Hand,
+            ToolTip = L10n.T("present.goto")
+        };
+        var hover = (Brush)new BrushConverter().ConvertFromString("#FFF1F5F9")!;
+        card.MouseEnter += (s, e) => card.Background = hover;
+        card.MouseLeave += (s, e) => card.Background = Brushes.Transparent;
+        card.MouseLeftButtonUp += (s, e) => Diagram.ShowRect(new Rect(f.X, f.Y, f.Width, f.Height), animate: true);
+        return card;
+    }
+
+    private Button MiniIcon(string glyph, string tipKey, Action onClick)
+    {
+        var b = new Button
+        {
+            Style = (Style)FindResource("IconButton"),
+            Content = glyph, Width = 24, Height = 24, FontSize = 11,
+            ToolTip = L10n.T(tipKey), Margin = new Thickness(1, 0, 0, 0)
+        };
+        b.Click += (s, e) => onClick();
+        return b;
+    }
+
+    private void BuildPresentBgSwatches()
+    {
+        PresentBgSwatches.Children.Clear();
+        foreach (var hex in PresentBgChoices) PresentBgSwatches.Children.Add(PresentBgSwatch(hex));
+        PresentBgSwatches.Children.Add(PresentBgCustomSwatch());
+    }
+
+    private Border PresentBgSwatch(string hex)
+    {
+        var b = new Border
+        {
+            Width = 24, Height = 24, Margin = new Thickness(0, 0, 6, 0), CornerRadius = new CornerRadius(6),
+            Background = (Brush)new BrushConverter().ConvertFromString(hex)!,
+            BorderBrush = (Brush)FindResource("BorderBrush"), BorderThickness = new Thickness(1),
+            Cursor = Cursors.Hand, ToolTip = hex
+        };
+        b.MouseLeftButtonDown += (s, e) => SetPresentBackground(hex);
+        return b;
+    }
+
+    private Border PresentBgCustomSwatch()
+    {
+        var b = new Border
+        {
+            Width = 24, Height = 24, Margin = new Thickness(0, 0, 6, 0), CornerRadius = new CornerRadius(6),
+            BorderBrush = (Brush)FindResource("BorderBrush"), BorderThickness = new Thickness(1),
+            Cursor = Cursors.Hand, ToolTip = L10n.T("color.custom"),
+            Background = new LinearGradientBrush(
+                new GradientStopCollection
+                {
+                    new GradientStop((Color)ColorConverter.ConvertFromString("#F87171"), 0.0),
+                    new GradientStop((Color)ColorConverter.ConvertFromString("#34D399"), 0.5),
+                    new GradientStop((Color)ColorConverter.ConvertFromString("#38BDF8"), 1.0),
+                }, new Point(0, 0), new Point(1, 1))
+        };
+        b.MouseLeftButtonDown += (s, e) =>
+        {
+            var picked = ColorPickerWindow.Pick(this, PresentBackgroundColor());
+            if (picked.HasValue)
+                SetPresentBackground($"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}");
+        };
+        return b;
+    }
+
+    private void SetPresentBackground(string hex)
+    {
+        Diagram.Model.PresentBackground = hex;
+        MarkDirtyFor(Diagram);
+        if (_presenting) Diagram.SetPresentationBackground(PresentBackgroundColor());
+    }
+
+    private Color PresentBackgroundColor()
+    {
+        var hex = Diagram.Model.PresentBackground;
+        if (string.IsNullOrWhiteSpace(hex)) return Colors.White;
+        try { return (Color)ColorConverter.ConvertFromString(hex); } catch { return Colors.White; }
+    }
+
+    private void BtnStartPresent_Click(object sender, RoutedEventArgs e) => StartPresenting();
+
+    private void StartPresenting()
+    {
+        var frames = Diagram.Model.Frames.OrderBy(f => f.Order).ToList();
+        if (frames.Count == 0)
+        {
+            ModalWindow.Info(this, L10n.T("present.title"), L10n.T("present.none"));
+            return;
+        }
+        EnterPresentationChrome();
+        Diagram.BeginPresentationVisual(PresentBackgroundColor());
+        _presenting = true;
+        _presentIndex = 0;
+        PresentPanel.Visibility = Visibility.Collapsed;
+        Focus();
+        // Wait for the chrome-hidden layout to settle so the canvas size (used for framing) is final.
+        Dispatcher.BeginInvoke(new Action(() => PresentNavigateTo(0, fast: false)),
+            System.Windows.Threading.DispatcherPriority.ContextIdle);
+    }
+
+    private void ExitPresenting()
+    {
+        if (!_presenting) return;
+        _presenting = false;
+        Diagram.EndPresentationVisual();
+        ExitPresentationChrome();
+    }
+
+    private void PresentNavigateTo(int index, bool fast)
+    {
+        var frames = Diagram.Model.Frames.OrderBy(f => f.Order).ToList();
+        if (frames.Count == 0) { ExitPresenting(); return; }
+        _presentIndex = Math.Max(0, Math.Min(frames.Count - 1, index));
+        Diagram.PresentGoToFrame(frames[_presentIndex], fast ? 1.8 : 2.6, null);
+    }
+
+    private void PresentNext() { if (!Diagram.IsAnimatingView) PresentNavigateTo(_presentIndex + 1, true); }
+    private void PresentPrev() { if (!Diagram.IsAnimatingView) PresentNavigateTo(_presentIndex - 1, true); }
+
+    // ---- chrome show/hide for fullscreen presentation ----
+    private WindowState _savedWindowState;
+    private WindowStyle _savedWindowStyle;
+    private ResizeMode _savedResizeMode;
+
+    private void EnterPresentationChrome()
+    {
+        _savedWindowState = WindowState;
+        _savedWindowStyle = WindowStyle;
+        _savedResizeMode = ResizeMode;
+
+        TopBar.Visibility = Visibility.Collapsed;
+        MainToolStripBorder.Visibility = Visibility.Collapsed;
+        FavoritesStripBorder.Visibility = Visibility.Collapsed;
+        TabStripBorder.Visibility = Visibility.Collapsed;
+        StatusBar.Visibility = Visibility.Collapsed;
+        Inspector.Visibility = Visibility.Collapsed;
+        PaletteBorder.Visibility = Visibility.Collapsed;
+        PaletteCol.Width = new GridLength(0);
+        RulerGrid.RowDefinitions[0].Height = new GridLength(0);
+        RulerGrid.ColumnDefinitions[0].Width = new GridLength(0);
+        VScroll.Visibility = Visibility.Collapsed;
+        HScroll.Visibility = Visibility.Collapsed;
+
+        // Borderless fullscreen. Toggling style while maximized needs a Normal bounce.
+        WindowStyle = WindowStyle.None;
+        ResizeMode = ResizeMode.NoResize;
+        if (WindowState == WindowState.Maximized) WindowState = WindowState.Normal;
+        WindowState = WindowState.Maximized;
+    }
+
+    private void ExitPresentationChrome()
+    {
+        TopBar.Visibility = Visibility.Visible;
+        TabStripBorder.Visibility = Visibility.Visible;
+        StatusBar.Visibility = Visibility.Visible;
+        PaletteBorder.Visibility = Visibility.Visible;
+        PaletteCol.Width = new GridLength(220);
+        RulerGrid.RowDefinitions[0].Height = new GridLength(18);
+        RulerGrid.ColumnDefinitions[0].Width = new GridLength(18);
+        VScroll.Visibility = Visibility.Visible;
+        HScroll.Visibility = Visibility.Visible;
+
+        WindowStyle = _savedWindowStyle;
+        ResizeMode = _savedResizeMode;
+        WindowState = _savedWindowState;
+
+        ApplyToolbarVisibility();   // restores main + favorites strips per user prefs
+        UpdateInspectorVisibility();
+    }
 
     private void MnuClearGuides_Click(object sender, RoutedEventArgs e) => Diagram.ClearGuides();
 
@@ -1958,6 +2237,17 @@ public partial class MainWindow : Window
         if (_imgPaletteLabel != null) _imgPaletteLabel.Text = L10n.T("topbar.image.tip");
         if (_freeSpaceStripLabel != null) _freeSpaceStripLabel.Text = L10n.T("topbar.freespace");
         if (_freeSpaceStripBtn != null) _freeSpaceStripBtn.ToolTip = L10n.T("topbar.freespace.tip");
+        if (_presentStripLabel != null) _presentStripLabel.Text = L10n.T("topbar.present");
+        if (_presentStripBtn != null) _presentStripBtn.ToolTip = L10n.T("topbar.present.tip");
+
+        // Presentation panel
+        if (PresentTitle != null)     PresentTitle.Text = L10n.T("present.title").ToUpperInvariant();
+        if (BtnMarkScreen != null)    BtnMarkScreen.Content = L10n.T("present.mark");
+        if (BtnAddFreeScreen != null) BtnAddFreeScreen.Content = L10n.T("present.addempty");
+        if (LblPresentBg != null)     LblPresentBg.Text = L10n.T("present.bg").ToUpperInvariant();
+        if (PresentEmptyHint != null) PresentEmptyHint.Text = L10n.T("present.empty");
+        if (BtnStartPresent != null)  BtnStartPresent.Content = L10n.T("present.start");
+        if (PresentPanel != null && PresentPanel.Visibility == Visibility.Visible) RefreshPresentPanel();
 
         // Palette group labels
         foreach (var (tb, key) in _groupLabels)
@@ -2044,6 +2334,22 @@ public partial class MainWindow : Window
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
+        // Presentation mode owns the keyboard: arrows/space/enter navigate, Esc exits.
+        if (_presenting)
+        {
+            switch (e.Key)
+            {
+                case Key.Escape: ExitPresenting(); break;
+                case Key.Left: case Key.Up: case Key.PageUp: PresentPrev(); break;
+                case Key.Right: case Key.Down: case Key.PageDown:
+                case Key.Space: case Key.Enter: PresentNext(); break;
+                case Key.Home: PresentNavigateTo(0, true); break;
+                case Key.End:  PresentNavigateTo(int.MaxValue, true); break;
+            }
+            e.Handled = true;
+            return;
+        }
+
         // Ignore if focus is inside a text editor (e.g. editing a label or rich text)
         if (Keyboard.FocusedElement is TextBox or RichTextBox) return;
 

@@ -60,6 +60,10 @@ public class DiagramCanvas : Canvas
     private bool _rightClickConn;
     private double? _snapX, _snapY;   // active alignment-guide coordinates while moving
 
+    /// While true (presentation mode) all mouse interaction is ignored — the view is driven
+    /// only by the presentation navigation.
+    public bool ReadOnly;
+
     // ---- Undo/redo ----
     private readonly Stack<string> _undoStack = new();
     private readonly Stack<string> _redoStack = new();
@@ -641,6 +645,7 @@ public class DiagramCanvas : Canvas
 
     private void OnMouseLeftDown(object sender, MouseButtonEventArgs e)
     {
+        if (ReadOnly) return;
         if (_isEditingText) { CommitTextEdit(); }
         Focus();
         var screen = e.GetPosition(this);
@@ -789,6 +794,7 @@ public class DiagramCanvas : Canvas
 
     private void OnMouseMove(object sender, MouseEventArgs e)
     {
+        if (ReadOnly) return;
         var screen = e.GetPosition(this);
         var world = ScreenToWorld(screen);
         _lastMouseWorld = world;
@@ -920,6 +926,7 @@ public class DiagramCanvas : Canvas
 
     private void OnMouseLeftUp(object sender, MouseButtonEventArgs e)
     {
+        if (ReadOnly) return;
         var world = ScreenToWorld(e.GetPosition(this));
 
         if (_drag == DragMode.GuideMove && _dragGuide != null)
@@ -981,6 +988,7 @@ public class DiagramCanvas : Canvas
 
     private void OnMouseRightDown(object sender, MouseButtonEventArgs e)
     {
+        if (ReadOnly) return;
         if (_isEditingText) CommitTextEdit();
         Focus();
         var screen = e.GetPosition(this);
@@ -1019,6 +1027,7 @@ public class DiagramCanvas : Canvas
 
     private void OnMouseRightUp(object sender, MouseButtonEventArgs e)
     {
+        if (ReadOnly) return;
         if (_rightClickPending)
         {
             _rightClickPending = false;
@@ -1047,6 +1056,7 @@ public class DiagramCanvas : Canvas
 
     private void OnMouseWheel(object sender, MouseWheelEventArgs e)
     {
+        if (ReadOnly) return;
         if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
         {
             // Ctrl + wheel = zoom toward the cursor.
@@ -2008,26 +2018,279 @@ public class DiagramCanvas : Canvas
         ViewChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    /// Pans (keeping the current zoom) to an empty stretch of canvas just past the
-    /// right edge of all existing shapes — a clean area to start another scene. Anything
-    /// to the right of the rightmost shape is guaranteed clear of shapes. With an empty
-    /// canvas there's nothing to clear, so it just recenters.
-    public void GoToFreeSpace()
+    // ===== Presentation screens & view framing =====
+
+    private const double FreeRegionW = 1000;
+    private const double FreeRegionH = 620;
+    private const double FreeRegionGap = 140;
+
+    /// Finds an empty gap (clear of shapes and existing screens), pans to it, and marks it
+    /// as the next numbered presentation screen. Returns the new frame so the UI can refresh.
+    public PresentationFrame GoToFreeSpace()
     {
         ClearSelection();
-        if (_model.Shapes.Count == 0) { ResetView(); return; }
+        var region = FindFreeRegion(new Size(FreeRegionW, FreeRegionH), FreeRegionGap);
+        var frame = AddFrame(region);
+        ShowRect(region, animate: true);
+        return frame;
+    }
 
-        double maxX = double.MinValue, minY = double.MaxValue;
-        foreach (var s in _model.Shapes)
+    /// Searches outward (nearest-first) for a region of the given size that overlaps no
+    /// shape and no existing screen. Falls back to the right of all content if none is found.
+    public Rect FindFreeRegion(Size size, double gap)
+    {
+        double w = size.Width, h = size.Height;
+        double stepX = w + gap, stepY = h + gap;
+
+        var obstacles = new List<Rect>();
+        foreach (var s in _model.Shapes) obstacles.Add(new Rect(s.X, s.Y, s.Width, s.Height));
+        foreach (var f in _model.Frames) obstacles.Add(new Rect(f.X, f.Y, f.Width, f.Height));
+
+        // Origin: top-left of existing content, else the current view's top-left.
+        double ox, oy;
+        if (obstacles.Count > 0)
         {
-            maxX = Math.Max(maxX, s.X + s.Width);
-            minY = Math.Min(minY, s.Y);
+            ox = obstacles.Min(r => r.X);
+            oy = obstacles.Min(r => r.Y);
+        }
+        else
+        {
+            var tl = ScreenToWorld(new Point(0, 0));
+            ox = tl.X + 40; oy = tl.Y + 40;
+            return new Rect(ox, oy, w, h);
         }
 
-        const double gap = 160;              // clear separation from the existing content
-        var zoom = Zoom <= 0 ? 1.0 : Zoom;
-        var margin = 100 / zoom;             // keep the free area a little in from the corner
-        ScrollViewTo(maxX + gap - margin, minY - margin);
+        bool Free(Rect cand)
+        {
+            var padded = new Rect(cand.X - gap / 2, cand.Y - gap / 2, cand.Width + gap, cand.Height + gap);
+            foreach (var o in obstacles) if (padded.IntersectsWith(o)) return false;
+            return true;
+        }
+
+        // Expanding square spiral over a grid of cells, nearest ring first.
+        for (int ring = 0; ring <= 80; ring++)
+        {
+            for (int gi = -ring; gi <= ring; gi++)
+            for (int gj = -ring; gj <= ring; gj++)
+            {
+                if (Math.Max(Math.Abs(gi), Math.Abs(gj)) != ring) continue; // perimeter only
+                var cand = new Rect(ox + gi * stepX, oy + gj * stepY, w, h);
+                if (Free(cand)) return cand;
+            }
+        }
+
+        // Fallback: just to the right of everything.
+        double maxX = obstacles.Max(r => r.Right);
+        return new Rect(maxX + gap, oy, w, h);
+    }
+
+    // ---- presentation frame model mutators (snapshot for undo) ----
+    public IReadOnlyList<PresentationFrame> Frames => _model.Frames;
+
+    public PresentationFrame AddFrame(Rect r)
+    {
+        Snapshot();
+        var f = new PresentationFrame { X = r.X, Y = r.Y, Width = r.Width, Height = r.Height };
+        _model.Frames.Add(f);
+        Renumber();
+        return f;
+    }
+
+    public void RemoveFrame(string id)
+    {
+        var f = _model.Frames.FirstOrDefault(x => x.Id == id);
+        if (f == null) return;
+        Snapshot();
+        _model.Frames.Remove(f);
+        Renumber();
+    }
+
+    /// Moves a screen earlier (dir<0) or later (dir>0) in the running order.
+    public void MoveFrame(string id, int dir)
+    {
+        var ordered = _model.Frames.OrderBy(f => f.Order).ToList();
+        var idx = ordered.FindIndex(f => f.Id == id);
+        var j = idx + (dir < 0 ? -1 : 1);
+        if (idx < 0 || j < 0 || j >= ordered.Count) return;
+        Snapshot();
+        (ordered[idx], ordered[j]) = (ordered[j], ordered[idx]);
+        for (int i = 0; i < ordered.Count; i++) ordered[i].Order = i + 1;
+    }
+
+    private void Renumber()
+    {
+        var ordered = _model.Frames.OrderBy(f => f.Order).ToList();
+        for (int i = 0; i < ordered.Count; i++) ordered[i].Order = i + 1;
+    }
+
+    // ---- view framing & animation ----
+    public Point ViewCenterWorld() => ScreenToWorld(new Point(ActualWidth / 2, ActualHeight / 2));
+
+    /// The world-space rectangle currently visible in the viewport.
+    public Rect CurrentViewWorldRect()
+    {
+        var tl = ScreenToWorld(new Point(0, 0));
+        var size = GetViewportWorldSize();
+        return new Rect(tl.X, tl.Y, Math.Max(1, size.Width), Math.Max(1, size.Height));
+    }
+
+    /// Sets an absolute view (zoom + world center). Unlike SetZoom this isn't clamped to the
+    /// editing zoom range, so presentation overviews can pull way out.
+    public void SetView(double zoom, Point centerWorld)
+    {
+        zoom = Math.Max(0.0008, Math.Min(12.0, zoom));
+        var m = _worldTransform.Matrix;
+        m.M11 = zoom; m.M22 = zoom; m.M12 = 0; m.M21 = 0;
+        m.OffsetX = ActualWidth / 2 - centerWorld.X * zoom;
+        m.OffsetY = ActualHeight / 2 - centerWorld.Y * zoom;
+        _worldTransform.Matrix = m;
+        UpdateGridOffset();
+        ZoomChanged?.Invoke(this, EventArgs.Empty);
+        ViewChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private double ZoomToFit(Rect r, double pad = 0.92)
+    {
+        if (r.Width <= 0 || r.Height <= 0 || ActualWidth <= 0 || ActualHeight <= 0) return Zoom;
+        return Math.Min(ActualWidth / r.Width, ActualHeight / r.Height) * pad;
+    }
+
+    /// Frames a world rect in the viewport. When animating, a quick direct tween (no
+    /// presentation fly-out) — used while editing (Free Space, screen preview clicks).
+    public void ShowRect(Rect r, bool animate)
+    {
+        var zEnd = ZoomToFit(r);
+        var cEnd = new Point(r.X + r.Width / 2, r.Y + r.Height / 2);
+        if (!animate) { StopViewAnimation(); SetView(zEnd, cEnd); return; }
+        AnimateViewDirect(zEnd, cEnd, 0.6, null);
+    }
+
+    /// Single-phase eased tween straight from the current view to (zEnd, cEnd).
+    public void AnimateViewDirect(double zEnd, Point cEnd, double seconds, Action? onDone)
+    {
+        StopViewAnimation();
+        double zStart = Zoom;
+        Point cStart = ViewCenterWorld();
+        _viewAnimStarted = false;
+
+        static double Ease(double u) => u * u * (3 - 2 * u);
+
+        _viewAnim = (s, e) =>
+        {
+            var rt = ((System.Windows.Media.RenderingEventArgs)e).RenderingTime;
+            if (!_viewAnimStarted) { _viewAnimStart = rt; _viewAnimStarted = true; }
+            double t = (rt - _viewAnimStart).TotalSeconds / seconds;
+            if (t >= 1) t = 1;
+            double u = Ease(t);
+            double z = zStart * Math.Pow(zEnd / zStart, u);
+            double cx = cStart.X + (cEnd.X - cStart.X) * u;
+            double cy = cStart.Y + (cEnd.Y - cStart.Y) * u;
+            SetView(z, new Point(cx, cy));
+            if (t >= 1) { StopViewAnimation(); onDone?.Invoke(); }
+        };
+        CompositionTarget.Rendering += _viewAnim;
+    }
+
+    /// The "zoom way out" waypoint: the union of all screens (or all content), padded.
+    public Rect OverviewRect()
+    {
+        var rects = new List<Rect>();
+        foreach (var f in _model.Frames) rects.Add(new Rect(f.X, f.Y, f.Width, f.Height));
+        if (rects.Count == 0)
+            foreach (var s in _model.Shapes) rects.Add(new Rect(s.X, s.Y, s.Width, s.Height));
+        if (rects.Count == 0) return new Rect(-500, -500, 1000, 1000);
+        var u = rects.Aggregate(Rect.Union);
+        u.Inflate(u.Width * 0.12 + 80, u.Height * 0.12 + 80);
+        return u;
+    }
+
+    // CompositionTarget.Rendering-driven view tween: current view -> overview -> target.
+    private EventHandler? _viewAnim;
+    private TimeSpan _viewAnimStart;
+    private bool _viewAnimStarted;
+
+    public bool IsAnimatingView => _viewAnim != null;
+
+    /// Animates to (zEnd, cEnd) via an overview waypoint (fit to overviewRect), over `seconds`.
+    public void AnimateView(double zEnd, Point cEnd, Rect overviewRect, double seconds, Action? onDone)
+    {
+        StopViewAnimation();
+        double zStart = Zoom;
+        Point cStart = ViewCenterWorld();
+        double zMid = ZoomToFit(overviewRect, 0.9);
+        // Only treat it as a fly-out if the overview is actually further out than both ends.
+        zMid = Math.Min(zMid, Math.Min(zStart, zEnd));
+        Point cMid = new(overviewRect.X + overviewRect.Width / 2, overviewRect.Y + overviewRect.Height / 2);
+        _viewAnimStarted = false;
+
+        static double Ease(double u) => u * u * (3 - 2 * u);
+        static double GeoLerp(double a, double b, double u) => a * Math.Pow(b / a, u);
+        static double Lerp(double a, double b, double u) => a + (b - a) * u;
+
+        _viewAnim = (s, e) =>
+        {
+            var rt = ((System.Windows.Media.RenderingEventArgs)e).RenderingTime;
+            if (!_viewAnimStarted) { _viewAnimStart = rt; _viewAnimStarted = true; }
+            double t = (rt - _viewAnimStart).TotalSeconds / seconds;
+            if (t >= 1) t = 1;
+
+            double z, cx, cy;
+            if (t < 0.5)
+            {
+                double u = Ease(t / 0.5);
+                z = GeoLerp(zStart, zMid, u);
+                cx = Lerp(cStart.X, cMid.X, u); cy = Lerp(cStart.Y, cMid.Y, u);
+            }
+            else
+            {
+                double u = Ease((t - 0.5) / 0.5);
+                z = GeoLerp(zMid, zEnd, u);
+                cx = Lerp(cMid.X, cEnd.X, u); cy = Lerp(cMid.Y, cEnd.Y, u);
+            }
+            SetView(z, new Point(cx, cy));
+            if (t >= 1) { StopViewAnimation(); onDone?.Invoke(); }
+        };
+        CompositionTarget.Rendering += _viewAnim;
+    }
+
+    public void StopViewAnimation()
+    {
+        if (_viewAnim != null) { CompositionTarget.Rendering -= _viewAnim; _viewAnim = null; }
+    }
+
+    // ---- presentation visual mode (background + grid + read-only) ----
+    private Matrix _savedViewMatrix = Matrix.Identity;
+
+    public void BeginPresentationVisual(Color background)
+    {
+        _savedViewMatrix = _worldTransform.Matrix;
+        ReadOnly = true;
+        Background = new SolidColorBrush(background);
+    }
+
+    /// Live-updates the presentation background while presenting (no-op otherwise).
+    public void SetPresentationBackground(Color background)
+    {
+        if (ReadOnly) Background = new SolidColorBrush(background);
+    }
+
+    public void EndPresentationVisual()
+    {
+        StopViewAnimation();
+        ReadOnly = false;
+        Background = _gridBrush;
+        _worldTransform.Matrix = _savedViewMatrix;
+        UpdateGridOffset();
+        ZoomChanged?.Invoke(this, EventArgs.Empty);
+        ViewChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// Animates to a presentation frame (numbered screen) with the overview fly-out.
+    public void PresentGoToFrame(PresentationFrame f, double seconds, Action? onDone)
+    {
+        var r = new Rect(f.X, f.Y, f.Width, f.Height);
+        AnimateView(ZoomToFit(r, 0.96), new Point(r.X + r.Width / 2, r.Y + r.Height / 2),
+                    OverviewRect(), seconds, onDone);
     }
 
     // ---- Scrollbar support ----

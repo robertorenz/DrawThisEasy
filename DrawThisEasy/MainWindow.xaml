@@ -19,7 +19,7 @@
     </Grid.RowDefinitions>
 
     <!-- ====== Top bar ====== -->
-    <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+    <Border x:Name="TopBar" Grid.Row="0" Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
       <Grid Margin="16,0">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="Auto"/>
@@ -144,12 +144,12 @@
     <!-- ====== Body: palette + canvas ====== -->
     <Grid Grid.Row="3">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="220"/>
+        <ColumnDefinition x:Name="PaletteCol" Width="220"/>
         <ColumnDefinition Width="*"/>
       </Grid.ColumnDefinitions>
 
       <!-- Palette -->
-      <Border Grid.Column="0" Background="{StaticResource SidebarBgBrush}">
+      <Border x:Name="PaletteBorder" Grid.Column="0" Background="{StaticResource SidebarBgBrush}">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel Margin="10,12,10,12" x:Name="PaletteStack"/>
         </ScrollViewer>
@@ -163,14 +163,14 @@
         </Grid.RowDefinitions>
 
         <!-- Document tab strip -->
-        <Border Grid.Row="0" Background="#FFF1F5F9" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+        <Border x:Name="TabStripBorder" Grid.Row="0" Background="#FFF1F5F9" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
           <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
             <StackPanel x:Name="TabStrip" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="8,0,8,0"/>
           </ScrollViewer>
         </Border>
 
         <!-- Rulers framing the canvas; drag from a ruler onto the canvas to drop a guide -->
-        <Grid Grid.Row="1">
+        <Grid x:Name="RulerGrid" Grid.Row="1">
           <Grid.RowDefinitions>
             <RowDefinition Height="18"/>
             <RowDefinition Height="*"/>
@@ -203,7 +203,7 @@
                      Height="14" Margin="0,0,14,28" Scroll="HScroll_Scroll"/>
 
         <!-- Status bar (bottom overlay) -->
-        <Border VerticalAlignment="Bottom" Background="#F2FFFFFF" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Height="28">
+        <Border x:Name="StatusBar" VerticalAlignment="Bottom" Background="#F2FFFFFF" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Height="28">
           <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0">
             <TextBlock x:Name="StatusTool" Text="Select" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
             <TextBlock Text="·" Margin="8,0" Foreground="{StaticResource TextMutedBrush}"/>
@@ -246,6 +246,42 @@
                 <Button.Foreground><SolidColorBrush Color="#FFEF4444"/></Button.Foreground>
               </Button>
             </UniformGrid>
+          </StackPanel>
+        </Border>
+
+        <!-- Presentation panel (top-left floating) -->
+        <Border x:Name="PresentPanel"
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                Margin="22,16,0,0"
+                Background="White"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                CornerRadius="12" Width="250" Padding="12" Visibility="Collapsed">
+          <Border.Effect>
+            <DropShadowEffect Color="#0F172A" Opacity="0.12" BlurRadius="16" ShadowDepth="2"/>
+          </Border.Effect>
+          <StackPanel>
+            <DockPanel Margin="0,0,0,8">
+              <Button x:Name="BtnClosePresentPanel" DockPanel.Dock="Right" Style="{StaticResource IconButton}"
+                      Content="✕" Width="22" Height="22" Click="BtnClosePresentPanel_Click"/>
+              <TextBlock x:Name="PresentTitle" Text="PRESENTATION" FontSize="10" FontWeight="SemiBold"
+                         Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+            </DockPanel>
+            <Button x:Name="BtnMarkScreen" Style="{StaticResource GhostButton}" Content="Mark current view"
+                    Click="BtnMarkScreen_Click" Margin="0,0,0,4" HorizontalContentAlignment="Center"/>
+            <Button x:Name="BtnAddFreeScreen" Style="{StaticResource GhostButton}" Content="Add empty screen"
+                    Click="BtnAddFreeScreen_Click" Margin="0,0,0,8" HorizontalContentAlignment="Center"/>
+            <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+              <StackPanel x:Name="PresentList"/>
+            </ScrollViewer>
+            <TextBlock x:Name="PresentEmptyHint" FontSize="11" Foreground="{StaticResource TextMutedBrush}"
+                       TextWrapping="Wrap" Margin="2,2,2,6"
+                       Text="No screens yet. Frame an area and Mark it, or add an empty screen."/>
+            <Border Background="{StaticResource BorderBrush}" Height="1" Margin="0,4"/>
+            <TextBlock x:Name="LblPresentBg" Text="BACKGROUND" FontSize="10" FontWeight="SemiBold"
+                       Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,4"/>
+            <WrapPanel x:Name="PresentBgSwatches" Margin="0,0,0,8"/>
+            <Button x:Name="BtnStartPresent" Style="{StaticResource PrimaryButton}" Content="Start Presenting"
+                    Click="BtnStartPresent_Click"/>
           </StackPanel>
         </Border>
           </Grid>

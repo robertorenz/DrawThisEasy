@@ -143,6 +143,17 @@ public class Guide
     public double Position { get; set; }
 }
 
+/// One numbered "screen" in a presentation: a world-space rectangle the view flies to.
+public class PresentationFrame
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public int Order { get; set; }
+    public double X { get; set; }
+    public double Y { get; set; }
+    public double Width { get; set; }
+    public double Height { get; set; }
+}
+
 public class DiagramModel
 {
     public string Version { get; set; } = "1.0";
@@ -150,6 +161,11 @@ public class DiagramModel
     public List<ShapeNode> Shapes { get; set; } = new();
     public List<Connection> Connections { get; set; } = new();
     public List<Guide> Guides { get; set; } = new();
+
+    /// Ordered presentation screens (see PresentationFrame). Empty unless the user marks any.
+    public List<PresentationFrame> Frames { get; set; } = new();
+    /// Background color (hex) used while presenting. Null = white.
+    public string? PresentBackground { get; set; }
 
     public ShapeNode? FindShape(string id) => Shapes.Find(s => s.Id == id);
 }
