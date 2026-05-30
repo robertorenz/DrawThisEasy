@@ -1,6 +1,6 @@
 # DrawThisEasy
 
-[![Latest release](https://img.shields.io/github/v/release/robertorenz/DrawThisEasy?label=download&color=0EA5E9&v=1.2.5)](https://github.com/robertorenz/DrawThisEasy/releases/latest)
+[![Latest release](https://img.shields.io/github/v/release/robertorenz/DrawThisEasy?label=download&color=0EA5E9&v=1.2.6)](https://github.com/robertorenz/DrawThisEasy/releases/latest)
 
 A fast, native Windows app for sketching **org charts, architecture diagrams, and system flows**. Built with WPF on .NET 9.
 
@@ -18,6 +18,10 @@ Grab the latest build from the **[Releases page](https://github.com/robertorenz/
 Both are self-contained — the .NET 9 runtime is bundled, nothing else to install. Windows 10/11, 64-bit. The exes aren't code-signed, so SmartScreen may show an "unknown publisher" prompt on first run (*More info → Run anyway*).
 
 ---
+
+## What's new in 1.2.6
+
+- Free Space / Add empty screen now picks a **random direction** for the new area (nearest available), instead of always going up-left.
 
 ## What's new in 1.2.5
 

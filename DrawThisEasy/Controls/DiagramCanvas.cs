@@ -28,6 +28,8 @@ public class DiagramCanvas : Canvas
     private readonly MatrixTransform _worldTransform = new(Matrix.Identity);
     // Applied after the world matrix (in screen space); only non-zero during the "spin" transition.
     private readonly RotateTransform _rotate = new(0);
+    // Randomizes which free area a new screen lands in (so it isn't always up-left).
+    private readonly Random _freeRng = new();
 
     // ---- Model & visuals ----
     private DiagramModel _model = new();
@@ -2070,16 +2072,19 @@ public class DiagramCanvas : Canvas
             return true;
         }
 
-        // Expanding square spiral over a grid of cells, nearest ring first.
+        // Expanding square rings, nearest first; within a ring pick a random free cell so
+        // new areas don't always end up in the same direction (e.g. up-left).
         for (int ring = 0; ring <= 80; ring++)
         {
+            var free = new List<Rect>();
             for (int gi = -ring; gi <= ring; gi++)
             for (int gj = -ring; gj <= ring; gj++)
             {
                 if (Math.Max(Math.Abs(gi), Math.Abs(gj)) != ring) continue; // perimeter only
                 var cand = new Rect(ox + gi * stepX, oy + gj * stepY, w, h);
-                if (Free(cand)) return cand;
+                if (Free(cand)) free.Add(cand);
             }
+            if (free.Count > 0) return free[_freeRng.Next(free.Count)];
         }
 
         // Fallback: just to the right of everything.
