@@ -55,6 +55,24 @@ public partial class ModalWindow : Window
         return choice;
     }
 
+    public enum PlacementChoice { Current, NewDoc, Cancel }
+
+    /// Three-way prompt for where to put a template: current document / new document / cancel.
+    public static PlacementChoice AskPlacement(
+        Window owner, string title, string body,
+        string currentLabel, string newLabel, string cancelLabel)
+    {
+        var w = new ModalWindow { Owner = owner };
+        w.TitleText.Text = title;
+        w.BodyText.Text = body;
+        var choice = PlacementChoice.Cancel;
+        w.AddButton(cancelLabel,  primary: false, click: () => { choice = PlacementChoice.Cancel;  w.Close(); });
+        w.AddButton(newLabel,     primary: false, click: () => { choice = PlacementChoice.NewDoc;  w.Close(); });
+        w.AddButton(currentLabel, primary: true,  click: () => { choice = PlacementChoice.Current; w.Close(); });
+        w.ShowDialog();
+        return choice;
+    }
+
     private void AddButton(string label, bool primary, Action click)
     {
         var styleKey = primary ? "PrimaryButton" : "GhostButton";

@@ -1544,8 +1544,18 @@ public partial class MainWindow : Window
     private void BtnTemplates_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new TemplateGalleryWindow { Owner = this };
-        if (dlg.ShowDialog() == true && dlg.SelectedTemplate != null)
-            NewDocument(CloneModel(dlg.SelectedTemplate.Builder), dlg.SelectedTemplate.Title);
+        if (dlg.ShowDialog() != true || dlg.SelectedTemplate == null) return;
+        var t = dlg.SelectedTemplate;
+
+        var choice = ModalWindow.AskPlacement(this,
+            L10n.T("tmpl.placement.title"), L10n.T("tmpl.placement.body"),
+            L10n.T("tmpl.placement.current"), L10n.T("tmpl.placement.new"), L10n.T("modal.cancel"));
+
+        if (choice == ModalWindow.PlacementChoice.Cancel) return;
+        if (choice == ModalWindow.PlacementChoice.NewDoc)
+            NewDocument(CloneModel(t.Builder), t.Title);
+        else
+            Diagram.InsertModel(CloneModel(t.Builder));
     }
 
     private void BtnCloud_Click(object sender, RoutedEventArgs e) => OpenCloudGallery();

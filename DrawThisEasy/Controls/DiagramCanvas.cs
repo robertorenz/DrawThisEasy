@@ -2087,6 +2087,58 @@ public class DiagramCanvas : Canvas
         return new Rect(maxX + gap, oy, w, h);
     }
 
+    /// Merges another model's shapes + connections into this one, placed in a free area
+    /// with fresh IDs (so it doesn't overlap existing content), then pans to it. Used to
+    /// add a template to the current document.
+    public void InsertModel(DiagramModel src)
+    {
+        if (src.Shapes.Count == 0) return;
+        Snapshot();
+
+        double minX = src.Shapes.Min(s => s.X), minY = src.Shapes.Min(s => s.Y);
+        double maxX = src.Shapes.Max(s => s.X + s.Width), maxY = src.Shapes.Max(s => s.Y + s.Height);
+        double w = Math.Max(50, maxX - minX), h = Math.Max(50, maxY - minY);
+        var region = FindFreeRegion(new Size(w, h), 100);
+        double dx = region.X - minX, dy = region.Y - minY;
+
+        var idMap = new Dictionary<string, string>();
+        var newIds = new List<string>();
+        foreach (var s in src.Shapes)
+        {
+            var copy = new ShapeNode
+            {
+                Kind = s.Kind, X = s.X + dx, Y = s.Y + dy, Width = s.Width, Height = s.Height,
+                Label = s.Label, Fill = s.Fill, Stroke = s.Stroke, Stencil = s.Stencil, Image = s.Image, Rtf = s.Rtf,
+                FontFamily = s.FontFamily, FontSize = s.FontSize, Bold = s.Bold, Italic = s.Italic,
+                Underline = s.Underline, FontColor = s.FontColor, TextAlign = s.TextAlign,
+                ZIndex = _nextZ++
+            };
+            idMap[s.Id] = copy.Id;
+            _model.Shapes.Add(copy);
+            AddShapeVisual(copy);
+            newIds.Add(copy.Id);
+        }
+        foreach (var c in src.Connections)
+        {
+            if (!idMap.TryGetValue(c.FromId, out var fid) || !idMap.TryGetValue(c.ToId, out var tid)) continue;
+            var conn = new Connection
+            {
+                FromId = fid, ToId = tid, Label = c.Label, Stroke = c.Stroke, Dashed = c.Dashed,
+                Routing = c.Routing, StrokeStyle = c.StrokeStyle, CurveDX = c.CurveDX, CurveDY = c.CurveDY
+            };
+            _model.Connections.Add(conn);
+            AddConnectionVisual(conn);
+        }
+
+        _selected.Clear();
+        _selectedConnectionId = null;
+        foreach (var id in newIds) _selected.Add(id);
+        ApplySelectionStyles();
+        RebuildOverlay();
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
+        ShowRect(region, animate: true);
+    }
+
     // ---- presentation frame model mutators (snapshot for undo) ----
     public IReadOnlyList<PresentationFrame> Frames => _model.Frames;
 

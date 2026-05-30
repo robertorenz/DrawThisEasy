@@ -325,6 +325,10 @@ public static class L10n
             // Modal
             ["modal.ok"]              = "OK",
             ["modal.cancel"]          = "Cancel",
+            ["tmpl.placement.title"]   = "Add template",
+            ["tmpl.placement.body"]    = "Add this template to the current document, or open it as a new document?",
+            ["tmpl.placement.current"] = "Add to current",
+            ["tmpl.placement.new"]     = "New document",
             ["modal.unsaved.title"]   = "Unsaved changes",
             ["modal.unsaved.body"]    = "You have unsaved changes. Do you want to save before closing?",
             ["modal.unsaved.save"]    = "Save",
@@ -800,6 +804,10 @@ public static class L10n
             // Modal
             ["modal.ok"]              = "Aceptar",
             ["modal.cancel"]          = "Cancelar",
+            ["tmpl.placement.title"]   = "Agregar plantilla",
+            ["tmpl.placement.body"]    = "¿Agregar esta plantilla al documento actual o abrirla como un documento nuevo?",
+            ["tmpl.placement.current"] = "Agregar al actual",
+            ["tmpl.placement.new"]     = "Documento nuevo",
             ["modal.unsaved.title"]   = "Cambios sin guardar",
             ["modal.unsaved.body"]    = "Tienes cambios sin guardar. ¿Quieres guardarlos antes de cerrar?",
             ["modal.unsaved.save"]    = "Guardar",

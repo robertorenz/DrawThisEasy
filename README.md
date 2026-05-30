@@ -19,6 +19,10 @@ Both are self-contained — the .NET 9 runtime is bundled, nothing else to insta
 
 ---
 
+## What's new in 1.2.5
+
+- Picking a **template** now asks whether to **add it to the current document** (placed in a free area) or open it as a **new document**.
+
 ## What's new in 1.2.4
 
 - Presentation: more transitions — **pan then zoom**, **rotate & zoom**, **spring zoom**, **whirlwind** (spirals around before landing) — plus a **Random** setting that varies the transition on every screen.
@@ -79,7 +83,7 @@ The main push to create it was watching my good friend **Alejandro Elías** alwa
 - **Preferences** (Edit → Preferences) — set the **default connector** routing & line style for new connectors, toggle **snapping**, choose **ruler units** (pixels, cm, inches, picas), turn on **autosave** (silently writes every dirty tab that has a file path), and **reopen files on startup** (remembers the set of open documents and reopens them on next launch). Saved to `%LOCALAPPDATA%\DrawThisEasy\preferences.json`; the open-files list lives next to it in `session.json`.
 - **Right-click context menu** on any shape — a polished popup to edit text, apply fill / stroke swatches (or pick a custom color), reorder layers, duplicate, copy, and delete. Right-drag empty space still pans.
 - **Copy / Cut / Paste** (`Ctrl+C` / `Ctrl+X` / `Ctrl+V`) via the system clipboard, with connection edges preserved. Works between two open DrawThisEasy instances. **Paste also accepts content from other apps**: copy a shape, slide, or image in **PowerPoint** (or a screenshot, or any image from a browser) and `Ctrl+V` drops it onto the canvas as a full-resolution image; copy **formatted text** and it pastes as a **Rich Text** shape with fonts, colors, and styles preserved; plain text pastes as a Text shape. (To paste text *into* an existing shape's label, double-click the shape to edit it and `Ctrl+V` there.)
-- **Templates** — a broad starter set: org chart; web / three-tier / full-stack architectures; REST API, serverless, microservices, event-driven; frontend & backend, message middleware, database cluster, caching; client-server, CI/CD, Kubernetes, data pipeline; and a blank canvas.
+- **Templates** — a broad starter set: org chart; web / three-tier / full-stack architectures; REST API, serverless, microservices, event-driven; frontend & backend, message middleware, database cluster, caching; client-server, CI/CD, Kubernetes, data pipeline; and a blank canvas. When you pick one, you choose whether to **add it to the current document** (dropped into a free area) or open it as a **new document**.
 - **Cloud service objects** — a gallery of **AWS**, **Azure**, and **Google Cloud** services (compute, functions, storage, databases, containers, messaging, networking, analytics, monitoring) drawn as provider-tinted badge tiles. *Generic, original glyphs — not the providers' trademarked icons.* The **AWS / Azure / Google** buttons — in both the toolbar and the left **Cloud** palette group — drop down a flyout of that provider's services (icon + name); click one to place it, no dialog. File → Cloud Services still opens the full browse-all gallery. A **Templates** button is in the toolbar too.
 - **Undo / Redo** (`Ctrl+Z` / `Ctrl+Y`).
 - **Save / Load** as JSON; **Open** supports selecting **several files at once** (each opens in its own tab); **Open Recent** lists the last 5 files; **Export** as PNG (2× resolution).

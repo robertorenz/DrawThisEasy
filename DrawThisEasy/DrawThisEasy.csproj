@@ -6,9 +6,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <Version>1.2.4</Version>
-    <FileVersion>1.2.4</FileVersion>
-    <AssemblyVersion>1.2.4</AssemblyVersion>
+    <Version>1.2.5</Version>
+    <FileVersion>1.2.5</FileVersion>
+    <AssemblyVersion>1.2.5</AssemblyVersion>
     <!-- Bundle WPF's native DLLs (PresentationNative, wpfgfx, D3DCompiler, PenImc, vcruntime)
          inside the single-file exe; they self-extract at startup. Without this, PublishSingleFile
          still emits those DLLs next to the exe, and the app fast-fails if you copy only the exe. -->
