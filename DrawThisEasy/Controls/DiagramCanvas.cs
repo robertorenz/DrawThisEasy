@@ -26,6 +26,8 @@ public class DiagramCanvas : Canvas
     private (bool Horizontal, double Pos)? _guidePreview;
 
     private readonly MatrixTransform _worldTransform = new(Matrix.Identity);
+    // Applied after the world matrix (in screen space); only non-zero during the "spin" transition.
+    private readonly RotateTransform _rotate = new(0);
 
     // ---- Model & visuals ----
     private DiagramModel _model = new();
@@ -111,7 +113,7 @@ public class DiagramCanvas : Canvas
         Focusable = true;
         FocusVisualStyle = null;
 
-        _world.RenderTransform = _worldTransform;
+        _world.RenderTransform = new TransformGroup { Children = { _worldTransform, _rotate } };
         _world.IsHitTestVisible = true;
         Children.Add(_world);
         _world.Children.Add(_connLayer);
@@ -2298,6 +2300,7 @@ public class DiagramCanvas : Canvas
         StopViewAnimation();
         _world.BeginAnimation(UIElement.OpacityProperty, null);
         _world.Opacity = 1;
+        _rotate.Angle = 0;
         ReadOnly = false;
         Background = _gridBrush;
         _worldTransform.Matrix = _savedViewMatrix;
@@ -2321,6 +2324,7 @@ public class DiagramCanvas : Canvas
         var r = new Rect(f.X, f.Y, f.Width, f.Height);
         var zEnd = ZoomToFit(r, 0.96);
         var cEnd = new Point(r.X + r.Width / 2, r.Y + r.Height / 2);
+        _rotate.Angle = 0; // clear any leftover rotation from an interrupted spin
         switch (style)
         {
             case "cut":
@@ -2332,10 +2336,88 @@ public class DiagramCanvas : Canvas
             case "fade":
                 FadeTransition(zEnd, cEnd, onDone);
                 break;
+            case "spin":
+                SpinTransition(zEnd, cEnd, onDone);
+                break;
+            case "spring":
+                SpringTransition(zEnd, cEnd, onDone);
+                break;
+            case "panzoom":
+                PanThenZoomTransition(zEnd, cEnd, onDone);
+                break;
             default: // "zoom"
                 AnimateView(zEnd, cEnd, OverviewRect(), 2.4, onDone);
                 break;
         }
+    }
+
+    private static double Smooth(double u) => u * u * (3 - 2 * u);
+
+    // Runs a per-frame view tween over `seconds`; apply(t) sets the view for progress t in [0,1].
+    private void RunViewTween(double seconds, Action<double> apply, Action? onDone)
+    {
+        StopViewAnimation();
+        _viewAnimStarted = false;
+        _viewAnim = (s, e) =>
+        {
+            var rt = ((System.Windows.Media.RenderingEventArgs)e).RenderingTime;
+            if (!_viewAnimStarted) { _viewAnimStart = rt; _viewAnimStarted = true; }
+            double t = (rt - _viewAnimStart).TotalSeconds / seconds;
+            if (t >= 1) t = 1;
+            apply(t);
+            if (t >= 1) { StopViewAnimation(); onDone?.Invoke(); }
+        };
+        CompositionTarget.Rendering += _viewAnim;
+    }
+
+    // Rotate & zoom: a slight rotation that unwinds as the view flies to the target.
+    private void SpinTransition(double zEnd, Point cEnd, Action? onDone)
+    {
+        double zStart = Zoom; Point cStart = ViewCenterWorld();
+        _rotate.CenterX = ActualWidth / 2; _rotate.CenterY = ActualHeight / 2;
+        const double startAngle = 12;
+        RunViewTween(1.4, t =>
+        {
+            double u = Smooth(t);
+            _rotate.Angle = startAngle * (1 - u);
+            SetView(zStart * Math.Pow(zEnd / zStart, u),
+                    new Point(cStart.X + (cEnd.X - cStart.X) * u, cStart.Y + (cEnd.Y - cStart.Y) * u));
+        }, () => { _rotate.Angle = 0; onDone?.Invoke(); });
+    }
+
+    // Spring zoom: overshoots the target slightly, then settles (back-ease).
+    private void SpringTransition(double zEnd, Point cEnd, Action? onDone)
+    {
+        double zStart = Zoom; Point cStart = ViewCenterWorld();
+        const double c1 = 1.70158, c3 = c1 + 1;
+        RunViewTween(1.2, t =>
+        {
+            double b = t - 1;
+            double u = 1 + c3 * b * b * b + c1 * b * b; // BackEase-out (overshoots near the end)
+            SetView(zStart * Math.Pow(zEnd / zStart, u),
+                    new Point(cStart.X + (cEnd.X - cStart.X) * u, cStart.Y + (cEnd.Y - cStart.Y) * u));
+        }, onDone);
+    }
+
+    // Pan, then zoom: glide across at the current zoom, then dive into the target.
+    private void PanThenZoomTransition(double zEnd, Point cEnd, Action? onDone)
+    {
+        double zStart = Zoom; Point cStart = ViewCenterWorld();
+        RunViewTween(1.5, t =>
+        {
+            double z, cx, cy;
+            if (t < 0.5)
+            {
+                double u = Smooth(t / 0.5);
+                z = zStart; cx = cStart.X + (cEnd.X - cStart.X) * u; cy = cStart.Y + (cEnd.Y - cStart.Y) * u;
+            }
+            else
+            {
+                double u = Smooth((t - 0.5) / 0.5);
+                z = zStart * Math.Pow(zEnd / zStart, u); cx = cEnd.X; cy = cEnd.Y;
+            }
+            SetView(z, new Point(cx, cy));
+        }, onDone);
     }
 
     // Fades the content out to the background color, jumps the view, then fades back in.

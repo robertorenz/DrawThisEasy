@@ -1916,7 +1916,13 @@ public partial class MainWindow : Window
         BtnStartPresent.IsEnabled = frames.Count > 0;
     }
 
-    private static readonly string[] TransitionKeys = { "zoom", "glide", "cut", "fade" };
+    private static readonly string[] TransitionKeys = { "zoom", "glide", "panzoom", "spin", "spring", "fade", "cut", "random" };
+    private static readonly string[] RandomTransitionPool = { "zoom", "glide", "panzoom", "spin", "spring", "fade" };
+    private readonly Random _transitionRng = new();
+
+    // "random" picks a different animated transition each navigation; everything else is itself.
+    private string? ResolveTransition(string? style) =>
+        style == "random" ? RandomTransitionPool[_transitionRng.Next(RandomTransitionPool.Length)] : style;
     private bool _suppressTransitionEvent;
 
     private void BuildTransitionCombo()
@@ -2149,7 +2155,7 @@ public partial class MainWindow : Window
         var f = frames[_presentIndex];
         PresentIndicatorText.Text = $"{FrameTitle(f)}   ·   {_presentIndex + 1} / {frames.Count}";
         _presentBusy = true;
-        Diagram.PresentTransitionTo(f, Diagram.Model.PresentTransition, () => _presentBusy = false);
+        Diagram.PresentTransitionTo(f, ResolveTransition(Diagram.Model.PresentTransition), () => _presentBusy = false);
     }
 
     private void PresentNext() { if (!_presentBusy) PresentNavigateTo(_presentIndex + 1, true); }

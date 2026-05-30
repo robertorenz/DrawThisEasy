@@ -19,6 +19,10 @@ Both are self-contained — the .NET 9 runtime is bundled, nothing else to insta
 
 ---
 
+## What's new in 1.2.4
+
+- Presentation: three more transitions — **pan then zoom**, **rotate & zoom**, **spring zoom** — plus a **Random** setting that varies the transition on every screen.
+
 ## What's new in 1.2.3
 
 - In-app **User Manual** now includes a **Presentation mode** chapter (marking/renaming/reordering screens, transitions, navigation keys).
@@ -69,7 +73,7 @@ The main push to create it was watching my good friend **Alejandro Elías** alwa
 - **Rich Text shape** — a formatted text card you edit in place (double-click): mix fonts, sizes, **bold / italic / underline**, colors, and alignment within one block using the Inspector controls or `Ctrl+B/I/U`. Pasting formatted text from PowerPoint/Word into the canvas creates one of these with its formatting intact. Stored as RTF in the `.ptd.json`.
 - **Pan & zoom** — `Space` + drag, right-click + drag, or just drag empty area. Mouse wheel zooms.
 - **Go to Free Space** — a toolbar button (also **View → Go to Free Space**) that finds an empty gap on the canvas, marks it as the next numbered **presentation screen**, and pans there — so you can lay out another scene without overlapping existing content.
-- **Presentation mode** — turn a diagram into a slideshow. **Present** opens a panel where you mark screens (capture the current view, or auto-add empty ones), **double-click a screen to rename it**, **update a screen to the current view** (◎ — re-captures its position & zoom), reorder them in a numbered queue, choose a background color, and pick a **transition style** — *zoom out & in*, *smooth glide*, *instant cut*, or *fade through background*. **Start Presenting** goes fullscreen and flies between screens. Navigate with arrow keys (**↑/← back**, **↓/→ forward**), **Space/Enter** (forward), **Home/End** (first/last); **Esc** exits.
+- **Presentation mode** — turn a diagram into a slideshow. **Present** opens a panel where you mark screens (capture the current view, or auto-add empty ones), **double-click a screen to rename it**, **update a screen to the current view** (◎ — re-captures its position & zoom), reorder them in a numbered queue, choose a background color, and pick a **transition style** — *zoom out & in*, *smooth glide*, *pan then zoom*, *rotate & zoom*, *spring zoom*, *fade through background*, *instant cut*, or *random* (a different one each screen). **Start Presenting** goes fullscreen and flies between screens. Navigate with arrow keys (**↑/← back**, **↓/→ forward**), **Space/Enter** (forward), **Home/End** (first/last); **Esc** exits.
 - **Inspector panel** for fill / stroke colors, **label typography** (font family, size, **bold / italic / underline**, alignment, and text color — applied to every selected shape), and layer ordering.
 - **Rulers, guides & snapping** — rulers along the top and left; **drag from a ruler** onto the canvas to drop a guide line. Drag a guide to reposition it, or **drag it back onto its ruler to remove it** (**View → Clear Guides** clears all). Moving shapes **snap** to other shapes' edges/centers and to guides, with live red alignment lines; hold `Alt` to move freely.
 - **Preferences** (Edit → Preferences) — set the **default connector** routing & line style for new connectors, toggle **snapping**, choose **ruler units** (pixels, cm, inches, picas), turn on **autosave** (silently writes every dirty tab that has a file path), and **reopen files on startup** (remembers the set of open documents and reopens them on next launch). Saved to `%LOCALAPPDATA%\DrawThisEasy\preferences.json`; the open-files list lives next to it in `session.json`.
