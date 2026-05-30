@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using DrawThisEasy.Models;
@@ -2117,6 +2118,14 @@ public class DiagramCanvas : Canvas
         for (int i = 0; i < ordered.Count; i++) ordered[i].Order = i + 1;
     }
 
+    public void RenameFrame(string id, string? name)
+    {
+        var f = _model.Frames.FirstOrDefault(x => x.Id == id);
+        if (f == null) return;
+        Snapshot();
+        f.Name = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
+    }
+
     private void Renumber()
     {
         var ordered = _model.Frames.OrderBy(f => f.Order).ToList();
@@ -2277,6 +2286,8 @@ public class DiagramCanvas : Canvas
     public void EndPresentationVisual()
     {
         StopViewAnimation();
+        _world.BeginAnimation(UIElement.OpacityProperty, null);
+        _world.Opacity = 1;
         ReadOnly = false;
         Background = _gridBrush;
         _worldTransform.Matrix = _savedViewMatrix;
@@ -2291,6 +2302,46 @@ public class DiagramCanvas : Canvas
         var r = new Rect(f.X, f.Y, f.Width, f.Height);
         AnimateView(ZoomToFit(r, 0.96), new Point(r.X + r.Width / 2, r.Y + r.Height / 2),
                     OverviewRect(), seconds, onDone);
+    }
+
+    /// Transitions to a frame using the chosen style: "zoom" (overview fly-out), "glide"
+    /// (direct pan+zoom), "cut" (instant), or "fade" (dip through the background).
+    public void PresentTransitionTo(PresentationFrame f, string? style, Action? onDone)
+    {
+        var r = new Rect(f.X, f.Y, f.Width, f.Height);
+        var zEnd = ZoomToFit(r, 0.96);
+        var cEnd = new Point(r.X + r.Width / 2, r.Y + r.Height / 2);
+        switch (style)
+        {
+            case "cut":
+                StopViewAnimation(); SetView(zEnd, cEnd); onDone?.Invoke();
+                break;
+            case "glide":
+                AnimateViewDirect(zEnd, cEnd, 1.1, onDone);
+                break;
+            case "fade":
+                FadeTransition(zEnd, cEnd, onDone);
+                break;
+            default: // "zoom"
+                AnimateView(zEnd, cEnd, OverviewRect(), 2.4, onDone);
+                break;
+        }
+    }
+
+    // Fades the content out to the background color, jumps the view, then fades back in.
+    private void FadeTransition(double zEnd, Point cEnd, Action? onDone)
+    {
+        StopViewAnimation();
+        var ease = new QuadraticEase { EasingMode = EasingMode.EaseInOut };
+        var fadeOut = new DoubleAnimation(_world.Opacity, 0, TimeSpan.FromSeconds(0.32)) { EasingFunction = ease };
+        fadeOut.Completed += (s, e) =>
+        {
+            SetView(zEnd, cEnd);
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.32)) { EasingFunction = ease };
+            fadeIn.Completed += (s2, e2) => { _world.BeginAnimation(UIElement.OpacityProperty, null); _world.Opacity = 1; onDone?.Invoke(); };
+            _world.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+        };
+        _world.BeginAnimation(UIElement.OpacityProperty, fadeOut);
     }
 
     // ---- Scrollbar support ----

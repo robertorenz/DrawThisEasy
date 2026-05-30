@@ -277,6 +277,10 @@
                        TextWrapping="Wrap" Margin="2,2,2,6"
                        Text="No screens yet. Frame an area and Mark it, or add an empty screen."/>
             <Border Background="{StaticResource BorderBrush}" Height="1" Margin="0,4"/>
+            <TextBlock x:Name="LblPresentTransition" Text="TRANSITION" FontSize="10" FontWeight="SemiBold"
+                       Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,4"/>
+            <ComboBox x:Name="PresentTransitionCombo" Height="26" Margin="0,0,0,8"
+                      SelectionChanged="PresentTransitionCombo_Changed"/>
             <TextBlock x:Name="LblPresentBg" Text="BACKGROUND" FontSize="10" FontWeight="SemiBold"
                        Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,4"/>
             <WrapPanel x:Name="PresentBgSwatches" Margin="0,0,0,8"/>

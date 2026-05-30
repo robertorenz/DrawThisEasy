@@ -148,6 +148,8 @@ public class PresentationFrame
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public int Order { get; set; }
+    /// User-given name; null falls back to "Screen {Order}".
+    public string? Name { get; set; }
     public double X { get; set; }
     public double Y { get; set; }
     public double Width { get; set; }
@@ -166,6 +168,8 @@ public class DiagramModel
     public List<PresentationFrame> Frames { get; set; } = new();
     /// Background color (hex) used while presenting. Null = white.
     public string? PresentBackground { get; set; }
+    /// Transition style between screens: "zoom" (default), "glide", "cut", or "fade".
+    public string? PresentTransition { get; set; }
 
     public ShapeNode? FindShape(string id) => Shapes.Find(s => s.Id == id);
 }

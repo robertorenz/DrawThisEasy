@@ -1911,7 +1911,38 @@ public partial class MainWindow : Window
         PresentEmptyHint.Visibility = frames.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         foreach (var f in frames) PresentList.Children.Add(BuildPresentRow(f));
         if (PresentBgSwatches.Children.Count == 0) BuildPresentBgSwatches();
+        if (PresentTransitionCombo.Items.Count == 0) BuildTransitionCombo();
+        SelectCurrentTransition();
         BtnStartPresent.IsEnabled = frames.Count > 0;
+    }
+
+    private static readonly string[] TransitionKeys = { "zoom", "glide", "cut", "fade" };
+    private bool _suppressTransitionEvent;
+
+    private void BuildTransitionCombo()
+    {
+        PresentTransitionCombo.Items.Clear();
+        foreach (var key in TransitionKeys)
+            PresentTransitionCombo.Items.Add(new ComboBoxItem { Content = L10n.T($"present.tx.{key}"), Tag = key });
+    }
+
+    private void SelectCurrentTransition()
+    {
+        var cur = string.IsNullOrWhiteSpace(Diagram.Model.PresentTransition) ? "zoom" : Diagram.Model.PresentTransition!;
+        _suppressTransitionEvent = true;
+        PresentTransitionCombo.SelectedItem = PresentTransitionCombo.Items
+            .OfType<ComboBoxItem>().FirstOrDefault(it => (string)it.Tag == cur);
+        _suppressTransitionEvent = false;
+    }
+
+    private void PresentTransitionCombo_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressTransitionEvent) return;
+        if (PresentTransitionCombo.SelectedItem is ComboBoxItem it && it.Tag is string key)
+        {
+            Diagram.Model.PresentTransition = key;
+            MarkDirtyFor(Diagram);
+        }
     }
 
     private UIElement BuildPresentRow(PresentationFrame f)
@@ -1936,8 +1967,10 @@ public partial class MainWindow : Window
 
         var label = new TextBlock
         {
-            Text = $"{L10n.T("present.screen")} {f.Order}", VerticalAlignment = VerticalAlignment.Center,
-            FontSize = 12, Foreground = (Brush)FindResource("TextBrush")
+            Text = FrameTitle(f), VerticalAlignment = VerticalAlignment.Center,
+            FontSize = 12, Foreground = (Brush)FindResource("TextBrush"),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            ToolTip = L10n.T("present.rename")
         };
         Grid.SetColumn(label, 1);
 
@@ -1956,10 +1989,52 @@ public partial class MainWindow : Window
             ToolTip = L10n.T("present.goto")
         };
         var hover = (Brush)new BrushConverter().ConvertFromString("#FFF1F5F9")!;
-        card.MouseEnter += (s, e) => card.Background = hover;
-        card.MouseLeave += (s, e) => card.Background = Brushes.Transparent;
-        card.MouseLeftButtonUp += (s, e) => Diagram.ShowRect(new Rect(f.X, f.Y, f.Width, f.Height), animate: true);
+        bool editing = false;
+        card.MouseEnter += (s, e) => { if (!editing) card.Background = hover; };
+        card.MouseLeave += (s, e) => { if (!editing) card.Background = Brushes.Transparent; };
+        card.MouseLeftButtonDown += (s, e) =>
+        {
+            if (e.ClickCount == 2) { editing = true; BeginRenameRow(grid, label, f); e.Handled = true; }
+        };
+        card.MouseLeftButtonUp += (s, e) =>
+        {
+            if (editing || e.ClickCount >= 2) return;
+            Diagram.ShowRect(new Rect(f.X, f.Y, f.Width, f.Height), animate: true);
+        };
         return card;
+    }
+
+    private string FrameTitle(PresentationFrame f) =>
+        string.IsNullOrWhiteSpace(f.Name) ? $"{L10n.T("present.screen")} {f.Order}" : f.Name!;
+
+    // Swaps the row label for an inline editor; Enter / focus-loss commits, Esc cancels.
+    private void BeginRenameRow(Grid grid, TextBlock label, PresentationFrame f)
+    {
+        var box = new TextBox
+        {
+            Text = FrameTitle(f), FontSize = 12, VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 4, 0)
+        };
+        Grid.SetColumn(box, 1);
+        grid.Children.Remove(label);
+        grid.Children.Add(box);
+        box.Focus();
+        box.SelectAll();
+
+        bool done = false;
+        void Commit(bool save)
+        {
+            if (done) return;
+            done = true;
+            if (save) Diagram.RenameFrame(f.Id, box.Text);
+            RefreshPresentPanel();
+        }
+        box.KeyDown += (s, e) =>
+        {
+            if (e.Key == Key.Enter) { Commit(true); e.Handled = true; }
+            else if (e.Key == Key.Escape) { Commit(false); e.Handled = true; }
+        };
+        box.LostFocus += (s, e) => Commit(true);
     }
 
     private Button MiniIcon(string glyph, string tipKey, Action onClick)
@@ -2061,16 +2136,20 @@ public partial class MainWindow : Window
         ExitPresentationChrome();
     }
 
+    private bool _presentBusy;
+
     private void PresentNavigateTo(int index, bool fast)
     {
         var frames = Diagram.Model.Frames.OrderBy(f => f.Order).ToList();
         if (frames.Count == 0) { ExitPresenting(); return; }
         _presentIndex = Math.Max(0, Math.Min(frames.Count - 1, index));
-        Diagram.PresentGoToFrame(frames[_presentIndex], fast ? 1.8 : 2.6, null);
+        _presentBusy = true;
+        Diagram.PresentTransitionTo(frames[_presentIndex], Diagram.Model.PresentTransition,
+            () => _presentBusy = false);
     }
 
-    private void PresentNext() { if (!Diagram.IsAnimatingView) PresentNavigateTo(_presentIndex + 1, true); }
-    private void PresentPrev() { if (!Diagram.IsAnimatingView) PresentNavigateTo(_presentIndex - 1, true); }
+    private void PresentNext() { if (!_presentBusy) PresentNavigateTo(_presentIndex + 1, true); }
+    private void PresentPrev() { if (!_presentBusy) PresentNavigateTo(_presentIndex - 1, true); }
 
     // ---- chrome show/hide for fullscreen presentation ----
     private WindowState _savedWindowState;
@@ -2245,6 +2324,8 @@ public partial class MainWindow : Window
         if (BtnMarkScreen != null)    BtnMarkScreen.Content = L10n.T("present.mark");
         if (BtnAddFreeScreen != null) BtnAddFreeScreen.Content = L10n.T("present.addempty");
         if (LblPresentBg != null)     LblPresentBg.Text = L10n.T("present.bg").ToUpperInvariant();
+        if (LblPresentTransition != null) LblPresentTransition.Text = L10n.T("present.transition").ToUpperInvariant();
+        if (PresentTransitionCombo != null && PresentTransitionCombo.Items.Count > 0) { BuildTransitionCombo(); SelectCurrentTransition(); }
         if (PresentEmptyHint != null) PresentEmptyHint.Text = L10n.T("present.empty");
         if (BtnStartPresent != null)  BtnStartPresent.Content = L10n.T("present.start");
         if (PresentPanel != null && PresentPanel.Visibility == Visibility.Visible) RefreshPresentPanel();
