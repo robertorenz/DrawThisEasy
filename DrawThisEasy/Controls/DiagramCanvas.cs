@@ -1256,19 +1256,20 @@ public class DiagramCanvas : Canvas
         // (from PowerPoint, screenshots, browsers, etc.) or plain text as a Text shape.
         if (string.IsNullOrWhiteSpace(json))
         {
-            // A bare text copy (e.g. selecting text inside a PowerPoint text box) should
-            // become an editable Text shape; a copied object/picture/slide should come in
-            // as an image. Office exposes copied objects as a metafile but a plain text
-            // selection has none — so the metafile is the discriminator.
-            if (ClipboardHasDrawingObject())
+            // Decide between an editable Text shape and an Image. A real text selection
+            // from Office carries Rich Text Format; plain text with no image at all is a
+            // Notepad-style copy. Either way → Text shape. A picture/shape/slide/screenshot
+            // (image, but no RTF) → Image. PowerPoint also tags text copies with a metafile
+            // and bitmap, so "has an image" alone can't be trusted — RTF is the tell.
+            if (ClipboardLooksLikeText())
             {
-                if (TryPasteClipboardImage()) return;
                 if (TryPasteClipboardText()) return;
+                if (TryPasteClipboardImage()) return;
             }
             else
             {
-                if (TryPasteClipboardText()) return;
                 if (TryPasteClipboardImage()) return;
+                if (TryPasteClipboardText()) return;
             }
             return;
         }
@@ -1355,14 +1356,18 @@ public class DiagramCanvas : Canvas
         return new Point(0, 0);
     }
 
-    /// True when the clipboard carries a copied drawing object (Office exposes one as a
-    /// metafile). Used to tell "I copied a shape/picture" from "I copied plain text".
-    private static bool ClipboardHasDrawingObject()
+    /// True when the clipboard is best treated as a text selection rather than a picture.
+    /// Office text copies carry Rich Text Format (even though PowerPoint also adds a
+    /// metafile + bitmap); a Notepad-style copy is plain text with no image at all. A
+    /// copied shape/picture/slide/screenshot has an image but no RTF, so it is not text.
+    private static bool ClipboardLooksLikeText()
     {
         try
         {
-            return System.Windows.Clipboard.ContainsData(DataFormats.EnhancedMetafile)
-                || System.Windows.Clipboard.ContainsData(DataFormats.MetafilePicture);
+            if (!System.Windows.Clipboard.ContainsText()) return false;
+            if (System.Windows.Clipboard.ContainsData(DataFormats.Rtf)) return true;
+            return !System.Windows.Clipboard.ContainsImage()
+                && !System.Windows.Clipboard.ContainsData("PNG");
         }
         catch { return false; }
     }
