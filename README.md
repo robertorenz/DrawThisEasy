@@ -19,6 +19,10 @@ Both are self-contained — the .NET 9 runtime is bundled, nothing else to insta
 
 ---
 
+## What's new in 1.2.3
+
+- In-app **User Manual** now includes a **Presentation mode** chapter (marking/renaming/reordering screens, transitions, navigation keys).
+
 ## What's new in 1.2.2
 
 - Presentation: **update a stored screen to the current view** — frame an area (pan/zoom) and click ◎ on a screen to set its position and zoom.

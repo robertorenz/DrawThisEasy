@@ -106,6 +106,11 @@ public partial class ManualWindow : Window
         Heading("manual.view.h");
         Bullets("manual.view.b.pan", "manual.view.b.zoom", "manual.view.b.reset");
 
+        Heading("manual.present.h");
+        Para("manual.present.p");
+        Bullets("manual.present.b.mark", "manual.present.b.free", "manual.present.b.manage",
+                "manual.present.b.style", "manual.present.b.start", "manual.present.b.keys");
+
         Heading("manual.toolbars.h");
         Para("manual.toolbars.p");
         Bullets("manual.toolbars.b.pin", "manual.toolbars.b.customize", "manual.toolbars.b.hide", "manual.toolbars.b.reset");

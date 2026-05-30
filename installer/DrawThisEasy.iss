@@ -3,7 +3,7 @@
 ; Produces installer\Output\DrawThisEasy-Setup.exe
 
 #define AppName "DrawThisEasy"
-#define AppVersion "1.2.2"
+#define AppVersion "1.2.3"
 #define AppPublisher "Roberto Renz"
 #define AppExeName "DrawThisEasy.exe"
 
