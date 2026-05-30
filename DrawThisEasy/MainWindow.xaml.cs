@@ -1976,6 +1976,7 @@ public partial class MainWindow : Window
 
         var btns = new StackPanel { Orientation = Orientation.Horizontal };
         Grid.SetColumn(btns, 2);
+        btns.Children.Add(MiniIcon("◎", "present.recapture", () => { Diagram.UpdateFrame(f.Id, Diagram.CurrentViewWorldRect()); RefreshPresentPanel(); }));
         btns.Children.Add(MiniIcon("▲", "present.up",     () => { Diagram.MoveFrame(f.Id, -1); RefreshPresentPanel(); }));
         btns.Children.Add(MiniIcon("▼", "present.down",   () => { Diagram.MoveFrame(f.Id,  1); RefreshPresentPanel(); }));
         btns.Children.Add(MiniIcon("✕", "present.delete", () => { Diagram.RemoveFrame(f.Id);   RefreshPresentPanel(); }));
@@ -2122,6 +2123,7 @@ public partial class MainWindow : Window
         _presenting = true;
         _presentIndex = 0;
         PresentPanel.Visibility = Visibility.Collapsed;
+        PresentIndicator.Visibility = Visibility.Visible;
         Focus();
         // Wait for the chrome-hidden layout to settle so the canvas size (used for framing) is final.
         Dispatcher.BeginInvoke(new Action(() => PresentNavigateTo(0, fast: false)),
@@ -2132,6 +2134,7 @@ public partial class MainWindow : Window
     {
         if (!_presenting) return;
         _presenting = false;
+        PresentIndicator.Visibility = Visibility.Collapsed;
         Diagram.EndPresentationVisual();
         ExitPresentationChrome();
     }
@@ -2143,9 +2146,10 @@ public partial class MainWindow : Window
         var frames = Diagram.Model.Frames.OrderBy(f => f.Order).ToList();
         if (frames.Count == 0) { ExitPresenting(); return; }
         _presentIndex = Math.Max(0, Math.Min(frames.Count - 1, index));
+        var f = frames[_presentIndex];
+        PresentIndicatorText.Text = $"{FrameTitle(f)}   ·   {_presentIndex + 1} / {frames.Count}";
         _presentBusy = true;
-        Diagram.PresentTransitionTo(frames[_presentIndex], Diagram.Model.PresentTransition,
-            () => _presentBusy = false);
+        Diagram.PresentTransitionTo(f, Diagram.Model.PresentTransition, () => _presentBusy = false);
     }
 
     private void PresentNext() { if (!_presentBusy) PresentNavigateTo(_presentIndex + 1, true); }

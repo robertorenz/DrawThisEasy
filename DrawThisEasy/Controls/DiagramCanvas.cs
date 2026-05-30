@@ -2118,6 +2118,16 @@ public class DiagramCanvas : Canvas
         for (int i = 0; i < ordered.Count; i++) ordered[i].Order = i + 1;
     }
 
+    /// Re-captures a screen's region (position + zoom) from a world rect — typically the
+    /// current view, so the user frames an area then applies it to a stored screen.
+    public void UpdateFrame(string id, Rect r)
+    {
+        var f = _model.Frames.FirstOrDefault(x => x.Id == id);
+        if (f == null) return;
+        Snapshot();
+        f.X = r.X; f.Y = r.Y; f.Width = r.Width; f.Height = r.Height;
+    }
+
     public void RenameFrame(string id, string? name)
     {
         var f = _model.Frames.FirstOrDefault(x => x.Id == id);
