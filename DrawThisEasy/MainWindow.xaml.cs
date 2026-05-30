@@ -439,6 +439,7 @@ public partial class MainWindow : Window
             new ToolDef(ToolMode.AddQueue,    "tool.queue",    "tip.queue"),
             new ToolDef(ToolMode.AddNote,     "tool.note",     "tip.note"),
             new ToolDef(ToolMode.AddText,     "tool.text",     "tip.text"),
+            new ToolDef(ToolMode.AddRichText, "tool.richtext", "tip.richtext"),
         });
 
         AddCloudGroup();
@@ -586,7 +587,8 @@ public partial class MainWindow : Window
             new[] { ToolMode.AddRectangle, ToolMode.AddRounded, ToolMode.AddEllipse,
                     ToolMode.AddDiamond,   ToolMode.AddHexagon, ToolMode.AddParallelogram },
             new[] { ToolMode.AddCylinder, ToolMode.AddCloud, ToolMode.AddServer,
-                    ToolMode.AddPerson,   ToolMode.AddQueue, ToolMode.AddNote, ToolMode.AddText },
+                    ToolMode.AddPerson,   ToolMode.AddQueue, ToolMode.AddNote, ToolMode.AddText,
+                    ToolMode.AddRichText },
         };
 
         for (int g = 0; g < groups.Length; g++)
@@ -640,7 +642,7 @@ public partial class MainWindow : Window
         // Shapes
         "AddRectangle", "AddRounded", "AddEllipse", "AddDiamond", "AddHexagon", "AddParallelogram",
         // Infrastructure
-        "AddCylinder", "AddCloud", "AddServer", "AddPerson", "AddQueue", "AddNote", "AddText",
+        "AddCylinder", "AddCloud", "AddServer", "AddPerson", "AddQueue", "AddNote", "AddText", "AddRichText",
         // Actions
         "Templates", "Image",
         // Cloud provider flyouts
@@ -906,6 +908,7 @@ public partial class MainWindow : Window
         ToolMode.AddQueue             => "tip.queue",
         ToolMode.AddNote              => "tip.note",
         ToolMode.AddText              => "tip.text",
+        ToolMode.AddRichText          => "tip.richtext",
         _ => "tip.select"
     };
 
@@ -927,6 +930,7 @@ public partial class MainWindow : Window
         ToolMode.AddQueue             => "tool.queue",
         ToolMode.AddNote              => "tool.note",
         ToolMode.AddText              => "tool.text",
+        ToolMode.AddRichText          => "tool.richtext",
         _ => "tool.select"
     };
 
@@ -2005,8 +2009,8 @@ public partial class MainWindow : Window
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
-        // Ignore if focus is inside a textbox (e.g. editing a label)
-        if (Keyboard.FocusedElement is TextBox) return;
+        // Ignore if focus is inside a text editor (e.g. editing a label or rich text)
+        if (Keyboard.FocusedElement is TextBox or RichTextBox) return;
 
         if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
         {
@@ -2034,7 +2038,7 @@ public partial class MainWindow : Window
 
     private void Window_KeyUp(object sender, KeyEventArgs e)
     {
-        if (Keyboard.FocusedElement is TextBox) return;
+        if (Keyboard.FocusedElement is TextBox or RichTextBox) return;
         Diagram.HandleKeyUp(e);
     }
 

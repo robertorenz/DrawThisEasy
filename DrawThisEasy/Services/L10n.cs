@@ -81,6 +81,7 @@ public static class L10n
             ["tool.queue"]     = "Queue",
             ["tool.note"]      = "Note",
             ["tool.text"]      = "Text",
+            ["tool.richtext"]  = "Rich Text",
 
             // Tooltips (palette + top strip)
             ["tip.select"]        = "Select & move (V)",
@@ -99,6 +100,7 @@ public static class L10n
             ["tip.queue"]         = "Queue / stream",
             ["tip.note"]          = "Sticky note",
             ["tip.text"]          = "Text label (T)",
+            ["tip.richtext"]      = "Rich text box (formatted)",
 
             // Palette hint footer
             ["palette.hint"] = "Click a tool, then click the canvas.\nDrag from a shape's edge in Connector mode to link two shapes.",
@@ -124,6 +126,7 @@ public static class L10n
             ["default.queue"]     = "Queue",
             ["default.note"]      = "Note",
             ["default.text"]      = "Text",
+            ["default.richtext"]  = "Double-click to edit rich text",
 
             // Inspector
             ["inspector.fill"]   = "FILL",
@@ -503,6 +506,7 @@ public static class L10n
             ["tool.queue"]     = "Cola",
             ["tool.note"]      = "Nota",
             ["tool.text"]      = "Texto",
+            ["tool.richtext"]  = "Texto enriquecido",
 
             // Tooltips
             ["tip.select"]        = "Seleccionar y mover (V)",
@@ -521,6 +525,7 @@ public static class L10n
             ["tip.queue"]         = "Cola / flujo",
             ["tip.note"]          = "Nota adhesiva",
             ["tip.text"]          = "Etiqueta de texto (T)",
+            ["tip.richtext"]      = "Cuadro de texto enriquecido (con formato)",
 
             ["palette.hint"] = "Elige una herramienta y haz clic en el lienzo.\nEn modo Conector, arrastra desde el borde de una forma hasta otra para enlazarlas.",
 
@@ -545,6 +550,7 @@ public static class L10n
             ["default.queue"]     = "Cola",
             ["default.note"]      = "Nota",
             ["default.text"]      = "Texto",
+            ["default.richtext"]  = "Doble clic para editar texto enriquecido",
 
             // Inspector
             ["inspector.fill"]   = "RELLENO",

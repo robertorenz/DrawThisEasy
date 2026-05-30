@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -355,6 +356,7 @@ public class DiagramCanvas : Canvas
         ShapeKind.Text          => (120, 30),
         ShapeKind.ServiceTile   => (120, 96),
         ShapeKind.Image         => (160, 120),
+        ShapeKind.RichText      => (200, 110),
         _                       => (140, 70)
     };
 
@@ -373,6 +375,7 @@ public class DiagramCanvas : Canvas
         ShapeKind.Queue         => "default.queue",
         ShapeKind.Note          => "default.note",
         ShapeKind.Text          => "default.text",
+        ShapeKind.RichText      => "default.richtext",
         _ => "default.process"
     });
 
@@ -708,11 +711,12 @@ public class DiagramCanvas : Canvas
             var hit = HitTestShape(world);
             if (hit != null && _tool == ToolMode.Select)
             {
-                // Double-click → edit shape label
+                // Double-click → edit shape label (rich editor for rich-text shapes)
                 if (e.ClickCount == 2)
                 {
                     SelectOnly(hit.Id);
-                    BeginEditText(hit);
+                    if (hit.Kind == ShapeKind.RichText) BeginEditRichText(hit);
+                    else BeginEditText(hit);
                     e.Handled = true;
                     return;
                 }
@@ -1263,12 +1267,14 @@ public class DiagramCanvas : Canvas
             // and bitmap, so "has an image" alone can't be trusted — RTF is the tell.
             if (ClipboardLooksLikeText())
             {
+                if (TryPasteClipboardRtf()) return;   // formatted text (e.g. PowerPoint) → rich-text shape
                 if (TryPasteClipboardText()) return;
                 if (TryPasteClipboardImage()) return;
             }
             else
             {
                 if (TryPasteClipboardImage()) return;
+                if (TryPasteClipboardRtf()) return;
                 if (TryPasteClipboardText()) return;
             }
             return;
@@ -1480,6 +1486,41 @@ public class DiagramCanvas : Canvas
         return true;
     }
 
+    /// Pastes formatted clipboard text (RTF — e.g. from PowerPoint/Word) as a rich-text
+    /// shape, preserving fonts, colors and styles. Returns false if there's no RTF.
+    private bool TryPasteClipboardRtf()
+    {
+        string? rtf = null;
+        try
+        {
+            if (System.Windows.Clipboard.ContainsData(DataFormats.Rtf))
+                rtf = System.Windows.Clipboard.GetData(DataFormats.Rtf) as string;
+        }
+        catch { return false; }
+        if (string.IsNullOrWhiteSpace(rtf)) return false;
+
+        string text = "";
+        try { if (System.Windows.Clipboard.ContainsText()) text = System.Windows.Clipboard.GetText().Trim(); }
+        catch { /* label fallback is optional */ }
+
+        var (dw, dh) = DefaultSize(ShapeKind.RichText);
+        var center = PasteCenter();
+        Snapshot();
+        var node = new ShapeNode
+        {
+            Kind = ShapeKind.RichText,
+            X = center.X - dw / 2, Y = center.Y - dh / 2,
+            Width = dw, Height = dh,
+            Rtf = rtf,
+            Label = text,
+            ZIndex = _nextZ++,
+        };
+        _model.Shapes.Add(node);
+        AddShapeVisual(node);
+        SelectOnly(node.Id);
+        return true;
+    }
+
     public void SelectAll()
     {
         _selected.Clear();
@@ -1568,13 +1609,68 @@ public class DiagramCanvas : Canvas
         SelectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public void SetSelectedFontFamily(string family) => MutateSelectedShapes(s => s.FontFamily = family);
-    public void SetSelectedFontSize(double size)     => MutateSelectedShapes(s => s.FontSize = size);
-    public void SetSelectedBold(bool on)             => MutateSelectedShapes(s => s.Bold = on);
-    public void SetSelectedItalic(bool on)           => MutateSelectedShapes(s => s.Italic = on);
-    public void SetSelectedUnderline(bool on)        => MutateSelectedShapes(s => s.Underline = on);
-    public void SetSelectedFontColor(string hex)     => MutateSelectedShapes(s => s.FontColor = hex);
-    public void SetSelectedTextAlign(TextAlign align) => MutateSelectedShapes(s => s.TextAlign = align);
+    // When a rich-text editor is open, font controls format its (possibly inactive) selection;
+    // otherwise they set the per-shape typography fields on the selected shapes.
+    private bool ApplyRichProperty(DependencyProperty prop, object? value)
+    {
+        if (_richEditBox == null) return false;
+        _richEditBox.Selection?.ApplyPropertyValue(prop, value);
+        return true;
+    }
+
+    public void SetSelectedFontFamily(string family)
+    {
+        if (ApplyRichProperty(TextElement.FontFamilyProperty, new FontFamily(family))) return;
+        MutateSelectedShapes(s => s.FontFamily = family);
+    }
+
+    public void SetSelectedFontSize(double size)
+    {
+        if (ApplyRichProperty(TextElement.FontSizeProperty, size)) return;
+        MutateSelectedShapes(s => s.FontSize = size);
+    }
+
+    public void SetSelectedBold(bool on)
+    {
+        if (ApplyRichProperty(TextElement.FontWeightProperty, on ? FontWeights.Bold : FontWeights.Normal)) return;
+        MutateSelectedShapes(s => s.Bold = on);
+    }
+
+    public void SetSelectedItalic(bool on)
+    {
+        if (ApplyRichProperty(TextElement.FontStyleProperty, on ? FontStyles.Italic : FontStyles.Normal)) return;
+        MutateSelectedShapes(s => s.Italic = on);
+    }
+
+    public void SetSelectedUnderline(bool on)
+    {
+        if (ApplyRichProperty(Inline.TextDecorationsProperty, on ? TextDecorations.Underline : null)) return;
+        MutateSelectedShapes(s => s.Underline = on);
+    }
+
+    public void SetSelectedFontColor(string hex)
+    {
+        Brush? brush = null;
+        try { brush = (Brush)new BrushConverter().ConvertFromString(hex)!; } catch { }
+        if (_richEditBox != null) { if (brush != null) ApplyRichProperty(TextElement.ForegroundProperty, brush); return; }
+        MutateSelectedShapes(s => s.FontColor = hex);
+    }
+
+    public void SetSelectedTextAlign(TextAlign align)
+    {
+        if (_richEditBox != null)
+        {
+            var ta = align switch
+            {
+                TextAlign.Left  => TextAlignment.Left,
+                TextAlign.Right => TextAlignment.Right,
+                _               => TextAlignment.Center,
+            };
+            ApplyRichProperty(Block.TextAlignmentProperty, ta);
+            return;
+        }
+        MutateSelectedShapes(s => s.TextAlign = align);
+    }
 
     public ShapeNode? GetSelectedShape() => _selected.Count == 1 ? _model.FindShape(_selected.First()) : null;
 
@@ -1608,8 +1704,12 @@ public class DiagramCanvas : Canvas
     // ---------- Text edit ----------
 
     private TextBox? _textEditBox;
+    private RichTextBox? _richEditBox;
     private string? _editingShapeId;
     private string? _editingConnectionId;
+
+    /// True while an overlay RichTextBox is open for editing a rich-text shape.
+    public bool IsEditingRichText => _richEditBox != null;
 
     public void BeginEditText(ShapeNode node)
     {
@@ -1641,6 +1741,49 @@ public class DiagramCanvas : Canvas
         _overlayLayer.IsHitTestVisible = true;
         _overlayLayer.Children.Add(_textEditBox);
         _textEditBox.Focus();
+    }
+
+    /// Opens an editable RichTextBox over a rich-text shape. Ctrl+B/I/U and pasting
+    /// formatted content (e.g. from PowerPoint) work natively; Escape or clicking away
+    /// commits. The Inspector typography controls route to this editor's selection.
+    public void BeginEditRichText(ShapeNode node)
+    {
+        EndAnyEdit();
+        _editingShapeId = node.Id;
+        _isEditingText = true;
+        _richEditBox = new RichTextBox
+        {
+            Width = node.Width,
+            Height = node.Height,
+            Background = Brushes.White,
+            BorderBrush = (Brush)new BrushConverter().ConvertFromString("#0EA5E9")!,
+            BorderThickness = new Thickness(2),
+            Padding = new Thickness(6, 4, 6, 4),
+            FontFamily = new FontFamily("Segoe UI"),
+            FontSize = 13,
+            Foreground = (Brush)new BrushConverter().ConvertFromString("#0F172A")!,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            AcceptsReturn = true,
+            // Keep the selection visible when focus moves to the Inspector font controls,
+            // so those controls can format the still-selected text.
+            IsInactiveSelectionHighlightEnabled = true,
+        };
+        _richEditBox.Document.PagePadding = new Thickness(0);
+        ShapeFactory.LoadRich(_richEditBox, node.Rtf, node.Label);
+        // Commit on Escape; clicking elsewhere on the canvas also commits (OnMouseLeftDown).
+        // We deliberately do NOT commit on LostFocus, so the Inspector can format the selection.
+        _richEditBox.PreviewKeyDown += (s, e) =>
+        {
+            if (e.Key == Key.Escape) { CommitTextEdit(); e.Handled = true; }
+        };
+
+        Canvas.SetLeft(_richEditBox, node.X);
+        Canvas.SetTop(_richEditBox, node.Y);
+        _overlayLayer.IsHitTestVisible = true;
+        _overlayLayer.Children.Add(_richEditBox);
+        _richEditBox.Focus();
+        _richEditBox.SelectAll();
     }
 
     public void BeginEditConnectionText(Connection conn)
@@ -1676,7 +1819,25 @@ public class DiagramCanvas : Canvas
 
     private void CommitTextEdit()
     {
-        if (!_isEditingText || _textEditBox == null) return;
+        if (!_isEditingText) return;
+
+        // Rich-text shape: persist the document as RTF (plus a plain-text Label fallback).
+        if (_richEditBox != null && _editingShapeId != null)
+        {
+            Snapshot();
+            var s = _model.FindShape(_editingShapeId);
+            if (s != null)
+            {
+                s.Rtf = ShapeFactory.SaveRich(_richEditBox);
+                s.Label = new TextRange(_richEditBox.Document.ContentStart, _richEditBox.Document.ContentEnd).Text.Trim();
+                if (_shapeVisuals.TryGetValue(s.Id, out var v)) v.Rebuild();
+                ApplySelectionStyles();
+            }
+            EndAnyEdit();
+            return;
+        }
+
+        if (_textEditBox == null) return;
         Snapshot();
         var text = _textEditBox.Text;
         if (_editingShapeId != null)
@@ -1704,7 +1865,10 @@ public class DiagramCanvas : Canvas
     {
         if (_textEditBox != null && _overlayLayer.Children.Contains(_textEditBox))
             _overlayLayer.Children.Remove(_textEditBox);
+        if (_richEditBox != null && _overlayLayer.Children.Contains(_richEditBox))
+            _overlayLayer.Children.Remove(_richEditBox);
         _textEditBox = null;
+        _richEditBox = null;
         _editingShapeId = null;
         _editingConnectionId = null;
         _isEditingText = false;
@@ -1952,10 +2116,14 @@ public class ShapeVisual
 
         var fill = (Brush)new BrushConverter().ConvertFromString(Node.Fill)!;
         var stroke = (Brush)new BrushConverter().ConvertFromString(Node.Stroke)!;
-        var (body, styled) = ShapeFactory.BuildBody(Node.Kind, Node.Width, Node.Height, fill, stroke, Node.Stencil, Node.Image);
+        var (body, styled) = ShapeFactory.BuildBody(Node.Kind, Node.Width, Node.Height, fill, stroke, Node.Stencil, Node.Image, Node.Rtf, Node.Label);
         _body = body;
         _styledParts = styled;
         Element.Children.Add(body);
+
+        // Rich-text shapes render their content inside the body (a read-only RichTextBox);
+        // they have no separate single-font label.
+        if (Node.Kind == ShapeKind.RichText) return;
 
         // Special label margins for non-rect shapes (avoid overlapping cylinder top, etc.)
         _label.Text = Node.Label;

@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
@@ -15,13 +16,14 @@ public static class ShapeFactory
     public const double StrokeThickness = 1.6;
 
     /// Renders the shape body into the supplied panel. Returns a list of shapes whose Fill/Stroke should be updated when colors change.
-    public static (UIElement Container, System.Windows.Shapes.Shape[] StyledParts) BuildBody(ShapeKind kind, double w, double h, Brush fill, Brush stroke, string? stencil = null, string? image = null)
+    public static (UIElement Container, System.Windows.Shapes.Shape[] StyledParts) BuildBody(ShapeKind kind, double w, double h, Brush fill, Brush stroke, string? stencil = null, string? image = null, string? rtf = null, string? richFallback = null)
     {
         var canvas = new Canvas { Width = w, Height = h, IsHitTestVisible = true, Background = Brushes.Transparent };
 
         return kind switch
         {
             ShapeKind.Image         => BuildImage(canvas, w, h, image),
+            ShapeKind.RichText      => BuildRichText(canvas, w, h, fill, stroke, rtf, richFallback),
             ShapeKind.ServiceTile   => BuildServiceTile(canvas, w, h, fill, stroke, stencil),
             ShapeKind.Rectangle     => BuildRect(canvas, w, h, fill, stroke, 0),
             ShapeKind.Rounded       => BuildRect(canvas, w, h, fill, stroke, 10),
@@ -268,6 +270,70 @@ public static class ShapeFactory
         };
         c.Children.Add(hit);
         return (c, new System.Windows.Shapes.Shape[] { hit });
+    }
+
+    private static (UIElement, System.Windows.Shapes.Shape[]) BuildRichText(Canvas c, double w, double h, Brush fill, Brush stroke, string? rtf, string? fallback)
+    {
+        // Rich-text shapes sit on a light card so the formatted content stays legible.
+        var fillBrush = fill is SolidColorBrush sc && sc.Color == Colors.White
+            ? (Brush)new BrushConverter().ConvertFromString("#FFFFFF")!
+            : fill;
+        var rect = new System.Windows.Shapes.Rectangle
+        {
+            Width = w, Height = h,
+            Fill = fillBrush, Stroke = stroke, StrokeThickness = StrokeThickness,
+            RadiusX = 8, RadiusY = 8,
+        };
+        Canvas.SetLeft(rect, 0); Canvas.SetTop(rect, 0);
+        c.Children.Add(rect);
+
+        // A read-only RichTextBox renders the RTF. IsHitTestVisible=false keeps the canvas's
+        // manual hit-testing/drag model intact — editing happens via an overlay editor.
+        var rtb = new RichTextBox
+        {
+            Width = w, Height = h,
+            IsReadOnly = true, IsHitTestVisible = false, Focusable = false,
+            Background = Brushes.Transparent, BorderThickness = new Thickness(0),
+            Padding = new Thickness(8, 6, 8, 6),
+            FontFamily = new FontFamily("Segoe UI"), FontSize = 13,
+            Foreground = (Brush)new BrushConverter().ConvertFromString("#0F172A")!,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Hidden,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden,
+        };
+        rtb.Document.PagePadding = new Thickness(0);
+        LoadRich(rtb, rtf, fallback);
+        Canvas.SetLeft(rtb, 0); Canvas.SetTop(rtb, 0);
+        c.Children.Add(rtb);
+
+        return (c, new System.Windows.Shapes.Shape[] { rect });
+    }
+
+    /// Loads RTF into a RichTextBox, falling back to plain text when there's no RTF yet.
+    public static void LoadRich(RichTextBox rtb, string? rtf, string? fallback)
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(rtf))
+            {
+                var range = new TextRange(rtb.Document.ContentStart, rtb.Document.ContentEnd);
+                var bytes = System.Text.Encoding.UTF8.GetBytes(rtf);
+                using var ms = new System.IO.MemoryStream(bytes);
+                range.Load(ms, DataFormats.Rtf);
+                return;
+            }
+        }
+        catch { /* corrupt/empty RTF: fall through to plain text */ }
+        rtb.Document.Blocks.Clear();
+        rtb.Document.Blocks.Add(new Paragraph(new Run(fallback ?? "")));
+    }
+
+    /// Serializes a RichTextBox's document back to an RTF string.
+    public static string SaveRich(RichTextBox rtb)
+    {
+        var range = new TextRange(rtb.Document.ContentStart, rtb.Document.ContentEnd);
+        using var ms = new System.IO.MemoryStream();
+        range.Save(ms, DataFormats.Rtf);
+        return System.Text.Encoding.UTF8.GetString(ms.ToArray());
     }
 
     private static (UIElement, System.Windows.Shapes.Shape[]) BuildImage(Canvas c, double w, double h, string? dataUrl)

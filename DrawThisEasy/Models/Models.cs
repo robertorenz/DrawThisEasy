@@ -20,7 +20,8 @@ public enum ShapeKind
     Note,
     Text,
     ServiceTile,  // cloud-provider service object; see Stencil + Services/Stencils.cs
-    Image         // raster image; bytes held in ShapeNode.Image as a data URL
+    Image,        // raster image; bytes held in ShapeNode.Image as a data URL
+    RichText      // formatted text card; content held in ShapeNode.Rtf (RTF), Label is the plain-text fallback
 }
 
 public enum ToolMode
@@ -40,7 +41,8 @@ public enum ToolMode
     AddPerson,
     AddQueue,
     AddNote,
-    AddText
+    AddText,
+    AddRichText
 }
 
 public static class ToolModeMap
@@ -60,6 +62,7 @@ public static class ToolModeMap
         ToolMode.AddQueue         => ShapeKind.Queue,
         ToolMode.AddNote          => ShapeKind.Note,
         ToolMode.AddText          => ShapeKind.Text,
+        ToolMode.AddRichText      => ShapeKind.RichText,
         _ => null
     };
 }
@@ -96,6 +99,10 @@ public class ShapeNode
 
     /// For ShapeKind.Image: the image as a data URL ("data:image/png;base64,..."). Null otherwise.
     public string? Image { get; set; }
+
+    /// For ShapeKind.RichText: the formatted content as an RTF string. When null, the plain
+    /// Label is shown instead (and becomes the seed text the first time the shape is edited).
+    public string? Rtf { get; set; }
 
     [JsonIgnore]
     public double CenterX => X + Width / 2.0;

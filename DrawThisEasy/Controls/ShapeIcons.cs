@@ -118,6 +118,14 @@ public static class ShapeIcons
                     Width = 18, Height = 18, TextAlignment = TextAlignment.Center
                 });
                 break;
+
+            case ToolMode.AddRichText:
+                // A small card with mixed (rich) text lines.
+                Add(canvas, new Path { Data = Geometry.Parse("M 2,2 L 16,2 L 16,16 L 2,16 Z"), Stroke = pen, StrokeThickness = 1.4, Fill = null });
+                Add(canvas, new Path { Data = Geometry.Parse("M 4,6 L 11,6"),  Stroke = pen, StrokeThickness = 1.8, Fill = null });
+                Add(canvas, new Path { Data = Geometry.Parse("M 4,9 L 14,9"),  Stroke = pen, StrokeThickness = 1.0, Fill = null });
+                Add(canvas, new Path { Data = Geometry.Parse("M 4,12 L 12,12"), Stroke = pen, StrokeThickness = 1.0, Fill = null });
+                break;
         }
         return canvas;
     }
