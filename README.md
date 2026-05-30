@@ -19,6 +19,14 @@ Both are self-contained — the .NET 9 runtime is bundled, nothing else to insta
 
 ---
 
+## What's new in 1.1.0
+
+- **Rich Text shape** — a formatted text card with mixed fonts, sizes, **bold / italic / underline**, colors, and alignment in one block.
+- **Label typography** — set font family, size, B/I/U, alignment, and text color per shape from the Inspector.
+- **Smarter paste from other apps** — copy from **PowerPoint** (or a browser, or a screenshot): images paste at full resolution, formatted text becomes a Rich Text shape with its formatting preserved, and plain text becomes a Text shape.
+
+---
+
 ## Why it exists
 
 When you need to whiteboard *"how do the clients, load balancer, app servers, queue, and database fit together"*, you don't want to wrestle with Visio or wait for a web app to load. DrawThisEasy opens instantly, ships as a single `.exe`, and stays out of your way.
