@@ -234,6 +234,8 @@
               <WrapPanel x:Name="StrokeSwatches" Orientation="Horizontal"/>
             </DockPanel>
             <Border Background="{StaticResource BorderBrush}" Height="1" Margin="0,4"/>
+            <StackPanel x:Name="TextSection" Margin="0,2,0,0"/>
+            <Border Background="{StaticResource BorderBrush}" Height="1" Margin="0,4"/>
             <UniformGrid Columns="4" Margin="0,6,0,0">
               <Button x:Name="BtnFront" Style="{StaticResource MiniButton}" Content="Front"  Click="BtnFront_Click" Margin="0,0,4,0"/>
               <Button x:Name="BtnBack"  Style="{StaticResource MiniButton}" Content="Back"   Click="BtnBack_Click"  Margin="0,0,4,0"/>

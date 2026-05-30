@@ -63,6 +63,7 @@ public partial class MainWindow : Window
         BuildToolStrip();
         BuildPalette();
         BuildSwatches();
+        BuildTextInspector();
         BuildFavoritesStrip();
         ApplyToolbarVisibility();
 
@@ -1054,6 +1055,178 @@ public partial class MainWindow : Window
         return isFill ? Colors.White : Color.FromRgb(0x33, 0x41, 0x55);
     }
 
+    // ===== Inspector: label typography =====
+
+    private static readonly string[] FontChoices =
+    {
+        "Segoe UI", "Arial", "Calibri", "Cambria", "Comic Sans MS", "Consolas",
+        "Courier New", "Georgia", "Tahoma", "Times New Roman", "Trebuchet MS", "Verdana"
+    };
+    private static readonly double[] FontSizeChoices =
+        { 8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32, 40, 48, 64, 72 };
+
+    private ComboBox _fontFamilyCombo = null!;
+    private ComboBox _fontSizeCombo = null!;
+    private ToggleButton _boldBtn = null!, _italicBtn = null!, _underlineBtn = null!;
+    private ToggleButton _alignLeftBtn = null!, _alignCenterBtn = null!, _alignRightBtn = null!;
+    private TextBlock _lblText = null!;
+    private TextBlock _textColorGlyph = null!;
+    private Border _textColorSwatch = null!;
+    private readonly Dictionary<ToggleButton, string> _toggleTipKey = new();
+    private bool _suppressFontEvents;
+
+    private void BuildTextInspector()
+    {
+        _lblText = new TextBlock
+        {
+            Text = "TEXT", FontSize = 10, FontWeight = FontWeights.SemiBold,
+            Foreground = (Brush)FindResource("TextMutedBrush"), Margin = new Thickness(0, 2, 0, 4),
+        };
+        TextSection.Children.Add(_lblText);
+
+        // Font family
+        _fontFamilyCombo = new ComboBox { Height = 26, Margin = new Thickness(0, 0, 0, 6) };
+        foreach (var f in FontChoices)
+            _fontFamilyCombo.Items.Add(new ComboBoxItem { Content = f, FontFamily = new FontFamily(f), Tag = f });
+        _fontFamilyCombo.SelectionChanged += (s, e) =>
+        {
+            if (_suppressFontEvents) return;
+            if (_fontFamilyCombo.SelectedItem is ComboBoxItem it && it.Tag is string fam)
+                Diagram.SetSelectedFontFamily(fam);
+        };
+        TextSection.Children.Add(_fontFamilyCombo);
+
+        // Size + Bold/Italic/Underline
+        var row1 = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 6) };
+        _fontSizeCombo = new ComboBox { Width = 58, Height = 26, IsEditable = true, Margin = new Thickness(0, 0, 8, 0) };
+        foreach (var sz in FontSizeChoices)
+            _fontSizeCombo.Items.Add(sz.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        _fontSizeCombo.SelectionChanged += (s, e) => { if (!_suppressFontEvents) CommitFontSize(); };
+        _fontSizeCombo.KeyDown += (s, e) => { if (e.Key == Key.Enter) { CommitFontSize(); e.Handled = true; } };
+        _fontSizeCombo.LostFocus += (s, e) => { if (!_suppressFontEvents) CommitFontSize(); };
+        row1.Children.Add(_fontSizeCombo);
+
+        _boldBtn      = MakeFontToggle("B", FontWeights.Bold,   FontStyles.Normal, false, "inspector.tip.bold",      on => Diagram.SetSelectedBold(on));
+        _italicBtn    = MakeFontToggle("I", FontWeights.Normal, FontStyles.Italic, false, "inspector.tip.italic",    on => Diagram.SetSelectedItalic(on));
+        _underlineBtn = MakeFontToggle("U", FontWeights.Normal, FontStyles.Normal, true,  "inspector.tip.underline", on => Diagram.SetSelectedUnderline(on));
+        row1.Children.Add(_boldBtn);
+        row1.Children.Add(_italicBtn);
+        row1.Children.Add(_underlineBtn);
+        TextSection.Children.Add(row1);
+
+        // Alignment + text color
+        var row2 = new StackPanel { Orientation = Orientation.Horizontal };
+        _alignLeftBtn   = MakeAlignToggle("⯇", TextAlign.Left,   "inspector.tip.alignleft");
+        _alignCenterBtn = MakeAlignToggle("≡", TextAlign.Center, "inspector.tip.aligncenter");
+        _alignRightBtn  = MakeAlignToggle("⯈", TextAlign.Right,  "inspector.tip.alignright");
+        row2.Children.Add(_alignLeftBtn);
+        row2.Children.Add(_alignCenterBtn);
+        row2.Children.Add(_alignRightBtn);
+
+        _textColorGlyph = new TextBlock
+        {
+            Text = "A", FontWeight = FontWeights.Bold, FontSize = 13,
+            HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+        };
+        _textColorSwatch = new Border
+        {
+            Width = 30, Height = 26, Margin = new Thickness(8, 0, 0, 0),
+            CornerRadius = new CornerRadius(6), Background = Brushes.White,
+            BorderBrush = (Brush)FindResource("BorderBrush"), BorderThickness = new Thickness(1),
+            Cursor = Cursors.Hand, Child = _textColorGlyph,
+        };
+        _textColorSwatch.MouseLeftButtonDown += (s, e) =>
+        {
+            var initial = CurrentFontColor();
+            var picked = ColorPickerWindow.Pick(this, initial);
+            if (picked.HasValue)
+                Diagram.SetSelectedFontColor($"#{picked.Value.R:X2}{picked.Value.G:X2}{picked.Value.B:X2}");
+        };
+        row2.Children.Add(_textColorSwatch);
+        TextSection.Children.Add(row2);
+    }
+
+    private ToggleButton MakeFontToggle(string glyph, FontWeight weight, FontStyle style, bool underline, string tipKey, Action<bool> apply)
+    {
+        var tb = new ToggleButton
+        {
+            Width = 30, Height = 26, Margin = new Thickness(0, 0, 4, 0), Focusable = false,
+            ToolTip = L10n.T(tipKey),
+            Content = new TextBlock
+            {
+                Text = glyph, FontSize = 13, FontWeight = weight, FontStyle = style,
+                TextDecorations = underline ? TextDecorations.Underline : null,
+            },
+        };
+        _toggleTipKey[tb] = tipKey;
+        tb.Click += (s, e) => { if (!_suppressFontEvents) apply(tb.IsChecked == true); };
+        return tb;
+    }
+
+    private ToggleButton MakeAlignToggle(string glyph, TextAlign align, string tipKey)
+    {
+        var tb = new ToggleButton
+        {
+            Width = 30, Height = 26, Margin = new Thickness(0, 0, 4, 0), Focusable = false,
+            FontSize = 13, Content = glyph, ToolTip = L10n.T(tipKey),
+        };
+        _toggleTipKey[tb] = tipKey;
+        tb.Click += (s, e) => { if (!_suppressFontEvents) Diagram.SetSelectedTextAlign(align); };
+        return tb;
+    }
+
+    private static double EffectiveFontSize(ShapeNode s) =>
+        s.FontSize ?? (s.Kind == ShapeKind.ServiceTile ? 11.5 : 13);
+
+    private void CommitFontSize()
+    {
+        var txt = _fontSizeCombo.Text?.Trim();
+        if (!double.TryParse(txt, System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out var sz)) return;
+        if (sz < 4 || sz > 400) return;
+        // Skip no-op commits so we don't stack identical undo snapshots.
+        var cur = Diagram.PrimarySelectedShape;
+        if (cur != null && Math.Abs(EffectiveFontSize(cur) - sz) < 0.01) return;
+        Diagram.SetSelectedFontSize(sz);
+    }
+
+    private Color CurrentFontColor()
+    {
+        var shape = Diagram.PrimarySelectedShape;
+        var hex = string.IsNullOrWhiteSpace(shape?.FontColor) ? "#0F172A" : shape!.FontColor!;
+        try { return (Color)ColorConverter.ConvertFromString(hex); }
+        catch { return (Color)ColorConverter.ConvertFromString("#0F172A"); }
+    }
+
+    private void RefreshTextInspector()
+    {
+        var shape = Diagram.PrimarySelectedShape;
+        if (shape == null) return;
+        _suppressFontEvents = true;
+        try
+        {
+            var fam = string.IsNullOrWhiteSpace(shape.FontFamily) ? "Segoe UI" : shape.FontFamily!;
+            _fontFamilyCombo.SelectedItem = _fontFamilyCombo.Items
+                .OfType<ComboBoxItem>()
+                .FirstOrDefault(it => (string)it.Tag == fam);
+
+            _fontSizeCombo.Text = EffectiveFontSize(shape)
+                .ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+            _boldBtn.IsChecked      = shape.Bold;
+            _italicBtn.IsChecked    = shape.Italic;
+            _underlineBtn.IsChecked = shape.Underline;
+            _alignLeftBtn.IsChecked   = shape.TextAlign == TextAlign.Left;
+            _alignCenterBtn.IsChecked = shape.TextAlign == TextAlign.Center;
+            _alignRightBtn.IsChecked  = shape.TextAlign == TextAlign.Right;
+
+            var hex = string.IsNullOrWhiteSpace(shape.FontColor) ? "#0F172A" : shape.FontColor!;
+            try { _textColorGlyph.Foreground = (Brush)new BrushConverter().ConvertFromString(hex)!; }
+            catch { _textColorGlyph.Foreground = Brushes.Black; }
+        }
+        finally { _suppressFontEvents = false; }
+    }
+
     // ===== Right-click context menu =====
 
     private Popup? _ctxPopup;
@@ -1293,8 +1466,9 @@ public partial class MainWindow : Window
 
     private void UpdateInspectorVisibility()
     {
-        Inspector.Visibility = Diagram.SelectedShapeIds.Count > 0
-            ? Visibility.Visible : Visibility.Collapsed;
+        var has = Diagram.SelectedShapeIds.Count > 0;
+        Inspector.Visibility = has ? Visibility.Visible : Visibility.Collapsed;
+        if (has) RefreshTextInspector();
     }
 
     private void BtnFront_Click(object sender, RoutedEventArgs e) => Diagram.BringToFront();
@@ -1768,6 +1942,13 @@ public partial class MainWindow : Window
         BtnBack.Content  = L10n.T("inspector.back");   BtnBack.ToolTip  = L10n.T("inspector.tip.back");
         BtnDup.Content   = L10n.T("inspector.dup");    BtnDup.ToolTip   = L10n.T("inspector.tip.dup");
         BtnDel.Content   = L10n.T("inspector.delete"); BtnDel.ToolTip   = L10n.T("inspector.tip.delete");
+
+        // Inspector — text/typography
+        if (_lblText != null)          _lblText.Text = L10n.T("inspector.text").ToUpperInvariant();
+        if (_fontFamilyCombo != null)  _fontFamilyCombo.ToolTip = L10n.T("inspector.tip.fontfamily");
+        if (_fontSizeCombo != null)    _fontSizeCombo.ToolTip = L10n.T("inspector.tip.fontsize");
+        if (_textColorSwatch != null)  _textColorSwatch.ToolTip = L10n.T("inspector.tip.textcolor");
+        foreach (var (tb, key) in _toggleTipKey) tb.ToolTip = L10n.T(key);
 
         // Status text reflects current tool
         SyncToolButtons();

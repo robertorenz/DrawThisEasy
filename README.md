@@ -41,7 +41,7 @@ The main push to create it was watching my good friend **Alejandro Elías** alwa
 - **Empty-area drag pans the canvas** in both Select and Connector modes. Hold `Shift` while dragging empty space to marquee-select instead.
 - **Inline label editing** — double-click any shape, type, `Enter` to commit.
 - **Pan & zoom** — `Space` + drag, right-click + drag, or just drag empty area. Mouse wheel zooms.
-- **Inspector panel** for fill / stroke colors and layer ordering.
+- **Inspector panel** for fill / stroke colors, **label typography** (font family, size, **bold / italic / underline**, alignment, and text color — applied to every selected shape), and layer ordering.
 - **Rulers, guides & snapping** — rulers along the top and left; **drag from a ruler** onto the canvas to drop a guide line. Drag a guide to reposition it, or **drag it back onto its ruler to remove it** (**View → Clear Guides** clears all). Moving shapes **snap** to other shapes' edges/centers and to guides, with live red alignment lines; hold `Alt` to move freely.
 - **Preferences** (Edit → Preferences) — set the **default connector** routing & line style for new connectors, toggle **snapping**, choose **ruler units** (pixels, cm, inches, picas), turn on **autosave** (silently writes every dirty tab that has a file path), and **reopen files on startup** (remembers the set of open documents and reopens them on next launch). Saved to `%LOCALAPPDATA%\DrawThisEasy\preferences.json`; the open-files list lives next to it in `session.json`.
 - **Right-click context menu** on any shape — a polished popup to edit text, apply fill / stroke swatches (or pick a custom color), reorder layers, duplicate, copy, and delete. Right-drag empty space still pans.

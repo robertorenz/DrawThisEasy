@@ -1552,7 +1552,34 @@ public class DiagramCanvas : Canvas
         // Also update any connections originating/ending here? No — connection strokes are separate.
     }
 
+    // ---- Label typography (applies to every selected shape) ----
+    private void MutateSelectedShapes(Action<ShapeNode> mutate)
+    {
+        if (_selected.Count == 0) return;
+        Snapshot();
+        foreach (var id in _selected)
+        {
+            var s = _model.FindShape(id);
+            if (s == null) continue;
+            mutate(s);
+            if (_shapeVisuals.TryGetValue(id, out var v)) v.Rebuild();
+        }
+        ApplySelectionStyles();
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void SetSelectedFontFamily(string family) => MutateSelectedShapes(s => s.FontFamily = family);
+    public void SetSelectedFontSize(double size)     => MutateSelectedShapes(s => s.FontSize = size);
+    public void SetSelectedBold(bool on)             => MutateSelectedShapes(s => s.Bold = on);
+    public void SetSelectedItalic(bool on)           => MutateSelectedShapes(s => s.Italic = on);
+    public void SetSelectedUnderline(bool on)        => MutateSelectedShapes(s => s.Underline = on);
+    public void SetSelectedFontColor(string hex)     => MutateSelectedShapes(s => s.FontColor = hex);
+    public void SetSelectedTextAlign(TextAlign align) => MutateSelectedShapes(s => s.TextAlign = align);
+
     public ShapeNode? GetSelectedShape() => _selected.Count == 1 ? _model.FindShape(_selected.First()) : null;
+
+    /// First shape in the current selection (any count), used to seed the font inspector.
+    public ShapeNode? PrimarySelectedShape => _selected.Count > 0 ? _model.FindShape(_selected.First()) : null;
 
     public Connection? GetSelectedConnection() =>
         _selectedConnectionId == null ? null : _model.Connections.FirstOrDefault(c => c.Id == _selectedConnectionId);
@@ -1932,8 +1959,24 @@ public class ShapeVisual
 
         // Special label margins for non-rect shapes (avoid overlapping cylinder top, etc.)
         _label.Text = Node.Label;
-        _label.FontSize = Node.Kind == ShapeKind.ServiceTile ? 11.5 : 13;
-        _label.FontWeight = Node.Kind == ShapeKind.ServiceTile ? FontWeights.SemiBold : FontWeights.Normal;
+
+        // Typography: explicit per-shape settings win, otherwise fall back to the per-kind
+        // defaults that have always applied (tiles use a smaller, semi-bold label).
+        _label.FontFamily = new FontFamily(string.IsNullOrWhiteSpace(Node.FontFamily) ? "Segoe UI" : Node.FontFamily);
+        _label.FontSize = Node.FontSize ?? (Node.Kind == ShapeKind.ServiceTile ? 11.5 : 13);
+        _label.FontWeight = Node.Bold
+            ? FontWeights.Bold
+            : (Node.Kind == ShapeKind.ServiceTile ? FontWeights.SemiBold : FontWeights.Normal);
+        _label.FontStyle = Node.Italic ? FontStyles.Italic : FontStyles.Normal;
+        _label.TextDecorations = Node.Underline ? TextDecorations.Underline : null;
+        _label.Foreground = (Brush)new BrushConverter().ConvertFromString(
+            string.IsNullOrWhiteSpace(Node.FontColor) ? "#0F172A" : Node.FontColor)!;
+        _label.TextAlignment = Node.TextAlign switch
+        {
+            TextAlign.Left  => TextAlignment.Left,
+            TextAlign.Right => TextAlignment.Right,
+            _               => TextAlignment.Center,
+        };
         _label.Margin = Node.Kind switch
         {
             ShapeKind.Cylinder    => new Thickness(8, Math.Min(Node.Height * 0.18, 18), 8, 4),

@@ -136,6 +136,16 @@ public static class L10n
             ["inspector.tip.back"]   = "Send to back",
             ["inspector.tip.dup"]    = "Duplicate (Ctrl+D)",
             ["inspector.tip.delete"] = "Delete (Del)",
+            ["inspector.text"]            = "Text",
+            ["inspector.tip.fontfamily"]  = "Font",
+            ["inspector.tip.fontsize"]    = "Font size",
+            ["inspector.tip.bold"]        = "Bold",
+            ["inspector.tip.italic"]      = "Italic",
+            ["inspector.tip.underline"]   = "Underline",
+            ["inspector.tip.alignleft"]   = "Align left",
+            ["inspector.tip.aligncenter"] = "Align center",
+            ["inspector.tip.alignright"]  = "Align right",
+            ["inspector.tip.textcolor"]   = "Text color",
 
             // Templates dialog
             ["templates.title"]    = "Start from a template",
@@ -547,6 +557,16 @@ public static class L10n
             ["inspector.tip.back"]   = "Enviar al fondo",
             ["inspector.tip.dup"]    = "Duplicar (Ctrl+D)",
             ["inspector.tip.delete"] = "Eliminar (Supr)",
+            ["inspector.text"]            = "Texto",
+            ["inspector.tip.fontfamily"]  = "Fuente",
+            ["inspector.tip.fontsize"]    = "Tamaño de fuente",
+            ["inspector.tip.bold"]        = "Negrita",
+            ["inspector.tip.italic"]      = "Cursiva",
+            ["inspector.tip.underline"]   = "Subrayado",
+            ["inspector.tip.alignleft"]   = "Alinear a la izquierda",
+            ["inspector.tip.aligncenter"] = "Centrar",
+            ["inspector.tip.alignright"]  = "Alinear a la derecha",
+            ["inspector.tip.textcolor"]   = "Color del texto",
 
             // Templates dialog
             ["templates.title"]    = "Comenzar desde una plantilla",

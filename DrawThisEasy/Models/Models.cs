@@ -77,6 +77,20 @@ public class ShapeNode
     public string Stroke { get; set; } = "#334155";
     public int ZIndex { get; set; }
 
+    // ---- Label typography ----
+    // Null / false members fall back to the per-kind defaults in ShapeVisual, so files
+    // saved before these fields existed render exactly as they did before.
+    /// Font family name (e.g. "Segoe UI"). Null = per-kind default.
+    public string? FontFamily { get; set; }
+    /// Point size of the label. Null = per-kind default (11.5 for tiles, else 13).
+    public double? FontSize { get; set; }
+    public bool Bold { get; set; }
+    public bool Italic { get; set; }
+    public bool Underline { get; set; }
+    /// Label text color as hex. Null = default ink (#0F172A).
+    public string? FontColor { get; set; }
+    public TextAlign TextAlign { get; set; } = TextAlign.Center;
+
     /// For ShapeKind.ServiceTile: the cloud-service stencil id (e.g. "aws-lambda"). Null otherwise.
     public string? Stencil { get; set; }
 
@@ -88,6 +102,10 @@ public class ShapeNode
     [JsonIgnore]
     public double CenterY => Y + Height / 2.0;
 }
+
+// Center is first so default(TextAlign) == Center — matches the historical (and only)
+// behavior, so labels in files saved before this field existed stay centered.
+public enum TextAlign { Center, Left, Right }
 
 public enum ConnectorRouting { Straight, Curved, Elbow }
 
