@@ -1256,8 +1256,20 @@ public class DiagramCanvas : Canvas
         // (from PowerPoint, screenshots, browsers, etc.) or plain text as a Text shape.
         if (string.IsNullOrWhiteSpace(json))
         {
-            if (TryPasteClipboardImage()) return;
-            if (TryPasteClipboardText()) return;
+            // A bare text copy (e.g. selecting text inside a PowerPoint text box) should
+            // become an editable Text shape; a copied object/picture/slide should come in
+            // as an image. Office exposes copied objects as a metafile but a plain text
+            // selection has none — so the metafile is the discriminator.
+            if (ClipboardHasDrawingObject())
+            {
+                if (TryPasteClipboardImage()) return;
+                if (TryPasteClipboardText()) return;
+            }
+            else
+            {
+                if (TryPasteClipboardText()) return;
+                if (TryPasteClipboardImage()) return;
+            }
             return;
         }
 
@@ -1343,39 +1355,90 @@ public class DiagramCanvas : Canvas
         return new Point(0, 0);
     }
 
+    /// True when the clipboard carries a copied drawing object (Office exposes one as a
+    /// metafile). Used to tell "I copied a shape/picture" from "I copied plain text".
+    private static bool ClipboardHasDrawingObject()
+    {
+        try
+        {
+            return System.Windows.Clipboard.ContainsData(DataFormats.EnhancedMetafile)
+                || System.Windows.Clipboard.ContainsData(DataFormats.MetafilePicture);
+        }
+        catch { return false; }
+    }
+
     /// Pastes a bitmap off the system clipboard (PowerPoint, screenshots, browsers, …)
     /// as an Image shape. Returns false if the clipboard holds no image.
     private bool TryPasteClipboardImage()
     {
-        BitmapSource? src = null;
-        try
-        {
-            if (System.Windows.Clipboard.ContainsImage())
-                src = System.Windows.Clipboard.GetImage();
-        }
-        catch { return false; }
-        if (src == null) return false;
+        byte[]? bytes = null;
+        double pw = 0, ph = 0;
 
-        byte[] bytes;
+        // Prefer the raw "PNG" payload Office/browsers put on the clipboard — it keeps the
+        // full resolution and alpha, whereas Clipboard.GetImage() round-trips through a DIB
+        // that frequently comes back downscaled.
         try
         {
-            var encoder = new PngBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(src));
-            using var ms = new System.IO.MemoryStream();
-            encoder.Save(ms);
-            bytes = ms.ToArray();
+            if (System.Windows.Clipboard.ContainsData("PNG"))
+            {
+                var data = System.Windows.Clipboard.GetData("PNG");
+                if (data is System.IO.MemoryStream ms) bytes = ms.ToArray();
+                else if (data is byte[] b) bytes = b;
+            }
         }
-        catch { return false; }
+        catch { bytes = null; }
+
+        if (bytes is { Length: > 0 })
+        {
+            try
+            {
+                var probe = new BitmapImage();
+                using (var ms = new System.IO.MemoryStream(bytes))
+                {
+                    probe.BeginInit();
+                    probe.CacheOption = BitmapCacheOption.OnLoad;
+                    probe.StreamSource = ms;
+                    probe.EndInit();
+                }
+                pw = probe.PixelWidth; ph = probe.PixelHeight;
+            }
+            catch { bytes = null; }
+        }
+
+        // Fall back to the DIB bitmap when there's no usable PNG payload.
+        if (bytes is not { Length: > 0 })
+        {
+            BitmapSource? src = null;
+            try
+            {
+                if (System.Windows.Clipboard.ContainsImage())
+                    src = System.Windows.Clipboard.GetImage();
+            }
+            catch { return false; }
+            if (src == null) return false;
+
+            try
+            {
+                var encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(src));
+                using var ms = new System.IO.MemoryStream();
+                encoder.Save(ms);
+                bytes = ms.ToArray();
+            }
+            catch { return false; }
+            pw = src.PixelWidth; ph = src.PixelHeight;
+        }
 
         var dataUrl = $"data:image/png;base64,{Convert.ToBase64String(bytes)}";
 
-        // Use the source pixel size, scaled down to a sensible default.
+        // Display the image at its pixel size, scaled down to a sensible default. The full
+        // resolution stays in the data URL, so resizing it back up stays crisp.
         double w = 200, h = 150;
-        if (src.PixelWidth > 0 && src.PixelHeight > 0)
+        if (pw > 0 && ph > 0)
         {
-            double scale = Math.Min(1.0, 320.0 / Math.Max(src.PixelWidth, src.PixelHeight));
-            w = Math.Max(24, src.PixelWidth * scale);
-            h = Math.Max(24, src.PixelHeight * scale);
+            double scale = Math.Min(1.0, 320.0 / Math.Max(pw, ph));
+            w = Math.Max(24, pw * scale);
+            h = Math.Max(24, ph * scale);
         }
         AddImageAt(dataUrl, w, h, PasteCenter());
         return true;
