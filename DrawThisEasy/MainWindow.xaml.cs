@@ -1916,8 +1916,8 @@ public partial class MainWindow : Window
         BtnStartPresent.IsEnabled = frames.Count > 0;
     }
 
-    private static readonly string[] TransitionKeys = { "zoom", "glide", "panzoom", "spin", "spring", "fade", "cut", "random" };
-    private static readonly string[] RandomTransitionPool = { "zoom", "glide", "panzoom", "spin", "spring", "fade" };
+    private static readonly string[] TransitionKeys = { "zoom", "glide", "panzoom", "spin", "spring", "whirl", "fade", "cut", "random" };
+    private static readonly string[] RandomTransitionPool = { "zoom", "glide", "panzoom", "spin", "spring", "whirl", "fade" };
     private readonly Random _transitionRng = new();
 
     // "random" picks a different animated transition each navigation; everything else is itself.

@@ -2345,6 +2345,9 @@ public class DiagramCanvas : Canvas
             case "panzoom":
                 PanThenZoomTransition(zEnd, cEnd, onDone);
                 break;
+            case "whirl":
+                WhirlwindTransition(zEnd, cEnd, r.Width, r.Height, onDone);
+                break;
             default: // "zoom"
                 AnimateView(zEnd, cEnd, OverviewRect(), 2.4, onDone);
                 break;
@@ -2397,6 +2400,34 @@ public class DiagramCanvas : Canvas
             SetView(zStart * Math.Pow(zEnd / zStart, u),
                     new Point(cStart.X + (cEnd.X - cStart.X) * u, cStart.Y + (cEnd.Y - cStart.Y) * u));
         }, onDone);
+    }
+
+    // Whirlwind: zooms out then back in (like the overview fly-out) while the focal point
+    // spirals inward in a decaying circle and the world unwinds a couple of turns — so it
+    // appears to swirl around before landing on the target.
+    private void WhirlwindTransition(double zEnd, Point cEnd, double rW, double rH, Action? onDone)
+    {
+        double zStart = Zoom; Point cStart = ViewCenterWorld();
+        double zMid = Math.Min(zStart, zEnd) * 0.5;                 // pull out partway
+        double dx = cEnd.X - cStart.X, dy = cEnd.Y - cStart.Y;
+        double dist = Math.Sqrt(dx * dx + dy * dy);
+        double radius = Math.Max(dist * 0.30, Math.Max(rW, rH) * 0.6); // orbit size (world units)
+        _rotate.CenterX = ActualWidth / 2; _rotate.CenterY = ActualHeight / 2;
+        const double turns = 2.5;     // how many times it circles
+        const double spinDeg = 540;   // content rotation that unwinds to 0
+
+        RunViewTween(2.6, t =>
+        {
+            double u = Smooth(t);
+            double z = u < 0.5
+                ? zStart * Math.Pow(zMid / zStart, u / 0.5)
+                : zMid * Math.Pow(zEnd / zMid, (u - 0.5) / 0.5);
+            double bx = cStart.X + dx * u, by = cStart.Y + dy * u;  // straight path...
+            double theta = u * turns * 2 * Math.PI;                 // ...plus a decaying orbit
+            double rad = radius * (1 - u);
+            _rotate.Angle = spinDeg * (1 - u);
+            SetView(z, new Point(bx + Math.Cos(theta) * rad, by + Math.Sin(theta) * rad));
+        }, () => { _rotate.Angle = 0; onDone?.Invoke(); });
     }
 
     // Pan, then zoom: glide across at the current zoom, then dive into the target.
