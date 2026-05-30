@@ -2008,6 +2008,28 @@ public class DiagramCanvas : Canvas
         ViewChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    /// Pans (keeping the current zoom) to an empty stretch of canvas just past the
+    /// right edge of all existing shapes — a clean area to start another scene. Anything
+    /// to the right of the rightmost shape is guaranteed clear of shapes. With an empty
+    /// canvas there's nothing to clear, so it just recenters.
+    public void GoToFreeSpace()
+    {
+        ClearSelection();
+        if (_model.Shapes.Count == 0) { ResetView(); return; }
+
+        double maxX = double.MinValue, minY = double.MaxValue;
+        foreach (var s in _model.Shapes)
+        {
+            maxX = Math.Max(maxX, s.X + s.Width);
+            minY = Math.Min(minY, s.Y);
+        }
+
+        const double gap = 160;              // clear separation from the existing content
+        var zoom = Zoom <= 0 ? 1.0 : Zoom;
+        var margin = 100 / zoom;             // keep the free area a little in from the corner
+        ScrollViewTo(maxX + gap - margin, minY - margin);
+    }
+
     // ---- Scrollbar support ----
 
     public (double X, double Y) GetScrollOffsetWorld()

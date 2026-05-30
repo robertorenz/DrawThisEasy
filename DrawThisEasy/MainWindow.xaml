@@ -66,6 +66,7 @@
             <MenuItem x:Name="MnuViewZoomIn"    Header="Zoom _In"      Click="BtnZoomIn_Click"/>
             <MenuItem x:Name="MnuViewZoomOut"   Header="Zoom _Out"     Click="BtnZoomOut_Click"/>
             <MenuItem x:Name="MnuViewZoomReset" Header="_Reset Zoom"   Click="BtnZoomReset_Click"/>
+            <MenuItem x:Name="MnuViewFreeSpace" Header="Go to _Free Space" Click="BtnGoToFreeSpace_Click"/>
             <Separator/>
             <MenuItem x:Name="MnuViewClearGuides" Header="Clear _Guides" Click="MnuClearGuides_Click"/>
             <Separator/>

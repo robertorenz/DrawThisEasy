@@ -34,6 +34,8 @@ public partial class MainWindow : Window
     private Button? _imgStripBtn;
     private TextBlock? _imgStripLabel;
     private TextBlock? _imgPaletteLabel;
+    private Button? _freeSpaceStripBtn;
+    private TextBlock? _freeSpaceStripLabel;
 
     // ===== Open documents (tabs) =====
     private sealed class DocTab
@@ -611,6 +613,12 @@ public partial class MainWindow : Window
         AttachFavoritesContextMenu(iBtn, "Image");
         ToolStrip.Children.Add(iBtn);
 
+        var (fBtn, fLbl) = MakeStripAction(BuildFreeSpaceIcon((Brush)FindResource("TextMutedBrush")),
+            L10n.T("topbar.freespace"), L10n.T("topbar.freespace.tip"),
+            (s, e) => Diagram.GoToFreeSpace());
+        _freeSpaceStripBtn = fBtn; _freeSpaceStripLabel = fLbl;
+        ToolStrip.Children.Add(fBtn);
+
         ToolStrip.Children.Add(BuildStripSeparator());
         ToolStrip.Children.Add(BuildProviderStripButton("AWS",    Stencils.Aws,   Stencils.AwsColor));
         ToolStrip.Children.Add(BuildProviderStripButton("Azure",  Stencils.Azure, Stencils.AzureColor));
@@ -854,6 +862,28 @@ public partial class MainWindow : Window
         {
             Fill = brush,
             Points = new PointCollection { new Point(3, 15), new Point(8, 9.5), new Point(12, 15) }
+        });
+        return c;
+    }
+
+    // A dashed frame (existing content) with an arrow pointing to fresh space on the right.
+    private UIElement BuildFreeSpaceIcon(Brush brush)
+    {
+        var c = new Canvas { Width = 18, Height = 18 };
+        var frame = new System.Windows.Shapes.Rectangle
+        {
+            Width = 8, Height = 12, RadiusX = 1.5, RadiusY = 1.5,
+            Stroke = brush, StrokeThickness = 1.4, Fill = null,
+            StrokeDashArray = new DoubleCollection(new[] { 2.0, 1.6 })
+        };
+        Canvas.SetLeft(frame, 1); Canvas.SetTop(frame, 3); c.Children.Add(frame);
+
+        var shaft = new System.Windows.Shapes.Line { X1 = 11, Y1 = 9, X2 = 16, Y2 = 9, Stroke = brush, StrokeThickness = 1.6 };
+        c.Children.Add(shaft);
+        c.Children.Add(new System.Windows.Shapes.Polygon
+        {
+            Fill = brush,
+            Points = new PointCollection { new Point(14, 6), new Point(17, 9), new Point(14, 12) }
         });
         return c;
     }
@@ -1812,6 +1842,8 @@ public partial class MainWindow : Window
     private void BtnZoomOut_Click(object sender, RoutedEventArgs e) => Diagram.SetZoom(Diagram.Zoom / 1.2);
     private void BtnZoomReset_Click(object sender, RoutedEventArgs e) => Diagram.ResetView();
 
+    private void BtnGoToFreeSpace_Click(object sender, RoutedEventArgs e) => Diagram.GoToFreeSpace();
+
     private void MnuClearGuides_Click(object sender, RoutedEventArgs e) => Diagram.ClearGuides();
 
     private void BtnPreferences_Click(object sender, RoutedEventArgs e)
@@ -1888,6 +1920,7 @@ public partial class MainWindow : Window
         MnuViewZoomIn.Header     = L10n.T("menu.view.zoomin");
         MnuViewZoomOut.Header    = L10n.T("menu.view.zoomout");
         MnuViewZoomReset.Header  = L10n.T("menu.view.zoomreset");
+        MnuViewFreeSpace.Header  = L10n.T("menu.view.freespace");
         MnuViewClearGuides.Header = L10n.T("menu.view.clearguides");
         MnuViewToolbars.Header           = L10n.T("menu.view.toolbars");
         MnuViewShowMain.Header           = L10n.T("menu.view.show.main");
@@ -1923,6 +1956,8 @@ public partial class MainWindow : Window
         if (_imgStripLabel != null) _imgStripLabel.Text = L10n.T("topbar.image");
         if (_imgStripBtn != null) _imgStripBtn.ToolTip = L10n.T("topbar.image.tip");
         if (_imgPaletteLabel != null) _imgPaletteLabel.Text = L10n.T("topbar.image.tip");
+        if (_freeSpaceStripLabel != null) _freeSpaceStripLabel.Text = L10n.T("topbar.freespace");
+        if (_freeSpaceStripBtn != null) _freeSpaceStripBtn.ToolTip = L10n.T("topbar.freespace.tip");
 
         // Palette group labels
         foreach (var (tb, key) in _groupLabels)
