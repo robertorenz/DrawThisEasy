@@ -24,3 +24,6 @@ Thumbs.db
 
 # Local app data
 *.local.json
+
+# Local scratch / test diagrams
+Duwest.excalidraw
