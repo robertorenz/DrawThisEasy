@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using DrawThisEasy.Models;
 using DrawThisEasy.Services;
@@ -315,10 +316,16 @@ public class DiagramCanvas : Canvas
     /// Drops an image (data URL) at the current viewport center, at the given size.
     public ShapeNode AddImage(string dataUrl, double w, double h)
     {
-        Snapshot();
         var center = (ActualWidth > 0 && ActualHeight > 0)
             ? ScreenToWorld(new Point(ActualWidth / 2, ActualHeight / 2))
             : new Point(0, 0);
+        return AddImageAt(dataUrl, w, h, center);
+    }
+
+    /// Drops an image (data URL) centered on the given world point.
+    private ShapeNode AddImageAt(string dataUrl, double w, double h, Point center)
+    {
+        Snapshot();
         var node = new ShapeNode
         {
             Kind = ShapeKind.Image,
@@ -1243,9 +1250,16 @@ public class DiagramCanvas : Canvas
             if (System.Windows.Clipboard.ContainsData(ClipboardFormat))
                 json = System.Windows.Clipboard.GetData(ClipboardFormat) as string;
         }
-        catch (Exception) { return; }
+        catch (Exception) { /* fall through to image/text below */ }
 
-        if (string.IsNullOrWhiteSpace(json)) return;
+        // No DrawThisEasy snippet on the clipboard — fall back to pasting an image
+        // (from PowerPoint, screenshots, browsers, etc.) or plain text as a Text shape.
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            if (TryPasteClipboardImage()) return;
+            if (TryPasteClipboardText()) return;
+            return;
+        }
 
         DiagramModel? snippet;
         try
@@ -1318,6 +1332,84 @@ public class DiagramCanvas : Canvas
         ApplySelectionStyles();
         RebuildOverlay();
         SelectionChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// Where a paste should land: the cursor if it's over the canvas, else the viewport center.
+    private Point PasteCenter()
+    {
+        if (IsMouseOver && _hasMouseWorld) return _lastMouseWorld;
+        if (ActualWidth > 0 && ActualHeight > 0)
+            return ScreenToWorld(new Point(ActualWidth / 2, ActualHeight / 2));
+        return new Point(0, 0);
+    }
+
+    /// Pastes a bitmap off the system clipboard (PowerPoint, screenshots, browsers, …)
+    /// as an Image shape. Returns false if the clipboard holds no image.
+    private bool TryPasteClipboardImage()
+    {
+        BitmapSource? src = null;
+        try
+        {
+            if (System.Windows.Clipboard.ContainsImage())
+                src = System.Windows.Clipboard.GetImage();
+        }
+        catch { return false; }
+        if (src == null) return false;
+
+        byte[] bytes;
+        try
+        {
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(src));
+            using var ms = new System.IO.MemoryStream();
+            encoder.Save(ms);
+            bytes = ms.ToArray();
+        }
+        catch { return false; }
+
+        var dataUrl = $"data:image/png;base64,{Convert.ToBase64String(bytes)}";
+
+        // Use the source pixel size, scaled down to a sensible default.
+        double w = 200, h = 150;
+        if (src.PixelWidth > 0 && src.PixelHeight > 0)
+        {
+            double scale = Math.Min(1.0, 320.0 / Math.Max(src.PixelWidth, src.PixelHeight));
+            w = Math.Max(24, src.PixelWidth * scale);
+            h = Math.Max(24, src.PixelHeight * scale);
+        }
+        AddImageAt(dataUrl, w, h, PasteCenter());
+        return true;
+    }
+
+    /// Pastes plain text off the system clipboard as a Text shape.
+    /// Returns false if the clipboard holds no (non-empty) text.
+    private bool TryPasteClipboardText()
+    {
+        string? text = null;
+        try
+        {
+            if (System.Windows.Clipboard.ContainsText())
+                text = System.Windows.Clipboard.GetText();
+        }
+        catch { return false; }
+        if (string.IsNullOrWhiteSpace(text)) return false;
+
+        text = text.Trim();
+        var (dw, dh) = DefaultSize(ShapeKind.Text);
+        var center = PasteCenter();
+        Snapshot();
+        var node = new ShapeNode
+        {
+            Kind = ShapeKind.Text,
+            X = center.X - dw / 2, Y = center.Y - dh / 2,
+            Width = dw, Height = dh,
+            Label = text,
+            ZIndex = _nextZ++
+        };
+        _model.Shapes.Add(node);
+        AddShapeVisual(node);
+        SelectOnly(node.Id);
+        return true;
     }
 
     public void SelectAll()
