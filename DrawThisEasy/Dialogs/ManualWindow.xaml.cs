@@ -58,6 +58,7 @@ public partial class ManualWindow : Window
         (ShapeKind.Queue,         "tool.queue",     90, 36),
         (ShapeKind.Note,          "tool.note",      58, 52),
         (ShapeKind.Text,          "tool.text",      72, 30),
+        (ShapeKind.RichText,      "tool.richtext",  92, 50),
     };
 
     private void Build()
@@ -90,6 +91,14 @@ public partial class ManualWindow : Window
 
         Heading("manual.colors.h");
         Para("manual.colors.p");
+
+        Heading("manual.text.h");
+        Para("manual.text.p");
+        Bullets("manual.text.b.font", "manual.text.b.rich", "manual.text.b.edit");
+
+        Heading("manual.paste.h");
+        Para("manual.paste.p");
+        Bullets("manual.paste.b.image", "manual.paste.b.rich", "manual.paste.b.text", "manual.paste.b.label");
 
         Heading("manual.rulers.h");
         Bullets("manual.rulers.b.show", "manual.rulers.b.drag", "manual.rulers.b.move", "manual.rulers.b.snap", "manual.rulers.b.clear");
@@ -245,7 +254,11 @@ public partial class ManualWindow : Window
 
         foreach (var (kind, nameKey, w, h) in Shapes)
         {
-            var (body, _) = ShapeFactory.BuildBody(kind, w, h, fill, stroke);
+            // Rich-text shapes render their content from RTF/text rather than an external
+            // label, so give the gallery preview a little sample to show.
+            var (body, _) = kind == ShapeKind.RichText
+                ? ShapeFactory.BuildBody(kind, w, h, fill, stroke, null, null, null, "Aa Bb")
+                : ShapeFactory.BuildBody(kind, w, h, fill, stroke);
             if (body is FrameworkElement fe) { fe.HorizontalAlignment = HorizontalAlignment.Center; fe.VerticalAlignment = VerticalAlignment.Center; }
 
             var holder = new Grid { Width = 104, Height = 64 };

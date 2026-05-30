@@ -55,7 +55,10 @@ public partial class HelpWindow : Window
             ("Ctrl+D", L10n.T("help.action.duplicate")),
             ("Ctrl+A", L10n.T("help.action.selectall")),
             ("Del",    L10n.T("help.action.delete")),
-            (L10n.T("help.action.doubleclick"), L10n.T("help.action.edit"))
+            (L10n.T("help.action.doubleclick"), L10n.T("help.action.edit")),
+            ("Ctrl+B", L10n.T("help.action.bold")),
+            ("Ctrl+I", L10n.T("help.action.italic")),
+            ("Ctrl+U", L10n.T("help.action.underline"))
         });
         FileList.Content = MakeList(new (string, string)[]
         {
