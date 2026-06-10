@@ -1316,6 +1316,17 @@ public partial class MainWindow : Window
         stack.Children.Add(CtxActionRow("⤓", L10n.T("ctx.back"),      danger: false, () => Diagram.SendToBack()));
         stack.Children.Add(CtxActionRow("⧉", L10n.T("ctx.duplicate"), danger: false, () => Diagram.DuplicateSelection()));
         stack.Children.Add(CtxActionRow("❏", L10n.T("ctx.copy"),      danger: false, () => Diagram.Copy()));
+
+        stack.Children.Add(CtxSeparator());
+        if (Diagram.CanGroup)
+            stack.Children.Add(CtxActionRow("⊞", L10n.T("ctx.group"),   danger: false, () => Diagram.GroupSelection()));
+        if (Diagram.HasGroupedSelection)
+            stack.Children.Add(CtxActionRow("⊟", L10n.T("ctx.ungroup"), danger: false, () => Diagram.UngroupSelection()));
+        stack.Children.Add(CtxActionRow("↺", L10n.T("ctx.rotateleft"),  danger: false, () => Diagram.RotateSelection(-90)));
+        stack.Children.Add(CtxActionRow("↻", L10n.T("ctx.rotateright"), danger: false, () => Diagram.RotateSelection(90)));
+        stack.Children.Add(CtxActionRow("⨯", L10n.T("ctx.rotatereset"), danger: false, () => Diagram.ResetRotation()));
+
+        stack.Children.Add(CtxSeparator());
         stack.Children.Add(CtxActionRow("✕", L10n.T("ctx.delete"),    danger: true,  () => Diagram.DeleteSelection()));
 
         var card = new Border

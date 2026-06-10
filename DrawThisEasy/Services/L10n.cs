@@ -360,6 +360,11 @@ public static class L10n
             ["ctx.back"]      = "Send to back",
             ["ctx.duplicate"] = "Duplicate",
             ["ctx.copy"]      = "Copy",
+            ["ctx.group"]       = "Group",
+            ["ctx.ungroup"]     = "Ungroup",
+            ["ctx.rotateleft"]  = "Rotate left 90°",
+            ["ctx.rotateright"] = "Rotate right 90°",
+            ["ctx.rotatereset"] = "Reset rotation",
             ["ctx.delete"]    = "Delete",
 
             // Connector context menu
@@ -486,7 +491,7 @@ public static class L10n
             ["manual.files.b.new"]    = "New (Ctrl+N, or the + tab) opens another diagram in its own tab; switch between open diagrams along the top.",
 
             ["manual.editing.h"] = "Copy, paste and undo",
-            ["manual.editing.p"] = "Copy, Cut and Paste (Ctrl+C / X / V) work on a selection and even between two open DrawThisEasy windows, preserving the connections between shapes. Duplicate with Ctrl+D, select everything with Ctrl+A, and step backward or forward with Undo (Ctrl+Z) and Redo (Ctrl+Y).",
+            ["manual.editing.p"] = "Copy, Cut and Paste (Ctrl+C / X / V) work on a selection and even between two open DrawThisEasy windows, preserving the connections between shapes. Duplicate with Ctrl+D, select everything with Ctrl+A, and step backward or forward with Undo (Ctrl+Z) and Redo (Ctrl+Y). Group shapes together with Ctrl+G (Ctrl+Shift+G to ungroup) so they select and move as one, and rotate any shape or group by dragging the round handle above the selection — hold Shift to snap to 15° steps, or right-click for Rotate 90°.",
 
             ["manual.language.h"] = "Language",
             ["manual.language.p"] = "Switch between English and Español at any time from the Language menu or the EN / ES button in the top bar. The whole interface updates live — no restart required.",
@@ -839,6 +844,11 @@ public static class L10n
             ["ctx.back"]      = "Enviar al fondo",
             ["ctx.duplicate"] = "Duplicar",
             ["ctx.copy"]      = "Copiar",
+            ["ctx.group"]       = "Agrupar",
+            ["ctx.ungroup"]     = "Desagrupar",
+            ["ctx.rotateleft"]  = "Girar 90° izquierda",
+            ["ctx.rotateright"] = "Girar 90° derecha",
+            ["ctx.rotatereset"] = "Restablecer rotación",
             ["ctx.delete"]    = "Eliminar",
 
             // Connector context menu
@@ -965,7 +975,7 @@ public static class L10n
             ["manual.files.b.new"]    = "Nuevo (Ctrl+N, o la pestaña +) abre otro diagrama en su propia pestaña; cambia entre los diagramas abiertos en la parte superior.",
 
             ["manual.editing.h"] = "Copiar, pegar y deshacer",
-            ["manual.editing.p"] = "Copiar, Cortar y Pegar (Ctrl+C / X / V) funcionan sobre una selección e incluso entre dos ventanas abiertas de DrawThisEasy, conservando las conexiones entre formas. Duplica con Ctrl+D, selecciona todo con Ctrl+A y avanza o retrocede con Deshacer (Ctrl+Z) y Rehacer (Ctrl+Y).",
+            ["manual.editing.p"] = "Copiar, Cortar y Pegar (Ctrl+C / X / V) funcionan sobre una selección e incluso entre dos ventanas abiertas de DrawThisEasy, conservando las conexiones entre formas. Duplica con Ctrl+D, selecciona todo con Ctrl+A y avanza o retrocede con Deshacer (Ctrl+Z) y Rehacer (Ctrl+Y). Agrupa formas con Ctrl+G (Ctrl+Shift+G para desagrupar) para que se seleccionen y muevan como una sola, y gira cualquier forma o grupo arrastrando el tirador redondo sobre la selección — mantén Shift para ajustar en pasos de 15°, o haz clic derecho para Girar 90°.",
 
             ["manual.language.h"] = "Idioma",
             ["manual.language.p"] = "Cambia entre English y Español en cualquier momento desde el menú Idioma o el botón EN / ES de la barra superior. Toda la interfaz se actualiza al instante, sin reiniciar.",

@@ -80,6 +80,14 @@ public class ShapeNode
     public string Stroke { get; set; } = "#334155";
     public int ZIndex { get; set; }
 
+    /// Clockwise rotation in degrees about the shape's center. 0 = upright (the default for
+    /// files saved before rotation existed).
+    public double Rotation { get; set; }
+
+    /// Id shared by every shape in the same group; null when ungrouped. Grouped shapes are
+    /// selected, moved and rotated together. (Just a tag on the shape — no separate model type.)
+    public string? GroupId { get; set; }
+
     // ---- Label typography ----
     // Null / false members fall back to the per-kind defaults in ShapeVisual, so files
     // saved before these fields existed render exactly as they did before.

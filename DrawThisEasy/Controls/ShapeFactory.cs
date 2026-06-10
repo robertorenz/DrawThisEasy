@@ -544,8 +544,33 @@ public static class ShapeFactory
         return g;
     }
 
+    /// Rotates a point clockwise by `deg` degrees about `center`. Identity when deg == 0.
+    public static Point RotatePoint(Point p, Point center, double deg)
+    {
+        if (deg == 0) return p;
+        var r = deg * Math.PI / 180.0;
+        var cos = Math.Cos(r);
+        var sin = Math.Sin(r);
+        var dx = p.X - center.X;
+        var dy = p.Y - center.Y;
+        return new Point(center.X + dx * cos - dy * sin, center.Y + dx * sin + dy * cos);
+    }
+
     /// Compute where a connector line should attach to a shape edge along the ray from inside the shape toward an external point.
     public static Point EdgeIntersect(ShapeNode node, Point external)
+    {
+        // For a rotated shape, work in the shape's un-rotated local frame: spin the external
+        // point back by -Rotation, find the edge hit on the upright shape, then spin it forward.
+        if (node.Rotation != 0)
+        {
+            var center = new Point(node.CenterX, node.CenterY);
+            var local = EdgeIntersectUpright(node, RotatePoint(external, center, -node.Rotation));
+            return RotatePoint(local, center, node.Rotation);
+        }
+        return EdgeIntersectUpright(node, external);
+    }
+
+    private static Point EdgeIntersectUpright(ShapeNode node, Point external)
     {
         var cx = node.CenterX;
         var cy = node.CenterY;

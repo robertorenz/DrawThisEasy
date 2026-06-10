@@ -45,7 +45,7 @@ public class DiagramCanvas : Canvas
     private ToolMode _tool = ToolMode.Select;
 
     // ---- Interaction state ----
-    private enum DragMode { None, Pan, MoveShape, ResizeShape, ConnectDrag, Marquee, ConnCurve, GuideMove }
+    private enum DragMode { None, Pan, MoveShape, ResizeShape, ConnectDrag, Marquee, ConnCurve, GuideMove, Rotate }
     private DragMode _drag = DragMode.None;
     private Guide? _dragGuide;
     private Point _dragStartScreen;
@@ -54,7 +54,12 @@ public class DiagramCanvas : Canvas
     private Matrix _dragStartTransform;
     private string? _resizeShapeId;
     private string _resizeHandle = "";
-    private (double X, double Y, double W, double H) _resizeOrigin;
+    private (double X, double Y, double W, double H, double Rot) _resizeOrigin;
+    // Rotate-drag state: the pivot everything turns about, the starting pointer angle, and
+    // each selected shape's original (rotation, center) so the drag stays stable.
+    private Point _rotatePivot;
+    private double _rotateStartAngle;
+    private readonly Dictionary<string, (double Rot, Point Center)> _rotateOrigins = new();
     private string? _connectFromId;
     private string? _curveConnId;
     private Path? _dragLine;
@@ -535,77 +540,138 @@ public class DiagramCanvas : Canvas
         // Draw selection box around bounding rect of selected shapes
         if (_selected.Count == 0) return;
 
-        var rects = _selected.Select(id => _model.FindShape(id))
-                             .Where(s => s != null)
-                             .Select(s => new Rect(s!.X, s.Y, s.Width, s.Height))
-                             .ToList();
-        if (rects.Count == 0) return;
+        var selShapes = _selected.Select(id => _model.FindShape(id))
+                                 .Where(s => s != null).Cast<ShapeNode>().ToList();
+        if (selShapes.Count == 0) return;
 
-        var bounds = rects.Aggregate((a, b) => Rect.Union(a, b));
-        var pad = 4;
-        var sel = new Rectangle
+        var accent = (Brush)new BrushConverter().ConvertFromString("#0EA5E9")!;
+        var dash = new DoubleCollection(new[] { 4.0, 3.0 });
+        const double pad = 4;
+
+        if (selShapes.Count == 1 && selShapes[0].Rotation != 0)
         {
-            Width = bounds.Width + pad * 2,
-            Height = bounds.Height + pad * 2,
-            Stroke = (Brush)new BrushConverter().ConvertFromString("#0EA5E9")!,
-            StrokeThickness = 1,
-            StrokeDashArray = new DoubleCollection(new[] { 4.0, 3.0 }),
-            Fill = Brushes.Transparent
-        };
-        Canvas.SetLeft(sel, bounds.X - pad);
-        Canvas.SetTop(sel, bounds.Y - pad);
-        _overlayLayer.Children.Add(sel);
+            // Rotated single shape: outline + handles follow the shape's angle.
+            var s = selShapes[0];
+            var center = new Point(s.CenterX, s.CenterY);
+            Point Corner(double lx, double ly) => ShapeFactory.RotatePoint(new Point(lx, ly), center, s.Rotation);
 
-        // Resize handles only when a single shape is selected
-        if (_selected.Count == 1)
-        {
-            var id = _selected.First();
-            var shape = _model.FindShape(id);
-            if (shape == null) return;
-            var bx = shape.X; var by = shape.Y;
-            var bw = shape.Width; var bh = shape.Height;
-            var handleSize = 8.0 / Math.Max(Zoom, 0.4);
+            var poly = new Polygon { Stroke = accent, StrokeThickness = 1, StrokeDashArray = dash, Fill = Brushes.Transparent };
+            poly.Points.Add(Corner(s.X - pad, s.Y - pad));
+            poly.Points.Add(Corner(s.X + s.Width + pad, s.Y - pad));
+            poly.Points.Add(Corner(s.X + s.Width + pad, s.Y + s.Height + pad));
+            poly.Points.Add(Corner(s.X - pad, s.Y + s.Height + pad));
+            _overlayLayer.Children.Add(poly);
 
-            (string Name, double X, double Y)[] handles =
-            {
-                ("nw", bx, by),
-                ("n",  bx + bw/2, by),
-                ("ne", bx + bw, by),
-                ("e",  bx + bw, by + bh/2),
-                ("se", bx + bw, by + bh),
-                ("s",  bx + bw/2, by + bh),
-                ("sw", bx, by + bh),
-                ("w",  bx, by + bh/2)
-            };
-            foreach (var h in handles)
-            {
-                var r = new Rectangle
-                {
-                    Width = handleSize, Height = handleSize,
-                    Fill = Brushes.White,
-                    Stroke = (Brush)new BrushConverter().ConvertFromString("#0EA5E9")!,
-                    StrokeThickness = 1.5,
-                    Cursor = HandleCursor(h.Name)
-                };
-                Canvas.SetLeft(r, h.X - handleSize / 2);
-                Canvas.SetTop(r, h.Y - handleSize / 2);
-                r.IsHitTestVisible = true;
-                r.Tag = h.Name;
-                _overlayLayer.IsHitTestVisible = true;
-                r.MouseLeftButtonDown += (s, e) =>
-                {
-                    e.Handled = true;
-                    _resizeShapeId = id;
-                    _resizeHandle = (string)((Rectangle)s!).Tag;
-                    _resizeOrigin = (shape.X, shape.Y, shape.Width, shape.Height);
-                    _drag = DragMode.ResizeShape;
-                    _dragStartWorld = ScreenToWorld(e.GetPosition(this));
-                    CaptureMouse();
-                    Snapshot();
-                };
-                _overlayLayer.Children.Add(r);
-            }
+            AddResizeHandles(s);
+            AddRotationHandle(Corner(s.X + s.Width / 2.0, s.Y - pad), center);
         }
+        else
+        {
+            var bounds = selShapes.Select(s => new Rect(s.X, s.Y, s.Width, s.Height)).Aggregate(Rect.Union);
+            var sel = new Rectangle
+            {
+                Width = bounds.Width + pad * 2,
+                Height = bounds.Height + pad * 2,
+                Stroke = accent, StrokeThickness = 1, StrokeDashArray = dash, Fill = Brushes.Transparent
+            };
+            Canvas.SetLeft(sel, bounds.X - pad);
+            Canvas.SetTop(sel, bounds.Y - pad);
+            _overlayLayer.Children.Add(sel);
+
+            // Resize handles only when a single shape is selected.
+            if (selShapes.Count == 1) AddResizeHandles(selShapes[0]);
+
+            var pivot = new Point(bounds.X + bounds.Width / 2.0, bounds.Y + bounds.Height / 2.0);
+            AddRotationHandle(new Point(bounds.X + bounds.Width / 2.0, bounds.Y - pad), pivot);
+        }
+    }
+
+    /// Eight resize handles around `shape`, positioned along its rotated edges.
+    private void AddResizeHandles(ShapeNode shape)
+    {
+        var bx = shape.X; var by = shape.Y;
+        var bw = shape.Width; var bh = shape.Height;
+        var center = new Point(shape.CenterX, shape.CenterY);
+        var handleSize = 8.0 / Math.Max(Zoom, 0.4);
+
+        (string Name, double X, double Y)[] handles =
+        {
+            ("nw", bx, by),
+            ("n",  bx + bw/2, by),
+            ("ne", bx + bw, by),
+            ("e",  bx + bw, by + bh/2),
+            ("se", bx + bw, by + bh),
+            ("s",  bx + bw/2, by + bh),
+            ("sw", bx, by + bh),
+            ("w",  bx, by + bh/2)
+        };
+        foreach (var h in handles)
+        {
+            var pos = shape.Rotation == 0
+                ? new Point(h.X, h.Y)
+                : ShapeFactory.RotatePoint(new Point(h.X, h.Y), center, shape.Rotation);
+            var r = new Rectangle
+            {
+                Width = handleSize, Height = handleSize,
+                Fill = Brushes.White,
+                Stroke = (Brush)new BrushConverter().ConvertFromString("#0EA5E9")!,
+                StrokeThickness = 1.5,
+                Cursor = HandleCursor(h.Name)
+            };
+            Canvas.SetLeft(r, pos.X - handleSize / 2);
+            Canvas.SetTop(r, pos.Y - handleSize / 2);
+            r.IsHitTestVisible = true;
+            r.Tag = h.Name;
+            _overlayLayer.IsHitTestVisible = true;
+            r.MouseLeftButtonDown += (s, e) =>
+            {
+                e.Handled = true;
+                _resizeShapeId = shape.Id;
+                _resizeHandle = (string)((Rectangle)s!).Tag;
+                _resizeOrigin = (shape.X, shape.Y, shape.Width, shape.Height, shape.Rotation);
+                _drag = DragMode.ResizeShape;
+                _dragStartWorld = ScreenToWorld(e.GetPosition(this));
+                CaptureMouse();
+                Snapshot();
+            };
+            _overlayLayer.Children.Add(r);
+        }
+    }
+
+    /// A round rotation knob on a short stem, sitting just past the selection's top edge.
+    /// Dragging it spins the selection about `pivot`.
+    private void AddRotationHandle(Point topEdgeMid, Point pivot)
+    {
+        var dx = topEdgeMid.X - pivot.X; var dy = topEdgeMid.Y - pivot.Y;
+        var len = Math.Sqrt(dx * dx + dy * dy);
+        if (len < 1) return;
+        var ux = dx / len; var uy = dy / len;
+        var gap = 22.0 / Math.Max(Zoom, 0.4);
+        var knob = new Point(topEdgeMid.X + ux * gap, topEdgeMid.Y + uy * gap);
+        var accent = (Brush)new BrushConverter().ConvertFromString("#0EA5E9")!;
+
+        _overlayLayer.Children.Add(new Line
+        {
+            X1 = topEdgeMid.X, Y1 = topEdgeMid.Y, X2 = knob.X, Y2 = knob.Y,
+            Stroke = accent, StrokeThickness = 1.4 / Math.Max(Zoom, 0.4), IsHitTestVisible = false
+        });
+
+        var size = 11.0 / Math.Max(Zoom, 0.4);
+        var dot = new Ellipse
+        {
+            Width = size, Height = size, Fill = Brushes.White,
+            Stroke = accent, StrokeThickness = 1.6, Cursor = Cursors.Hand
+        };
+        Canvas.SetLeft(dot, knob.X - size / 2);
+        Canvas.SetTop(dot, knob.Y - size / 2);
+        _overlayLayer.IsHitTestVisible = true;
+        var capturedPivot = pivot;
+        dot.MouseLeftButtonDown += (s, e) =>
+        {
+            e.Handled = true;
+            BeginRotateDrag(capturedPivot, ScreenToWorld(e.GetPosition(this)));
+        };
+        _overlayLayer.Children.Add(dot);
     }
 
     private void BuildCurveHandle()
@@ -731,10 +797,24 @@ public class DiagramCanvas : Canvas
                     return;
                 }
 
+                // Clicking any member of a group selects the whole group.
+                var members = GroupMembers(hit.Id).ToList();
                 if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) || Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
-                    ToggleSelect(hit.Id);
+                {
+                    if (members.Any(_selected.Contains)) members.ForEach(m => _selected.Remove(m));
+                    else members.ForEach(m => _selected.Add(m));
+                    ApplySelectionStyles();
+                    RebuildOverlay();
+                    SelectionChanged?.Invoke(this, EventArgs.Empty);
+                }
                 else if (!_selected.Contains(hit.Id))
-                    SelectOnly(hit.Id);
+                {
+                    ClearSelection(suppressEvent: true);
+                    members.ForEach(m => _selected.Add(m));
+                    ApplySelectionStyles();
+                    RebuildOverlay();
+                    SelectionChanged?.Invoke(this, EventArgs.Empty);
+                }
 
                 // Begin move
                 _drag = DragMode.MoveShape;
@@ -870,22 +950,60 @@ public class DiagramCanvas : Canvas
         {
             var shape = _model.FindShape(_resizeShapeId);
             if (shape == null) return;
-            var dx = world.X - _dragStartWorld.X;
-            var dy = world.Y - _dragStartWorld.Y;
             var o = _resizeOrigin;
+
+            // Do the math in the shape's original (un-rotated) local frame, so the dragged edge
+            // tracks the pointer while the opposite edge stays put — even when the shape is rotated.
+            var origCenter = new Point(o.X + o.W / 2.0, o.Y + o.H / 2.0);
+            var localStart = ShapeFactory.RotatePoint(_dragStartWorld, origCenter, -o.Rot);
+            var localNow   = ShapeFactory.RotatePoint(world,           origCenter, -o.Rot);
+            var dx = localNow.X - localStart.X;
+            var dy = localNow.Y - localStart.Y;
+
             double nx = o.X, ny = o.Y, nw = o.W, nh = o.H;
             if (_resizeHandle.Contains('e')) nw = Math.Max(20, o.W + dx);
             if (_resizeHandle.Contains('s')) nh = Math.Max(20, o.H + dy);
             if (_resizeHandle.Contains('w')) { nx = o.X + dx; nw = Math.Max(20, o.W - dx); if (nw == 20) nx = o.X + o.W - 20; }
             if (_resizeHandle.Contains('n')) { ny = o.Y + dy; nh = Math.Max(20, o.H - dy); if (nh == 20) ny = o.Y + o.H - 20; }
-            shape.X = nx; shape.Y = ny; shape.Width = nw; shape.Height = nh;
+
+            // Map the new local center back through the original transform so the anchored edge
+            // stays fixed in world space, then derive the axis-aligned X/Y from that center.
+            var newLocalCenter = new Point(nx + nw / 2.0, ny + nh / 2.0);
+            var newCenter = ShapeFactory.RotatePoint(newLocalCenter, origCenter, o.Rot);
+            shape.Width = nw; shape.Height = nh;
+            shape.X = newCenter.X - nw / 2.0; shape.Y = newCenter.Y - nh / 2.0;
             if (_shapeVisuals.TryGetValue(shape.Id, out var v))
             {
-                Canvas.SetLeft(v.Element, nx);
-                Canvas.SetTop(v.Element, ny);
+                Canvas.SetLeft(v.Element, shape.X);
+                Canvas.SetTop(v.Element, shape.Y);
                 v.Rebuild();
             }
             RouteConnectionsFor(shape.Id);
+            RebuildOverlay();
+            return;
+        }
+
+        if (_drag == DragMode.Rotate)
+        {
+            double delta = AngleDeg(_rotatePivot, world) - _rotateStartAngle;
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+                delta = Math.Round(delta / 15.0) * 15.0;   // Shift = snap to 15° steps
+            foreach (var (id, origin) in _rotateOrigins)
+            {
+                var s = _model.FindShape(id);
+                if (s == null) continue;
+                var nc = ShapeFactory.RotatePoint(origin.Center, _rotatePivot, delta);
+                s.Rotation = origin.Rot + delta;
+                s.X = nc.X - s.Width / 2.0;
+                s.Y = nc.Y - s.Height / 2.0;
+                if (_shapeVisuals.TryGetValue(id, out var rv))
+                {
+                    Canvas.SetLeft(rv.Element, s.X);
+                    Canvas.SetTop(rv.Element, s.Y);
+                    rv.ApplyRotation();
+                }
+                RouteConnectionsFor(id);
+            }
             RebuildOverlay();
             return;
         }
@@ -917,6 +1035,7 @@ public class DiagramCanvas : Canvas
                 var sr = new Rect(s.X, s.Y, s.Width, s.Height);
                 if (marqueeRect.IntersectsWith(sr)) _selected.Add(s.Id);
             }
+            ExpandSelectionToGroups();   // never partially select a group
             ApplySelectionStyles();
             return;
         }
@@ -986,6 +1105,7 @@ public class DiagramCanvas : Canvas
         _curveConnId = null;
         _dragGuide = null;
         _dragOrigins.Clear();
+        _rotateOrigins.Clear();
         if (IsMouseCaptured) ReleaseMouseCapture();
         UpdateCursor();
         if (_snapX != null || _snapY != null) { _snapX = null; _snapY = null; RebuildOverlay(); }
@@ -1104,6 +1224,12 @@ public class DiagramCanvas : Canvas
             if (e.Key == Key.Z) { Undo(); e.Handled = true; return; }
             if (e.Key == Key.Y) { Redo(); e.Handled = true; return; }
             if (e.Key == Key.D) { DuplicateSelection(); e.Handled = true; return; }
+            if (e.Key == Key.G)
+            {
+                if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)) UngroupSelection();
+                else GroupSelection();
+                e.Handled = true; return;
+            }
             if (e.Key == Key.A) { SelectAll(); e.Handled = true; return; }
             if (e.Key == Key.C) { Copy();  e.Handled = true; return; }
             if (e.Key == Key.X) { Cut();   e.Handled = true; return; }
@@ -1185,6 +1311,7 @@ public class DiagramCanvas : Canvas
         if (_selected.Count == 0) return;
         Snapshot();
         var newIds = new List<string>();
+        var groupMap = new Dictionary<string, string>();
         foreach (var id in _selected.ToList())
         {
             var s = _model.FindShape(id);
@@ -1196,6 +1323,8 @@ public class DiagramCanvas : Canvas
                 Label = s.Label, Fill = s.Fill, Stroke = s.Stroke,
                 Stencil = s.Stencil,
                 Image = s.Image,
+                Rotation = s.Rotation,
+                GroupId = RemapGroup(s.GroupId, groupMap),
                 ZIndex = _nextZ++
             };
             _model.Shapes.Add(copy);
@@ -1228,6 +1357,8 @@ public class DiagramCanvas : Canvas
                 Label = s.Label, Fill = s.Fill, Stroke = s.Stroke,
                 Stencil = s.Stencil,
                 Image = s.Image,
+                Rotation = s.Rotation,
+                GroupId = s.GroupId,
                 ZIndex = s.ZIndex
             });
         }
@@ -1328,6 +1459,7 @@ public class DiagramCanvas : Canvas
         var dy = target.Y - cy;
 
         var idMap = new Dictionary<string, string>();
+        var groupMap = new Dictionary<string, string>();
         var newIds = new List<string>();
         foreach (var s in snippet.Shapes)
         {
@@ -1339,6 +1471,8 @@ public class DiagramCanvas : Canvas
                 Label = s.Label, Fill = s.Fill, Stroke = s.Stroke,
                 Stencil = s.Stencil,
                 Image = s.Image,
+                Rotation = s.Rotation,
+                GroupId = RemapGroup(s.GroupId, groupMap),
                 ZIndex = _nextZ++
             };
             idMap[s.Id] = copy.Id;
@@ -1579,6 +1713,138 @@ public class DiagramCanvas : Canvas
         foreach (var s in ordered)
             if (_shapeVisuals.TryGetValue(s.Id, out var v))
                 _shapeLayer.Children.Add(v.Element);
+    }
+
+    // ---------- Grouping ----------
+
+    /// True when the selection has at least two shapes that can be grouped.
+    public bool CanGroup => _selected.Select(id => _model.FindShape(id)).Count(s => s != null) >= 2;
+
+    /// True when any selected shape already belongs to a group.
+    public bool HasGroupedSelection => _selected.Any(id => _model.FindShape(id)?.GroupId != null);
+
+    /// Tags every selected shape with a shared, fresh group id so they select/move/rotate together.
+    public void GroupSelection()
+    {
+        var ids = _selected.Where(id => _model.FindShape(id) != null).ToList();
+        if (ids.Count < 2) return;
+        Snapshot();
+        var gid = Guid.NewGuid().ToString("N");
+        foreach (var id in ids) { var s = _model.FindShape(id); if (s != null) s.GroupId = gid; }
+        RebuildOverlay();
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// Clears the group tag from every group touched by the current selection.
+    public void UngroupSelection()
+    {
+        var gids = _selected.Select(id => _model.FindShape(id)?.GroupId)
+                            .Where(g => g != null).Distinct().ToHashSet();
+        if (gids.Count == 0) return;
+        Snapshot();
+        foreach (var s in _model.Shapes)
+            if (s.GroupId != null && gids.Contains(s.GroupId)) s.GroupId = null;
+        RebuildOverlay();
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// Maps a source group id to a fresh one (shared per source group), so copied/pasted shapes
+    /// stay grouped together but don't merge into the original group. Null stays null.
+    private static string? RemapGroup(string? srcGroup, Dictionary<string, string> map)
+    {
+        if (srcGroup == null) return null;
+        if (!map.TryGetValue(srcGroup, out var g)) { g = Guid.NewGuid().ToString("N"); map[srcGroup] = g; }
+        return g;
+    }
+
+    /// All shape ids in the same group as `id` (just `id` itself when it isn't grouped).
+    private IEnumerable<string> GroupMembers(string id)
+    {
+        var s = _model.FindShape(id);
+        if (s?.GroupId == null) return new[] { id };
+        return _model.Shapes.Where(x => x.GroupId == s.GroupId).Select(x => x.Id);
+    }
+
+    /// Grows the selection so a group is never partially selected.
+    private void ExpandSelectionToGroups()
+    {
+        var gids = _selected.Select(id => _model.FindShape(id)?.GroupId)
+                            .Where(g => g != null).ToHashSet();
+        if (gids.Count == 0) return;
+        foreach (var s in _model.Shapes)
+            if (s.GroupId != null && gids.Contains(s.GroupId)) _selected.Add(s.Id);
+    }
+
+    // ---------- Rotation ----------
+
+    private static double AngleDeg(Point pivot, Point p)
+        => Math.Atan2(p.Y - pivot.Y, p.X - pivot.X) * 180.0 / Math.PI;
+
+    /// Center of the axis-aligned bounding box of the given shapes (the pivot the whole
+    /// selection turns about).
+    private static Point SelectionCenter(IReadOnlyCollection<ShapeNode> shapes)
+    {
+        double minX = double.MaxValue, minY = double.MaxValue, maxX = double.MinValue, maxY = double.MinValue;
+        foreach (var s in shapes)
+        {
+            minX = Math.Min(minX, s.X); minY = Math.Min(minY, s.Y);
+            maxX = Math.Max(maxX, s.X + s.Width); maxY = Math.Max(maxY, s.Y + s.Height);
+        }
+        return new Point((minX + maxX) / 2.0, (minY + maxY) / 2.0);
+    }
+
+    /// Rotates the whole selection by `deltaDeg` about its collective center (a single shape
+    /// spins in place). Used by the context-menu 90° commands.
+    public void RotateSelection(double deltaDeg)
+    {
+        var shapes = _selected.Select(id => _model.FindShape(id)).Where(s => s != null).Cast<ShapeNode>().ToList();
+        if (shapes.Count == 0) return;
+        Snapshot();
+        var pivot = SelectionCenter(shapes);
+        foreach (var s in shapes)
+        {
+            var nc = ShapeFactory.RotatePoint(new Point(s.CenterX, s.CenterY), pivot, deltaDeg);
+            s.Rotation += deltaDeg;
+            s.X = nc.X - s.Width / 2.0;
+            s.Y = nc.Y - s.Height / 2.0;
+            if (_shapeVisuals.TryGetValue(s.Id, out var v))
+            {
+                Canvas.SetLeft(v.Element, s.X);
+                Canvas.SetTop(v.Element, s.Y);
+                v.ApplyRotation();
+            }
+            RouteConnectionsFor(s.Id);
+        }
+        RebuildOverlay();
+    }
+
+    /// Resets every selected shape to upright (in place — centers don't move).
+    public void ResetRotation()
+    {
+        var shapes = _selected.Select(id => _model.FindShape(id))
+                              .Where(s => s != null && s.Rotation != 0).Cast<ShapeNode>().ToList();
+        if (shapes.Count == 0) return;
+        Snapshot();
+        foreach (var s in shapes)
+        {
+            s.Rotation = 0;
+            if (_shapeVisuals.TryGetValue(s.Id, out var v)) v.ApplyRotation();
+            RouteConnectionsFor(s.Id);
+        }
+        RebuildOverlay();
+    }
+
+    private void BeginRotateDrag(Point pivot, Point mouseWorld)
+    {
+        var shapes = _selected.Select(id => _model.FindShape(id)).Where(s => s != null).Cast<ShapeNode>().ToList();
+        if (shapes.Count == 0) return;
+        _drag = DragMode.Rotate;
+        _rotatePivot = pivot;
+        _rotateStartAngle = AngleDeg(pivot, mouseWorld);
+        _rotateOrigins.Clear();
+        foreach (var s in shapes) _rotateOrigins[s.Id] = (s.Rotation, new Point(s.CenterX, s.CenterY));
+        CaptureMouse();
+        Snapshot();
     }
 
     public void SetSelectedFill(string hex)
@@ -1904,8 +2170,12 @@ public class DiagramCanvas : Canvas
         // Iterate from top z-order down
         foreach (var s in _model.Shapes.OrderByDescending(s => s.ZIndex))
         {
-            if (world.X >= s.X && world.X <= s.X + s.Width
-             && world.Y >= s.Y && world.Y <= s.Y + s.Height)
+            // Un-rotate the point into the shape's local frame, then do the box test.
+            var p = s.Rotation == 0
+                ? world
+                : ShapeFactory.RotatePoint(world, new Point(s.CenterX, s.CenterY), -s.Rotation);
+            if (p.X >= s.X && p.X <= s.X + s.Width
+             && p.Y >= s.Y && p.Y <= s.Y + s.Height)
                 return s;
         }
         return null;
@@ -2107,6 +2377,7 @@ public class DiagramCanvas : Canvas
         double dx = region.X - minX, dy = region.Y - minY;
 
         var idMap = new Dictionary<string, string>();
+        var groupMap = new Dictionary<string, string>();
         var newIds = new List<string>();
         foreach (var s in src.Shapes)
         {
@@ -2116,6 +2387,8 @@ public class DiagramCanvas : Canvas
                 Label = s.Label, Fill = s.Fill, Stroke = s.Stroke, Stencil = s.Stencil, Image = s.Image, Rtf = s.Rtf,
                 FontFamily = s.FontFamily, FontSize = s.FontSize, Bold = s.Bold, Italic = s.Italic,
                 Underline = s.Underline, FontColor = s.FontColor, TextAlign = s.TextAlign,
+                Rotation = s.Rotation,
+                GroupId = RemapGroup(s.GroupId, groupMap),
                 ZIndex = _nextZ++
             };
             idMap[s.Id] = copy.Id;
@@ -2629,6 +2902,7 @@ public class ShapeVisual
         Element.Children.Clear();
         Element.Width = Node.Width;
         Element.Height = Node.Height;
+        ApplyRotation();
 
         var fill = (Brush)new BrushConverter().ConvertFromString(Node.Fill)!;
         var stroke = (Brush)new BrushConverter().ConvertFromString(Node.Stroke)!;
@@ -2710,6 +2984,15 @@ public class ShapeVisual
     {
         _label.Text = text;
         Node.Label = text;
+    }
+
+    /// Spins the element about its center to match Node.Rotation. The center must track the
+    /// current Width/Height, so this is refreshed from Rebuild() (after a resize) too.
+    public void ApplyRotation()
+    {
+        Element.RenderTransform = Node.Rotation == 0
+            ? null
+            : new RotateTransform(Node.Rotation, Node.Width / 2.0, Node.Height / 2.0);
     }
 }
 

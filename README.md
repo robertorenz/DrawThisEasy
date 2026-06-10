@@ -1,6 +1,6 @@
 # DrawThisEasy
 
-[![Latest release](https://img.shields.io/github/v/release/robertorenz/DrawThisEasy?label=download&color=0EA5E9&v=1.2.6)](https://github.com/robertorenz/DrawThisEasy/releases/latest)
+[![Latest release](https://img.shields.io/github/v/release/robertorenz/DrawThisEasy?label=download&color=0EA5E9&v=1.3.0)](https://github.com/robertorenz/DrawThisEasy/releases/latest)
 
 A fast, native Windows app for sketching **org charts, architecture diagrams, and system flows**. Built with WPF on .NET 9.
 
@@ -18,6 +18,11 @@ Grab the latest build from the **[Releases page](https://github.com/robertorenz/
 Both are self-contained — the .NET 9 runtime is bundled, nothing else to install. Windows 10/11, 64-bit. The exes aren't code-signed, so SmartScreen may show an "unknown publisher" prompt on first run (*More info → Run anyway*).
 
 ---
+
+## What's new in 1.3.0
+
+- **Group & ungroup** — select shapes and press **Ctrl+G** to bind them into a group (or right-click → **Group**). Clicking any member now selects, moves, and rotates the whole group together. **Ctrl+Shift+G** (or right-click → **Ungroup**) breaks it apart. Groups persist in the saved file and survive copy/paste/duplicate.
+- **Rotate** — every selection gets a round **rotation handle** above it; drag to spin a shape or a whole group, and hold **Shift** to snap to 15° steps. Right-click also offers **Rotate left/right 90°** and **Reset rotation**. Connectors re-attach to the rotated edges, and resize handles follow the shape's angle.
 
 ## What's new in 1.2.6
 
