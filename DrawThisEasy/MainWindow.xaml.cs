@@ -39,6 +39,8 @@ public partial class MainWindow : Window
     private Button? _freeSpaceStripBtn;
     private TextBlock? _freeSpaceStripLabel;
     private Button? _presentStripBtn;
+    private Button? _markViewStripBtn;
+    private TextBlock? _markViewStripLabel;
     private TextBlock? _presentStripLabel;
 
     // ===== Open documents (tabs) =====
@@ -644,6 +646,13 @@ public partial class MainWindow : Window
         _freeSpaceStripBtn = fBtn; _freeSpaceStripLabel = fLbl;
         ToolStrip.Children.Add(fBtn);
 
+        var (mBtn, mLbl) = MakeStripAction(BuildMarkViewIcon((Brush)FindResource("TextMutedBrush")),
+            L10n.T("topbar.markview"), L10n.T("topbar.markview.tip"),
+            (s, e) => MarkCurrentView());
+        _markViewStripBtn = mBtn; _markViewStripLabel = mLbl;
+        AttachFavoritesContextMenu(mBtn, "MarkView");
+        ToolStrip.Children.Add(mBtn);
+
         var (pBtn, pLbl) = MakeStripAction(BuildPresentIcon((Brush)FindResource("TextMutedBrush")),
             L10n.T("topbar.present"), L10n.T("topbar.present.tip"),
             (s, e) => TogglePresentPanel());
@@ -683,7 +692,7 @@ public partial class MainWindow : Window
         // Infrastructure
         "AddCylinder", "AddCloud", "AddServer", "AddPerson", "AddQueue", "AddNote", "AddText", "AddRichText",
         // Actions
-        "Templates", "Ai", "Image",
+        "Templates", "Ai", "Image", "MarkView",
         // Cloud provider flyouts
         "Cloud.AWS", "Cloud.Azure", "Cloud.Google Cloud",
     };
@@ -693,6 +702,7 @@ public partial class MainWindow : Window
     {
         "Templates"        => L10n.T("topbar.templates"),
         "Ai"               => L10n.T("topbar.ai"),
+        "MarkView"         => L10n.T("topbar.markview"),
         "Image"            => L10n.T("topbar.image"),
         "Cloud.AWS"        => Stencils.Aws,
         "Cloud.Azure"      => Stencils.Azure,
@@ -731,6 +741,13 @@ public partial class MainWindow : Window
             {
                 var (btn, _) = MakeStripAction(BuildAiIcon(), L10n.T("topbar.ai"), L10n.T("topbar.ai.tip"),
                     (s, e) => BtnAiDesign_Click(s, e));
+                AttachFavoritesContextMenu(btn, id);
+                return btn;
+            }
+            case "MarkView":
+            {
+                var (btn, _) = MakeStripAction(BuildMarkViewIcon((Brush)FindResource("TextMutedBrush")),
+                    L10n.T("topbar.markview"), L10n.T("topbar.markview.tip"), (s, e) => MarkCurrentView());
                 AttachFavoritesContextMenu(btn, id);
                 return btn;
             }
@@ -857,14 +874,14 @@ public partial class MainWindow : Window
     {
         var lbl = new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center, FontSize = 13 };
         var content = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-        content.Children.Add(new Border { Child = icon, Width = 18, Height = 18, Margin = new Thickness(0, 0, 7, 0), VerticalAlignment = VerticalAlignment.Center });
+        content.Children.Add(new Border { Child = icon, Width = 18, Height = 18, Margin = new Thickness(0, 0, 5, 0), VerticalAlignment = VerticalAlignment.Center });
         content.Children.Add(lbl);
         var btn = new Button
         {
             Style = (Style)FindResource("IconButton"),
             Content = content,
             ToolTip = tooltip,
-            Padding = new Thickness(10, 0, 10, 0),
+            Padding = new Thickness(6, 0, 6, 0),
             Margin = new Thickness(1, 0, 1, 0)
         };
         btn.Click += onClick;
@@ -945,6 +962,25 @@ public partial class MainWindow : Window
     }
 
     // A "play" triangle inside a screen frame — the presentation panel toggle.
+    // Viewfinder corners around a "+" — capture the current view as a screen.
+    private UIElement BuildMarkViewIcon(Brush brush)
+    {
+        var c = new Canvas { Width = 18, Height = 18 };
+        c.Children.Add(new System.Windows.Shapes.Path
+        {
+            Stroke = brush, StrokeThickness = 1.6,
+            StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round,
+            Data = Geometry.Parse("M1,6 V3 Q1,2 2,2 H5 M13,2 H16 Q17,2 17,3 V6 M17,12 V15 Q17,16 16,16 H13 M5,16 H2 Q1,16 1,15 V12")
+        });
+        c.Children.Add(new System.Windows.Shapes.Path
+        {
+            Stroke = (Brush)FindResource("AccentStrongBrush"), StrokeThickness = 1.8,
+            StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round,
+            Data = Geometry.Parse("M9,6 V12 M6,9 H12")
+        });
+        return c;
+    }
+
     private UIElement BuildPresentIcon(Brush brush)
     {
         var c = new Canvas { Width = 18, Height = 18 };
@@ -988,7 +1024,7 @@ public partial class MainWindow : Window
         return new Border
         {
             Width = 1, Height = 20,
-            Margin = new Thickness(6, 0, 6, 0),
+            Margin = new Thickness(4, 0, 4, 0),
             Background = (Brush)new BrushConverter().ConvertFromString("#FFE2E8F0")!,
             VerticalAlignment = VerticalAlignment.Center
         };
@@ -2044,9 +2080,14 @@ public partial class MainWindow : Window
 
     private void BtnAddFreeScreen_Click(object sender, RoutedEventArgs e) => GoToFreeSpaceAndMark();
 
-    private void BtnMarkScreen_Click(object sender, RoutedEventArgs e)
+    private void BtnMarkScreen_Click(object sender, RoutedEventArgs e) => MarkCurrentView();
+
+    /// Adds the visible area (position + zoom) as the next presentation screen and shows
+    /// the Present panel so the new screen is visible in the queue.
+    private void MarkCurrentView()
     {
         Diagram.AddFrame(Diagram.CurrentViewWorldRect());
+        PresentPanel.Visibility = Visibility.Visible;
         RefreshPresentPanel();
     }
 
@@ -2480,6 +2521,8 @@ public partial class MainWindow : Window
         if (_imgPaletteLabel != null) _imgPaletteLabel.Text = L10n.T("topbar.image.tip");
         if (_freeSpaceStripLabel != null) _freeSpaceStripLabel.Text = L10n.T("topbar.freespace");
         if (_freeSpaceStripBtn != null) _freeSpaceStripBtn.ToolTip = L10n.T("topbar.freespace.tip");
+        if (_markViewStripLabel != null) _markViewStripLabel.Text = L10n.T("topbar.markview");
+        if (_markViewStripBtn != null) _markViewStripBtn.ToolTip = L10n.T("topbar.markview.tip");
         if (_presentStripLabel != null) _presentStripLabel.Text = L10n.T("topbar.present");
         if (_presentStripBtn != null) _presentStripBtn.ToolTip = L10n.T("topbar.present.tip");
 
