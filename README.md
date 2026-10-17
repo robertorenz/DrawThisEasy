@@ -1,6 +1,6 @@
 # DrawThisEasy
 
-[![Latest release](https://img.shields.io/github/v/release/robertorenz/DrawThisEasy?label=download&color=0EA5E9&v=1.4.0)](https://github.com/robertorenz/DrawThisEasy/releases/latest)
+[![Latest release](https://img.shields.io/github/v/release/robertorenz/DrawThisEasy?label=download&color=0EA5E9&v=1.4.1)](https://github.com/robertorenz/DrawThisEasy/releases/latest)
 
 A fast, native Windows app for sketching **org charts, architecture diagrams, and system flows**. Built with WPF on .NET 9.
 
@@ -18,6 +18,11 @@ Grab the latest build from the **[Releases page](https://github.com/robertorenz/
 Both are self-contained — the .NET 9 runtime is bundled, nothing else to install. Windows 10/11, 64-bit. The exes aren't code-signed, so SmartScreen may show an "unknown publisher" prompt on first run (*More info → Run anyway*).
 
 ---
+
+## What's new in 1.4.1
+
+- **Mark View** toolbar button — one click saves the current view (position + zoom) as the next **presentation screen** and opens the Present panel. Can also be pinned to the Favorites toolbar.
+- The tool strip is slightly more compact so every button, including the new one, fits on one row.
 
 ## What's new in 1.4.0
 
