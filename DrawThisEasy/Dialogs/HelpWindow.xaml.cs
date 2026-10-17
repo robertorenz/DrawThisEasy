@@ -54,6 +54,8 @@ public partial class HelpWindow : Window
             ("Ctrl+V", L10n.T("help.action.paste")),
             ("Ctrl+D", L10n.T("help.action.duplicate")),
             ("Ctrl+A", L10n.T("help.action.selectall")),
+            ("Ctrl+G", L10n.T("ctx.group")),
+            ("Ctrl+Shift+G", L10n.T("ctx.ungroup")),
             ("Del",    L10n.T("help.action.delete")),
             (L10n.T("help.action.doubleclick"), L10n.T("help.action.edit")),
             ("Ctrl+B", L10n.T("help.action.bold")),
@@ -65,13 +67,15 @@ public partial class HelpWindow : Window
             ("Ctrl+N", L10n.T("help.action.new")),
             ("Ctrl+O", L10n.T("help.action.open")),
             ("Ctrl+S", L10n.T("help.action.save")),
-            ("Ctrl+E", L10n.T("help.action.export"))
+            ("Ctrl+E", L10n.T("help.action.export")),
+            ("Ctrl+K", L10n.T("menu.ai.design").Replace("_", "").TrimEnd('.'))
         });
         ViewList.Content = MakeList(new (string, string)[]
         {
             ("Wheel",        L10n.T("help.action.scroll")),
             ("Ctrl + Wheel", L10n.T("help.action.zoom")),
-            ("Space + drag", L10n.T("help.action.pan.space"))
+            ("Space + drag", L10n.T("help.action.pan.space")),
+            ("Shift+1",      L10n.T("menu.view.zoomfit").Replace("_", ""))
         });
     }
 

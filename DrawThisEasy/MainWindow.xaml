@@ -66,6 +66,7 @@
             <MenuItem x:Name="MnuViewZoomIn"    Header="Zoom _In"      Click="BtnZoomIn_Click"/>
             <MenuItem x:Name="MnuViewZoomOut"   Header="Zoom _Out"     Click="BtnZoomOut_Click"/>
             <MenuItem x:Name="MnuViewZoomReset" Header="_Reset Zoom"   Click="BtnZoomReset_Click"/>
+            <MenuItem x:Name="MnuViewZoomFit"   Header="Zoom to _Fit"  InputGestureText="Shift+1" Click="MnuZoomFit_Click"/>
             <MenuItem x:Name="MnuViewFreeSpace" Header="Go to _Free Space" Click="BtnGoToFreeSpace_Click"/>
             <Separator/>
             <MenuItem x:Name="MnuViewClearGuides" Header="Clear _Guides" Click="MnuClearGuides_Click"/>
@@ -77,6 +78,10 @@
               <MenuItem x:Name="MnuViewCustomizeFavorites" Header="_Customize Favorites..." Click="BtnCustomizeFavorites_Click"/>
               <MenuItem x:Name="MnuViewResetToolbars" Header="_Reset Toolbars to Defaults" Click="MnuResetToolbars_Click"/>
             </MenuItem>
+          </MenuItem>
+          <MenuItem x:Name="MnuAi" Header="_AI" Style="{StaticResource TopMenuItem}">
+            <MenuItem x:Name="MnuAiDesign"   Header="_Design with AI..." InputGestureText="Ctrl+K" Click="BtnAiDesign_Click"/>
+            <MenuItem x:Name="MnuAiSettings" Header="AI _Settings..."                           Click="MnuAiSettings_Click"/>
           </MenuItem>
           <MenuItem x:Name="MnuLang" Header="_Language" Style="{StaticResource TopMenuItem}">
             <MenuItem x:Name="MnuLangEn" Header="English" IsCheckable="True" Click="MnuLangEn_Click"/>

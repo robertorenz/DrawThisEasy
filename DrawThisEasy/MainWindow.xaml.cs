@@ -31,6 +31,8 @@ public partial class MainWindow : Window
     // Toolbar Templates / Insert-Image buttons (re-translated live); cloud providers use proper-noun labels.
     private Button? _tmplStripBtn;
     private TextBlock? _tmplStripLabel;
+    private Button? _aiStripBtn;
+    private TextBlock? _aiStripLabel;
     private Button? _imgStripBtn;
     private TextBlock? _imgStripLabel;
     private TextBlock? _imgPaletteLabel;
@@ -82,7 +84,16 @@ public partial class MainWindow : Window
         RulerLeft.SizeChanged += (s, e) => DrawRulers();
         ApplyLanguage();
 
-        Loaded += (_, _) => RestoreSessionIfEnabled();
+        Loaded += (_, _) =>
+        {
+            RestoreSessionIfEnabled();
+            // Files passed on the command line ("Open with", drag onto the exe).
+            var args = Environment.GetCommandLineArgs().Skip(1).Where(File.Exists).ToList();
+            if (args.Count > 0) OpenPathsReplacingBlank(args);
+        };
+        AllowDrop = true;
+        DragOver += Window_DragOver;
+        Drop += Window_Drop;
         ApplyAutosaveSetting();
     }
 
@@ -93,7 +104,12 @@ public partial class MainWindow : Window
         if (!AppSettings.Current.RestoreOpenFilesOnStartup) return;
         var paths = SessionState.Load().Where(File.Exists).ToList();
         if (paths.Count == 0) return;
+        OpenPathsReplacingBlank(paths);
+    }
 
+    /// Opens files, dropping the untouched startup "Untitled" tab if anything opened.
+    private void OpenPathsReplacingBlank(List<string> paths)
+    {
         // Remember the initial blank tab; drop it if the restore actually opened something.
         var initial = _docs.Count == 1 && !_docs[0].Dirty && _docs[0].FilePath == null ? _docs[0] : null;
         int beforeCount = _docs.Count;
@@ -610,6 +626,12 @@ public partial class MainWindow : Window
         AttachFavoritesContextMenu(tBtn, "Templates");
         ToolStrip.Children.Add(tBtn);
 
+        var (aBtn, aLbl) = MakeStripAction(BuildAiIcon(), L10n.T("topbar.ai"), L10n.T("topbar.ai.tip"),
+            (s, e) => BtnAiDesign_Click(s, e));
+        _aiStripBtn = aBtn; _aiStripLabel = aLbl;
+        AttachFavoritesContextMenu(aBtn, "Ai");
+        ToolStrip.Children.Add(aBtn);
+
         var (iBtn, iLbl) = MakeStripAction(BuildImageIcon((Brush)FindResource("TextMutedBrush")), L10n.T("topbar.image"), L10n.T("topbar.image.tip"),
             (s, e) => BtnInsertImage_Click(s, e));
         _imgStripBtn = iBtn; _imgStripLabel = iLbl;
@@ -661,7 +683,7 @@ public partial class MainWindow : Window
         // Infrastructure
         "AddCylinder", "AddCloud", "AddServer", "AddPerson", "AddQueue", "AddNote", "AddText", "AddRichText",
         // Actions
-        "Templates", "Image",
+        "Templates", "Ai", "Image",
         // Cloud provider flyouts
         "Cloud.AWS", "Cloud.Azure", "Cloud.Google Cloud",
     };
@@ -670,6 +692,7 @@ public partial class MainWindow : Window
     public static string FavoriteLabel(string id) => id switch
     {
         "Templates"        => L10n.T("topbar.templates"),
+        "Ai"               => L10n.T("topbar.ai"),
         "Image"            => L10n.T("topbar.image"),
         "Cloud.AWS"        => Stencils.Aws,
         "Cloud.Azure"      => Stencils.Azure,
@@ -701,6 +724,13 @@ public partial class MainWindow : Window
             {
                 var (btn, _) = MakeStripAction(BuildTemplatesIcon(), L10n.T("topbar.templates"), L10n.T("topbar.templates.tip"),
                     (s, e) => BtnTemplates_Click(s, e));
+                AttachFavoritesContextMenu(btn, id);
+                return btn;
+            }
+            case "Ai":
+            {
+                var (btn, _) = MakeStripAction(BuildAiIcon(), L10n.T("topbar.ai"), L10n.T("topbar.ai.tip"),
+                    (s, e) => BtnAiDesign_Click(s, e));
                 AttachFavoritesContextMenu(btn, id);
                 return btn;
             }
@@ -851,6 +881,23 @@ public partial class MainWindow : Window
             Canvas.SetLeft(r, x); Canvas.SetTop(r, y); c.Children.Add(r);
         }
         Sq(1, 1); Sq(10, 1); Sq(1, 10); Sq(10, 10);
+        return c;
+    }
+
+    // A four-point sparkle in the accent color — the "Design with AI" button.
+    private UIElement BuildAiIcon()
+    {
+        var c = new Canvas { Width = 18, Height = 18 };
+        c.Children.Add(new System.Windows.Shapes.Path
+        {
+            Fill = (Brush)FindResource("AccentStrongBrush"),
+            Data = Geometry.Parse("M8,1 L9.6,6.4 L15,8 L9.6,9.6 L8,15 L6.4,9.6 L1,8 L6.4,6.4 Z")
+        });
+        c.Children.Add(new System.Windows.Shapes.Path
+        {
+            Fill = (Brush)FindResource("TealBrush"),
+            Data = Geometry.Parse("M14.5,11 L15.2,13.3 L17.5,14 L15.2,14.7 L14.5,17 L13.8,14.7 L11.5,14 L13.8,13.3 Z")
+        });
         return c;
     }
 
@@ -1569,6 +1616,39 @@ public partial class MainWindow : Window
             Diagram.InsertModel(CloneModel(t.Builder));
     }
 
+    // ===== Design with AI =====
+
+    private void BtnAiDesign_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new AiDesignWindow(Diagram.Model) { Owner = this };
+        if (dlg.ShowDialog() != true || dlg.Result is not { } model) return;
+
+        if (dlg.EditedCurrent)
+        {
+            Diagram.ReplaceContent(model);
+            return;
+        }
+        if (Diagram.Model.Shapes.Count == 0)
+        {
+            Diagram.InsertModel(model);
+            return;
+        }
+        var choice = ModalWindow.AskPlacement(this,
+            L10n.T("ai.placement.title"), L10n.T("ai.placement.body"),
+            L10n.T("tmpl.placement.current"), L10n.T("tmpl.placement.new"), L10n.T("modal.cancel"));
+        if (choice == ModalWindow.PlacementChoice.Cancel) return;
+        if (choice == ModalWindow.PlacementChoice.NewDoc)
+        {
+            var tab = NewDocument(model, model.Title);
+            tab.Canvas.Dispatcher.BeginInvoke(() => tab.Canvas.FitToContent(animate: false),
+                System.Windows.Threading.DispatcherPriority.Loaded);
+        }
+        else
+            Diagram.InsertModel(model);
+    }
+
+    private void MnuAiSettings_Click(object sender, RoutedEventArgs e) => AiSettingsWindow.Show(this);
+
     private void BtnCloud_Click(object sender, RoutedEventArgs e) => OpenCloudGallery();
 
     private void OpenCloudGallery(string? provider = null)
@@ -1673,12 +1753,20 @@ public partial class MainWindow : Window
         var errors = new List<string>();
         foreach (var file in paths)
         {
+            // Already open? Just switch to it.
+            var existing = _docs.FirstOrDefault(d => d.FilePath != null &&
+                string.Equals(IOPath.GetFullPath(d.FilePath), IOPath.GetFullPath(file), StringComparison.OrdinalIgnoreCase));
+            if (existing != null) { ActivateDocument(existing); continue; }
             try
             {
                 var text = File.ReadAllText(file);
                 bool excalidraw = IsExcalidraw(file, text);
                 var model = excalidraw ? DiagramImport.FromExcalidraw(text) : Persistence.Load(file);
-                var tab = NewDocument(model, IOPath.GetFileNameWithoutExtension(file));
+                var tab = NewDocument(model, DocTitle(file));
+                // Frame the content once the tab has been laid out.
+                var opened = tab.Canvas;
+                opened.Dispatcher.BeginInvoke(() => opened.FitToContent(animate: false),
+                    System.Windows.Threading.DispatcherPriority.Loaded);
                 // Excalidraw is an import (.excalidraw can't be saved back as DTE), so don't anchor a file path.
                 if (!excalidraw) tab.FilePath = file;
                 RecentFiles.Add(file);
@@ -1745,10 +1833,38 @@ public partial class MainWindow : Window
             Title = L10n.T("menu.edit.insertimage")
         };
         if (dlg.ShowDialog(this) != true) return;
+        InsertImageFile(dlg.FileName);
+    }
+
+    private static readonly string[] ImageExtensions = { ".png", ".jpg", ".jpeg", ".gif", ".bmp" };
+
+    // ===== Drag & drop: diagrams open in new tabs, images are inserted =====
+
+    private void Window_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void Window_Drop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetData(DataFormats.FileDrop) is not string[] files) return;
+        var diagrams = new List<string>();
+        foreach (var f in files)
+        {
+            if (ImageExtensions.Contains(IOPath.GetExtension(f).ToLowerInvariant())) InsertImageFile(f);
+            else if (File.Exists(f)) diagrams.Add(f);
+        }
+        if (diagrams.Count > 0) OpenPathsReplacingBlank(diagrams);
+        e.Handled = true;
+    }
+
+    private void InsertImageFile(string path)
+    {
         try
         {
-            var bytes = File.ReadAllBytes(dlg.FileName);
-            var ext = IOPath.GetExtension(dlg.FileName).TrimStart('.').ToLowerInvariant();
+            var bytes = File.ReadAllBytes(path);
+            var ext = IOPath.GetExtension(path).TrimStart('.').ToLowerInvariant();
             var mime = ext switch
             {
                 "jpg" or "jpeg" => "image/jpeg",
@@ -1801,7 +1917,7 @@ public partial class MainWindow : Window
         try
         {
             Persistence.Save(Diagram.Model, dlg.FileName);
-            _active.Title = IOPath.GetFileNameWithoutExtension(dlg.FileName);
+            _active.Title = DocTitle(dlg.FileName);
             _active.FilePath = dlg.FileName;
             MarkSaved();
             RecentFiles.Add(dlg.FileName);
@@ -1889,6 +2005,16 @@ public partial class MainWindow : Window
     private void BtnZoomIn_Click(object sender, RoutedEventArgs e) => Diagram.SetZoom(Diagram.Zoom * 1.2);
     private void BtnZoomOut_Click(object sender, RoutedEventArgs e) => Diagram.SetZoom(Diagram.Zoom / 1.2);
     private void BtnZoomReset_Click(object sender, RoutedEventArgs e) => Diagram.ResetView();
+    private void MnuZoomFit_Click(object sender, RoutedEventArgs e) => Diagram.FitToContent(animate: true);
+
+    /// Tab title for a file: the name without ".ptd.json" (or its single extension).
+    private static string DocTitle(string path)
+    {
+        var name = IOPath.GetFileName(path);
+        return name.EndsWith(".ptd.json", StringComparison.OrdinalIgnoreCase)
+            ? name[..^".ptd.json".Length]
+            : IOPath.GetFileNameWithoutExtension(name);
+    }
 
     private void BtnGoToFreeSpace_Click(object sender, RoutedEventArgs e) => GoToFreeSpaceAndMark();
 
@@ -2309,6 +2435,7 @@ public partial class MainWindow : Window
         MnuViewZoomIn.Header     = L10n.T("menu.view.zoomin");
         MnuViewZoomOut.Header    = L10n.T("menu.view.zoomout");
         MnuViewZoomReset.Header  = L10n.T("menu.view.zoomreset");
+        MnuViewZoomFit.Header    = L10n.T("menu.view.zoomfit");
         MnuViewFreeSpace.Header  = L10n.T("menu.view.freespace");
         MnuViewClearGuides.Header = L10n.T("menu.view.clearguides");
         MnuViewToolbars.Header           = L10n.T("menu.view.toolbars");
@@ -2324,6 +2451,10 @@ public partial class MainWindow : Window
         MnuLangEs.Header         = L10n.T("menu.lang.es");
         MnuLangEn.IsChecked      = L10n.Current == DrawThisEasy.Services.Language.En;
         MnuLangEs.IsChecked      = L10n.Current == DrawThisEasy.Services.Language.Es;
+
+        MnuAi.Header             = L10n.T("menu.ai");
+        MnuAiDesign.Header       = L10n.T("menu.ai.design");
+        MnuAiSettings.Header     = L10n.T("menu.ai.settings");
 
         MnuHelp.Header           = L10n.T("menu.help");
         MnuHelpManual.Header     = L10n.T("menu.help.manual");
@@ -2342,6 +2473,8 @@ public partial class MainWindow : Window
         // Toolbar Templates button (cloud-provider buttons use proper-noun labels)
         if (_tmplStripLabel != null) _tmplStripLabel.Text = L10n.T("topbar.templates");
         if (_tmplStripBtn != null) _tmplStripBtn.ToolTip = L10n.T("topbar.templates.tip");
+        if (_aiStripLabel != null) _aiStripLabel.Text = L10n.T("topbar.ai");
+        if (_aiStripBtn != null) _aiStripBtn.ToolTip = L10n.T("topbar.ai.tip");
         if (_imgStripLabel != null) _imgStripLabel.Text = L10n.T("topbar.image");
         if (_imgStripBtn != null) _imgStripBtn.ToolTip = L10n.T("topbar.image.tip");
         if (_imgPaletteLabel != null) _imgPaletteLabel.Text = L10n.T("topbar.image.tip");
@@ -2473,6 +2606,7 @@ public partial class MainWindow : Window
                 case Key.O: BtnOpen_Click(this, new RoutedEventArgs()); e.Handled = true; return;
                 case Key.S: BtnSave_Click(this, new RoutedEventArgs()); e.Handled = true; return;
                 case Key.E: BtnExport_Click(this, new RoutedEventArgs()); e.Handled = true; return;
+                case Key.K: BtnAiDesign_Click(this, new RoutedEventArgs()); e.Handled = true; return;
             }
         }
 

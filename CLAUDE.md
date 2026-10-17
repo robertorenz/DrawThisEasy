@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-DrawThisEasy is a native Windows diagramming app (org charts, architecture diagrams, system flows) built with **WPF on .NET 9** (`net9.0-windows`, `UseWPF`, nullable + implicit usings enabled). Single-project solution under `DrawThisEasy/`. No tests, no external NuGet dependencies — everything is hand-rolled on top of WPF primitives.
+DrawThisEasy is a native Windows diagramming app (org charts, architecture diagrams, system flows) built with **WPF on .NET 9** (`net9.0-windows`, `UseWPF`, nullable + implicit usings enabled). Single-project solution under `DrawThisEasy/`. No tests. The only NuGet dependency is the official `Anthropic` SDK (used by the AI feature); everything else is hand-rolled on top of WPF primitives.
 
 ## Build & run
 
@@ -31,7 +31,7 @@ The app is **model + custom-canvas + thin window**, not MVVM. There are no view-
 - **`Models/Models.cs`** — the entire data model and it's deliberately tiny: `DiagramModel` (title + `List<ShapeNode>` + `List<Connection>`), `ShapeNode`, `Connection`, the `ShapeKind` and `ToolMode` enums, `ToolModeMap.ShapeForTool` (maps an "Add" tool to the shape it creates), and `Palette` (the approved fill/stroke hex arrays). This is the JSON-serialized shape, so changing it changes the save-file format.
 
 - **`Controls/DiagramCanvas.cs`** — the heart of the app (~1250 lines). A custom `Canvas` subclass that owns:
-  - **Layered child canvases** inside a single `_world` canvas driven by one `MatrixTransform` (`_worldTransform`): `_connLayer` → `_shapeLayer` → `_overlayLayer`. Pan/zoom is just mutation of that matrix; the dotted-grid background is a `DrawingBrush` whose `Viewport` is offset to follow the transform.
+  - **Layered child canvases** inside a single `_world` canvas driven by one `MatrixTransform` (`_worldTransform`): `_shapeLayer` → `_guideLayer` → `_overlayLayer`. Shapes **and** connectors share `_shapeLayer`, ordered by `Panel.ZIndex` (`ApplyZOrder`): shape = `ZIndex*2`, connector = just above its higher endpoint, so lines inside a container draw over it. Pan/zoom is just mutation of that matrix; the dotted-grid background is a `DrawingBrush` whose `Viewport` is offset to follow the transform.
   - **Visual mirrors** of the model: `_shapeVisuals` (`Dictionary<id, ShapeVisual>`) and `_connVisuals`. `ShapeVisual` and `ConnectionVisual` are defined at the bottom of this same file. When the model changes you must keep these dictionaries in sync (add/remove visuals), or call `Rebuild()` to regenerate everything from the model.
   - **All mouse/keyboard interaction** via a `DragMode` state machine (`None/Pan/MoveShape/ResizeShape/ConnectDrag/Marquee`). The outer canvas captures the mouse on press, so **shape elements never get their own MouseDown handlers** — hit-testing is done manually in world coordinates (`HitTestShape`, `ScreenToWorld`). See the comment in `AddShapeVisual`. Double-click is detected centrally via `e.ClickCount` in `OnMouseLeftDown`.
   - **Undo/redo** via whole-model JSON snapshots: `Snapshot()` pushes `Persistence.ToJson(_model)` onto `_undoStack` (capped at 100) and clears redo. **Any mutating public method must call `Snapshot()` first.** Undo/redo deserialize a snapshot back into `_model` and call `Rebuild()`.
@@ -45,6 +45,8 @@ The app is **model + custom-canvas + thin window**, not MVVM. There are no view-
 - **`MainWindow.xaml(.cs)`** — builds the top tool strip, left palette, and color swatches **in code** (`BuildToolStrip`/`BuildPalette`/`BuildSwatches`), not in XAML. Multiple `ToggleButton`s can map to the same `ToolMode` (palette + strip), tracked in `_toolButtons`; `SyncToolButtons` keeps them consistent. Owns all menu/keyboard command handlers and delegates to `Diagram` (the `DiagramCanvas` instance). Keyboard: `Window_KeyDown` handles Ctrl+N/O/S/E and `?`, then forwards to `Diagram.HandleKeyDown`; both bail out when focus is in a `TextBox` (label editing).
 
 - **`Services/`** — `Persistence` (JSON load/save, camelCase, indented — the canonical (de)serializer used everywhere including undo), `Templates` (built-in starter `DiagramModel`s, cloned on use so the originals stay pristine), `Exporter` (PNG via `RenderTargetBitmap` at 2× scale), `L10n` (see below).
+
+- **`Services/Ai/`** — the AI feature. `IAiProvider` is text-in/text-out; engines are registered in `AiProviders.All` (`ClaudeCodeProvider` drives the signed-in `claude` CLI headlessly with tools disabled → user's subscription; `ClaudeApiProvider` uses the Anthropic SDK). `AiDiagram` owns the engine-agnostic protocol: the system prompt describing our shape kinds/palette/stencils, serializing the current diagram for edits, and leniently parsing the AI's JSON spec into a `DiagramModel` (colors are clamped to `Palette`). `AiSettings` persists to `ai-settings.json` (API key DPAPI-encrypted). **When you add a shape kind or stencil, also describe it in `AiDiagram`.**
 
 - **`Dialogs/`** — `ModalWindow` (reusable Info/Confirm via static `ModalWindow.Info(...)` / `ModalWindow.Confirm(...)`), `HelpWindow`, `TemplateGalleryWindow`, `ColorPickerWindow` (HSV picker, static `ColorPickerWindow.Pick(owner, initial)`).
 

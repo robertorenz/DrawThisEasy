@@ -19,7 +19,6 @@ public class DiagramCanvas : Canvas
 {
     // ---- Layers ----
     private readonly Canvas _world = new();
-    private readonly Canvas _connLayer = new();
     private readonly Canvas _shapeLayer = new();
     private readonly Canvas _guideLayer = new() { IsHitTestVisible = false };
     private readonly Canvas _overlayLayer = new() { IsHitTestVisible = false };
@@ -123,7 +122,6 @@ public class DiagramCanvas : Canvas
         _world.RenderTransform = new TransformGroup { Children = { _worldTransform, _rotate } };
         _world.IsHitTestVisible = true;
         Children.Add(_world);
-        _world.Children.Add(_connLayer);
         _world.Children.Add(_shapeLayer);
         _world.Children.Add(_guideLayer);
         _world.Children.Add(_overlayLayer);
@@ -162,7 +160,6 @@ public class DiagramCanvas : Canvas
     private void Rebuild()
     {
         _shapeLayer.Children.Clear();
-        _connLayer.Children.Clear();
         _shapeVisuals.Clear();
         _connVisuals.Clear();
 
@@ -170,6 +167,7 @@ public class DiagramCanvas : Canvas
             AddShapeVisual(s);
         foreach (var c in _model.Connections)
             AddConnectionVisual(c);
+        ApplyZOrder();
         RebuildGuides();
         RebuildOverlay();
     }
@@ -405,6 +403,7 @@ public class DiagramCanvas : Canvas
 
         Canvas.SetLeft(v.Element, node.X);
         Canvas.SetTop(v.Element, node.Y);
+        Panel.SetZIndex(v.Element, ShapeLayerZ(node.ZIndex));
         _shapeLayer.Children.Add(v.Element);
         _shapeVisuals[node.Id] = v;
     }
@@ -450,11 +449,34 @@ public class DiagramCanvas : Canvas
             SelectConnection(conn.Id);
             e.Handled = true;
         };
-        _connLayer.Children.Add(v.HitPath);
-        _connLayer.Children.Add(v.Path);
-        _connLayer.Children.Add(v.Arrow);
+        _shapeLayer.Children.Add(v.HitPath);
+        _shapeLayer.Children.Add(v.Path);
+        _shapeLayer.Children.Add(v.Arrow);
         _connVisuals[conn.Id] = v;
+        SetConnectionZ(conn, v);
         RouteConnection(conn);
+    }
+
+    // ---------- Z order ----------
+    // Shapes and connectors share one layer. A connector sits just above the higher of its
+    // two endpoints, so lines between shapes inside a container draw over the container's
+    // fill, while unrelated shapes stacked above still cover them.
+
+    private static int ShapeLayerZ(int z) => z * 2;
+
+    private void SetConnectionZ(Connection conn, ConnectionVisual v)
+    {
+        int z = Math.Max(_model.FindShape(conn.FromId)?.ZIndex ?? 0, _model.FindShape(conn.ToId)?.ZIndex ?? 0);
+        foreach (var el in new UIElement[] { v.HitPath, v.Path, v.Arrow })
+            Panel.SetZIndex(el, ShapeLayerZ(z) + 1);
+    }
+
+    private void ApplyZOrder()
+    {
+        foreach (var s in _model.Shapes)
+            if (_shapeVisuals.TryGetValue(s.Id, out var v)) Panel.SetZIndex(v.Element, ShapeLayerZ(s.ZIndex));
+        foreach (var c in _model.Connections)
+            if (_connVisuals.TryGetValue(c.Id, out var cv)) SetConnectionZ(c, cv);
     }
 
     private void RouteConnection(Connection conn)
@@ -1237,6 +1259,11 @@ public class DiagramCanvas : Canvas
             return;
         }
 
+        if (e.Key == Key.D1 && Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+        {
+            FitToContent(animate: true); e.Handled = true; return;
+        }
+
         switch (e.Key)
         {
             case Key.Delete: case Key.Back: DeleteSelection(); break;
@@ -1272,9 +1299,9 @@ public class DiagramCanvas : Canvas
             _model.Connections.RemoveAll(c => c.Id == _selectedConnectionId);
             if (_connVisuals.TryGetValue(_selectedConnectionId, out var v))
             {
-                _connLayer.Children.Remove(v.Path);
-                _connLayer.Children.Remove(v.Arrow);
-                _connLayer.Children.Remove(v.HitPath);
+                _shapeLayer.Children.Remove(v.Path);
+                _shapeLayer.Children.Remove(v.Arrow);
+                _shapeLayer.Children.Remove(v.HitPath);
                 _connVisuals.Remove(_selectedConnectionId);
             }
             _selectedConnectionId = null;
@@ -1295,9 +1322,9 @@ public class DiagramCanvas : Canvas
             if (!_model.Connections.Any(c => c.Id == cid))
             {
                 var cv = _connVisuals[cid];
-                _connLayer.Children.Remove(cv.Path);
-                _connLayer.Children.Remove(cv.Arrow);
-                _connLayer.Children.Remove(cv.HitPath);
+                _shapeLayer.Children.Remove(cv.Path);
+                _shapeLayer.Children.Remove(cv.Arrow);
+                _shapeLayer.Children.Remove(cv.HitPath);
                 _connVisuals.Remove(cid);
             }
         }
@@ -1688,12 +1715,8 @@ public class DiagramCanvas : Canvas
             var s = _model.FindShape(id);
             if (s == null) continue;
             s.ZIndex = _nextZ++;
-            if (_shapeVisuals.TryGetValue(id, out var v))
-            {
-                _shapeLayer.Children.Remove(v.Element);
-                _shapeLayer.Children.Add(v.Element);
-            }
         }
+        ApplyZOrder();
     }
 
     public void SendToBack()
@@ -1707,12 +1730,7 @@ public class DiagramCanvas : Canvas
             if (s == null) continue;
             s.ZIndex = --minZ;
         }
-        // Rebuild Z order in the shape layer
-        var ordered = _model.Shapes.OrderBy(s => s.ZIndex).ToList();
-        _shapeLayer.Children.Clear();
-        foreach (var s in ordered)
-            if (_shapeVisuals.TryGetValue(s.Id, out var v))
-                _shapeLayer.Children.Add(v.Element);
+        ApplyZOrder();
     }
 
     // ---------- Grouping ----------
@@ -2285,6 +2303,19 @@ public class DiagramCanvas : Canvas
         ViewChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    /// Frames all content in the viewport (never magnifying past 100%). No-op when empty.
+    public void FitToContent(bool animate)
+    {
+        if (_model.Shapes.Count == 0) { if (!animate) ResetView(); return; }
+        double minX = _model.Shapes.Min(s => s.X), minY = _model.Shapes.Min(s => s.Y);
+        double maxX = _model.Shapes.Max(s => s.X + s.Width), maxY = _model.Shapes.Max(s => s.Y + s.Height);
+        var r = new Rect(minX, minY, Math.Max(50, maxX - minX), Math.Max(50, maxY - minY));
+        var zEnd = Math.Min(1.0, ZoomToFit(r));
+        var cEnd = new Point(r.X + r.Width / 2, r.Y + r.Height / 2);
+        if (!animate) { StopViewAnimation(); SetView(zEnd, cEnd); return; }
+        AnimateViewDirect(zEnd, cEnd, 0.5, null);
+    }
+
     public void ResetView()
     {
         _worldTransform.Matrix = Matrix.Identity;
@@ -2415,6 +2446,34 @@ public class DiagramCanvas : Canvas
         RebuildOverlay();
         SelectionChanged?.Invoke(this, EventArgs.Empty);
         ShowRect(region, animate: true);
+    }
+
+    /// Replaces the shapes + connections with an edited version of this diagram (used by
+    /// "Modify the current diagram" in Design with AI). Undoable; guides, presentation
+    /// screens and settings are kept. The new content is selected and brought into view.
+    public void ReplaceContent(DiagramModel src)
+    {
+        Snapshot();
+        _model.Shapes = src.Shapes;
+        _model.Connections = src.Connections;
+        int z = 0;
+        foreach (var s in _model.Shapes.OrderBy(s => s.ZIndex)) s.ZIndex = z++;
+        _nextZ = z + 1;
+
+        _selected.Clear();
+        _selectedConnectionId = null;
+        Rebuild();
+        foreach (var s in _model.Shapes) _selected.Add(s.Id);
+        ApplySelectionStyles();
+        RebuildOverlay();
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
+
+        if (_model.Shapes.Count > 0)
+        {
+            double minX = _model.Shapes.Min(s => s.X), minY = _model.Shapes.Min(s => s.Y);
+            double maxX = _model.Shapes.Max(s => s.X + s.Width), maxY = _model.Shapes.Max(s => s.Y + s.Height);
+            ShowRect(new Rect(minX, minY, Math.Max(50, maxX - minX), Math.Max(50, maxY - minY)), animate: true);
+        }
     }
 
     // ---- presentation frame model mutators (snapshot for undo) ----
@@ -2844,10 +2903,14 @@ public class DiagramCanvas : Canvas
             (Brush)new BrushConverter().ConvertFromString("#CBD5E1")!,
             null, dot);
         var dg = new DrawingGroup();
+        // A transparent full-tile rect fixes the drawing's bounds at 24×24; without it the
+        // brush stretches the lone 2px dot to fill the whole tile (giant blobs).
+        dg.Children.Add(new GeometryDrawing(Brushes.Transparent, null, new RectangleGeometry(new Rect(0, 0, 24, 24))));
         dg.Children.Add(drawing);
         _gridBrush = new DrawingBrush
         {
             Drawing = dg,
+            Stretch = Stretch.None,
             TileMode = TileMode.Tile,
             ViewportUnits = BrushMappingMode.Absolute,
             Viewport = new Rect(0, 0, 24, 24)

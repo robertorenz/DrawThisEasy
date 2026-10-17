@@ -55,6 +55,7 @@ public partial class PreferencesWindow : Window
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {
+        var cur = AppSettings.Current;
         new AppSettings
         {
             DefaultRouting = (ConnectorRouting)System.Math.Max(0, CmbRouting.SelectedIndex),
@@ -63,7 +64,11 @@ public partial class PreferencesWindow : Window
             SnapEnabled    = ChkSnap.IsChecked == true,
             AutosaveEnabled = ChkAutosave.IsChecked == true,
             AutosaveIntervalSeconds = AppSettings.Current.AutosaveIntervalSeconds,
-            RestoreOpenFilesOnStartup = ChkRestoreSession.IsChecked == true
+            RestoreOpenFilesOnStartup = ChkRestoreSession.IsChecked == true,
+            // Not edited here, but must survive the save (the toolbar menus own them).
+            ShowMainToolbar = cur.ShowMainToolbar,
+            ShowFavoritesToolbar = cur.ShowFavoritesToolbar,
+            FavoriteToolbarItems = cur.FavoriteToolbarItems
         }.Save();
 
         DialogResult = true;

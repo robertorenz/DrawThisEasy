@@ -1,6 +1,6 @@
 # DrawThisEasy
 
-[![Latest release](https://img.shields.io/github/v/release/robertorenz/DrawThisEasy?label=download&color=0EA5E9&v=1.3.0)](https://github.com/robertorenz/DrawThisEasy/releases/latest)
+[![Latest release](https://img.shields.io/github/v/release/robertorenz/DrawThisEasy?label=download&color=0EA5E9&v=1.4.0)](https://github.com/robertorenz/DrawThisEasy/releases/latest)
 
 A fast, native Windows app for sketching **org charts, architecture diagrams, and system flows**. Built with WPF on .NET 9.
 
@@ -18,6 +18,16 @@ Grab the latest build from the **[Releases page](https://github.com/robertorenz/
 Both are self-contained — the .NET 9 runtime is bundled, nothing else to install. Windows 10/11, 64-bit. The exes aren't code-signed, so SmartScreen may show an "unknown publisher" prompt on first run (*More info → Run anyway*).
 
 ---
+
+## What's new in 1.4.0
+
+- **Design with AI** (**AI → Design with AI**, the **AI Design** toolbar button, or **Ctrl+K**) — describe a diagram in plain words ("serverless image pipeline on AWS", "org chart for a 40-person startup", "support-ticket flowchart with escalation") and Claude draws it using DrawThisEasy's own shapes, palette, connectors and AWS/Azure/Google Cloud service tiles. The result lands in a free area of the current document or in a new tab, and is fully editable and undoable.
+  - **Modify the current diagram** — tick the checkbox and ask for changes ("add a Redis cache in front of the database", "make it left-to-right"); the AI edits what's on the canvas, and **Ctrl+Z** brings back the original.
+  - **Pluggable engines.** Two to start: **Claude subscription** — uses your Claude Pro/Max plan through the Claude Code app installed on your PC (no API key; sign in once by running `claude`) — and **Claude API** — calls the Anthropic API with your API key. Pick the model per engine (Opus / Sonnet / Haiku). **AI → AI Settings** sets the default engine, the Claude Code path (auto-detected), and the API key (stored DPAPI-encrypted for your Windows account, or taken from `ANTHROPIC_API_KEY`), and has a **Test connection** button.
+  - The AI runs with no tools and in a private scratch folder — it can only answer with a diagram, never touch your files.
+- **Zoom to Fit** (**View → Zoom to Fit**, `Shift+1`) — frames the whole diagram. Opened files now fit to the window automatically.
+- **Open files by drag & drop** — drop `.ptd.json` / `.excalidraw` files onto the window to open them, or drop images to insert them. Files passed on the command line ("Open with…") open too, and opening a file that's already open switches to its tab instead of duplicating it.
+- **Fixes:** connectors between shapes inside a container (a big background rectangle) were hidden behind it — connectors now draw just above their shapes. The canvas dot grid rendered as giant blobs; it's back to fine dots. Saving **Preferences** no longer resets the Favorites toolbar. Tabs show `diagram` instead of `diagram.ptd`.
 
 ## What's new in 1.3.0
 
@@ -73,7 +83,8 @@ The main push to create it was watching my good friend **Alejandro Elías** alwa
 ## Features
 
 - **Multiple documents in tabs** — open several diagrams at once and switch between them along the top of the canvas. Each tab keeps its own zoom, selection, and unsaved-changes state; the `+` (or `Ctrl+N`) opens a new one, and closing a tab with unsaved edits prompts you to save.
-- **Menu bar** (File / Edit / View / Language / Help) with full keyboard accelerators.
+- **Design with AI** — describe a diagram and Claude draws it with the app's own shapes, colors, connectors and cloud tiles, or edits the current diagram on request. Works with your **Claude subscription** (via the Claude Code app) or the **Claude API**; engines are pluggable so more can be added. See *What's new in 1.4.0*.
+- **Menu bar** (File / Edit / View / AI / Language / Help) with full keyboard accelerators.
 - **Top tool strip** and **left palette** for fast tool switching.
 - **Customizable Favorites toolbar** — pin your most-used tools (right-click any toolbar button → *Add to Favorites*, or **View → Toolbars → Customize Favorites...**) to a second toolbar row. Hide the main toolbar, hide the favorites toolbar, reorder favorite items, or **Reset Toolbars to Defaults** from the View menu at any time.
 - **Shape palette** tailored to systems work:
@@ -123,10 +134,12 @@ The main push to create it was watching my good friend **Alejandro Elías** alwa
 | `P`            | User / Person  | `Ctrl+O`        | Open            |
 | `T`            | Text           | `Ctrl+S`        | Save            |
 |                |                | `Ctrl+E`        | Export PNG      |
+|                |                | `Ctrl+K`        | Design with AI  |
+|                |                | `Ctrl+G` / `Ctrl+Shift+G` | Group / Ungroup |
 
 **Scroll:** mouse wheel (`Shift`+wheel for horizontal), or the scrollbars.
 **Pan:** hold `Space` and drag, right-click and drag, or just drag any empty area.
-**Zoom:** `Ctrl`+mouse wheel, or the zoom buttons.
+**Zoom:** `Ctrl`+mouse wheel, or the zoom buttons. `Shift+1` zooms to fit the whole diagram.
 **Marquee select:** hold `Shift` and drag empty area.
 **Help:** `F1` opens the user manual; `?` opens the keyboard-shortcut reference.
 
@@ -163,6 +176,8 @@ DrawThisEasy/
 │   ├── ModalWindow.xaml(.cs)      — Reusable modal (Info / Confirm)
 │   ├── HelpWindow.xaml(.cs)       — Localized keyboard-shortcut reference
 │   ├── ManualWindow.xaml(.cs)     — Localized user manual (Help → User Manual / F1)
+│   ├── AiDesignWindow.xaml(.cs)   — "Design with AI" prompt dialog
+│   ├── AiSettingsWindow.xaml(.cs) — AI engine, Claude Code path, API key, connection test
 │   └── TemplateGalleryWindow…     — Template picker with live previews
 ├── Models/Models.cs               — DiagramModel, ShapeNode, Connection, enums, palette
 ├── Resources/Theme.xaml           — Brushes, button + menu styles, fonts
@@ -170,7 +185,10 @@ DrawThisEasy/
     ├── L10n.cs                    — Tiny string table + LanguageChanged event (EN / ES)
     ├── Persistence.cs             — JSON load / save
     ├── Templates.cs               — Built-in starter diagrams
-    └── Exporter.cs                — PNG export via RenderTargetBitmap
+    ├── Exporter.cs                — PNG export via RenderTargetBitmap
+    └── Ai/                        — Pluggable AI engines (IAiProvider): Claude Code CLI
+                                      (subscription) + Anthropic API (official SDK), and the
+                                      diagram protocol (system prompt ⇄ JSON spec ⇄ DiagramModel)
 ```
 
 ## License
