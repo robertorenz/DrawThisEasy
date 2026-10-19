@@ -2075,9 +2075,9 @@ public partial class MainWindow : Window
     // Find an empty gap, mark it as the next numbered screen, pan there, and show the panel.
     private void GoToFreeSpaceAndMark()
     {
-        Diagram.GoToFreeSpace();
+        var f = Diagram.GoToFreeSpace();
         PresentPanel.Visibility = Visibility.Visible;
-        RefreshPresentPanel();
+        RefreshPresentPanel(flashId: f.Id);
     }
 
     private void BtnAddFreeScreen_Click(object sender, RoutedEventArgs e) => GoToFreeSpaceAndMark();
@@ -2088,18 +2088,24 @@ public partial class MainWindow : Window
     /// the Present panel so the new screen is visible in the queue.
     private void MarkCurrentView()
     {
-        Diagram.AddFrame(Diagram.CurrentViewWorldRect());
+        var f = Diagram.AddFrame(Diagram.CurrentViewWorldRect());
         PresentPanel.Visibility = Visibility.Visible;
-        RefreshPresentPanel();
+        RefreshPresentPanel(flashId: f.Id);
     }
 
-    private void RefreshPresentPanel()
+    /// Rebuilds the screen list; flashId (a just-added screen) is scrolled into view and blinks twice.
+    private void RefreshPresentPanel(string? flashId = null)
     {
         if (PresentList == null) return;
         PresentList.Children.Clear();
         var frames = Diagram.Model.Frames.OrderBy(f => f.Order).ToList();
         PresentEmptyHint.Visibility = frames.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        foreach (var f in frames) PresentList.Children.Add(BuildPresentRow(f));
+        foreach (var f in frames)
+        {
+            var row = BuildPresentRow(f);
+            PresentList.Children.Add(row);
+            if (f.Id == flashId && row is Border card) FlashPresentRow(card);
+        }
         if (PresentBgSwatches.Children.Count == 0) BuildPresentBgSwatches();
         if (PresentTransitionCombo.Items.Count == 0) BuildTransitionCombo();
         SelectCurrentTransition();
@@ -2199,6 +2205,28 @@ public partial class MainWindow : Window
             Diagram.ShowRect(new Rect(f.X, f.Y, f.Width, f.Height), animate: true);
         };
         return card;
+    }
+
+    // Two soft accent pulses on a fresh row, once it's laid out and scrolled into view.
+    private void FlashPresentRow(Border card)
+    {
+        card.Dispatcher.BeginInvoke(new Action(() =>
+        {
+            card.BringIntoView();
+            var accent = ((SolidColorBrush)FindResource("AccentSoftBrush")).Color;
+            var brush = new SolidColorBrush(Colors.Transparent);
+            card.Background = brush;
+            var blink = new System.Windows.Media.Animation.ColorAnimation(Colors.Transparent, accent,
+                TimeSpan.FromMilliseconds(220))
+            {
+                AutoReverse = true,
+                RepeatBehavior = new System.Windows.Media.Animation.RepeatBehavior(2)
+            };
+            // Hand the background back to the hover handlers once the blink is done.
+            blink.Completed += (s, e) => card.Background = card.IsMouseOver
+                ? (Brush)new BrushConverter().ConvertFromString("#FFF1F5F9")! : Brushes.Transparent;
+            brush.BeginAnimation(SolidColorBrush.ColorProperty, blink);
+        }), System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
     private string FrameTitle(PresentationFrame f) =>
