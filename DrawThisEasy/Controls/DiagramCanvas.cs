@@ -2482,7 +2482,9 @@ public class DiagramCanvas : Canvas
     public PresentationFrame AddFrame(Rect r)
     {
         Snapshot();
-        var f = new PresentationFrame { X = r.X, Y = r.Y, Width = r.Width, Height = r.Height };
+        // Order = last + 1 so Renumber keeps the new screen at the end (0 would sort it first).
+        var f = new PresentationFrame { X = r.X, Y = r.Y, Width = r.Width, Height = r.Height,
+                                        Order = _model.Frames.Count == 0 ? 1 : _model.Frames.Max(x => x.Order) + 1 };
         _model.Frames.Add(f);
         Renumber();
         return f;
