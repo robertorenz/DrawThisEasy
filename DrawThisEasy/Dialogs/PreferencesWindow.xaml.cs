@@ -19,6 +19,8 @@ public partial class PreferencesWindow : Window
         LblFilesHeader.Text = L10n.T("pref.files").ToUpperInvariant();
         ChkAutosave.Content = L10n.T("pref.autosave");
         ChkRestoreSession.Content = L10n.T("pref.restore.session");
+        LblUpdatesHeader.Text = L10n.T("pref.updates").ToUpperInvariant();
+        ChkCheckUpdates.Content = L10n.T("pref.updates.check");
         BtnCancel.Content = L10n.T("modal.cancel");
         BtnSave.Content  = L10n.T("topbar.save");
 
@@ -42,6 +44,7 @@ public partial class PreferencesWindow : Window
         ChkSnap.IsChecked        = s.SnapEnabled;
         ChkAutosave.IsChecked    = s.AutosaveEnabled;
         ChkRestoreSession.IsChecked = s.RestoreOpenFilesOnStartup;
+        ChkCheckUpdates.IsChecked = s.CheckForUpdatesOnStartup;
     }
 
     /// Shows the dialog; returns true if the user saved changes.
@@ -65,6 +68,9 @@ public partial class PreferencesWindow : Window
             AutosaveEnabled = ChkAutosave.IsChecked == true,
             AutosaveIntervalSeconds = AppSettings.Current.AutosaveIntervalSeconds,
             RestoreOpenFilesOnStartup = ChkRestoreSession.IsChecked == true,
+            CheckForUpdatesOnStartup = ChkCheckUpdates.IsChecked == true,
+            LastUpdateCheckUtc = cur.LastUpdateCheckUtc,
+            SkippedUpdateVersion = cur.SkippedUpdateVersion,
             // Not edited here, but must survive the save (the toolbar menus own them).
             ShowMainToolbar = cur.ShowMainToolbar,
             ShowFavoritesToolbar = cur.ShowFavoritesToolbar,

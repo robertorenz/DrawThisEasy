@@ -90,6 +90,8 @@
           <MenuItem x:Name="MnuHelp" Header="_Help" Style="{StaticResource TopMenuItem}">
             <MenuItem x:Name="MnuHelpManual"    Header="_User Manual..."        InputGestureText="F1" Click="BtnManual_Click"/>
             <MenuItem x:Name="MnuHelpShortcuts" Header="_Keyboard Shortcuts..." InputGestureText="?"  Click="BtnHelp_Click"/>
+            <Separator/>
+            <MenuItem x:Name="MnuHelpUpdates"   Header="Check for _Updates..."                     Click="MnuCheckUpdates_Click"/>
           </MenuItem>
         </Menu>
 

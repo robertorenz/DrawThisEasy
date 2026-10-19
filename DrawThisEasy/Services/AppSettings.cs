@@ -28,6 +28,12 @@ public class AppSettings
     public bool ShowFavoritesToolbar { get; set; } = false;
     public List<string> FavoriteToolbarItems { get; set; } = new();
 
+    // Updates: check GitHub Releases at most once a day on startup; a skipped version
+    // ("1.5.0") is not offered again automatically (Help ▸ Check for Updates still shows it).
+    public bool CheckForUpdatesOnStartup { get; set; } = true;
+    public DateTime LastUpdateCheckUtc { get; set; }
+    public string? SkippedUpdateVersion { get; set; }
+
     [JsonIgnore]
     public static AppSettings Current { get; private set; } = Load();
 

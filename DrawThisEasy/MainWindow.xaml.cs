@@ -92,6 +92,8 @@ public partial class MainWindow : Window
             // Files passed on the command line ("Open with", drag onto the exe).
             var args = Environment.GetCommandLineArgs().Skip(1).Where(File.Exists).ToList();
             if (args.Count > 0) OpenPathsReplacingBlank(args);
+            Updater.CleanupAfterUpdate();
+            _ = CheckForUpdatesAsync(manual: false);
         };
         AllowDrop = true;
         DragOver += Window_DragOver;
@@ -2423,6 +2425,64 @@ public partial class MainWindow : Window
         ManualWindow.Show(this);
     }
 
+    private void MnuCheckUpdates_Click(object sender, RoutedEventArgs e) => _ = CheckForUpdatesAsync(manual: true);
+
+    /// Looks for a newer GitHub release. The startup check is silent, daily, and honors
+    /// "skip this version"; the manual check always reports what it found.
+    private async Task CheckForUpdatesAsync(bool manual)
+    {
+        var s = AppSettings.Current;
+        if (!manual && (!s.CheckForUpdatesOnStartup || DateTime.UtcNow - s.LastUpdateCheckUtc < TimeSpan.FromDays(1)))
+            return;
+
+        UpdateInfo? info;
+        try { info = await Updater.CheckAsync(); }
+        catch (Exception ex)
+        {
+            if (manual) ModalWindow.Info(this, L10n.T("update.title.check"), string.Format(L10n.T("update.error.check"), ex.Message));
+            return;
+        }
+        s.LastUpdateCheckUtc = DateTime.UtcNow;
+        s.Save();
+
+        if (info == null)
+        {
+            if (manual) ModalWindow.Info(this, L10n.T("update.title.check"),
+                string.Format(L10n.T("update.uptodate"), Updater.CurrentVersion.ToString(3)));
+            return;
+        }
+        if (!manual && s.SkippedUpdateVersion == info.Version.ToString(3)) return;
+        if (!IsActive && !manual) return;   // don't pop a dialog over another app or an open dialog
+
+        var downloaded = UpdateWindow.Show(this, info);
+        if (downloaded != null) ApplyUpdate(info, downloaded);
+    }
+
+    private void ApplyUpdate(UpdateInfo info, string downloaded)
+    {
+        if (!info.IsInstaller)
+        {
+            try { Updater.StagePortable(downloaded); }
+            catch (Exception ex)
+            {
+                ModalWindow.Info(this, L10n.T("update.title"), string.Format(L10n.T("update.error.stage"), ex.Message, downloaded));
+                return;
+            }
+        }
+
+        // Close normally so unsaved documents get their Save / Don't save prompt.
+        bool closed = false;
+        EventHandler onClosed = (_, _) => closed = true;
+        Closed += onClosed;
+        Close();
+        Closed -= onClosed;
+
+        if (closed)
+            Updater.Launch(info, downloaded);
+        else if (!info.IsInstaller)
+            ModalWindow.Info(this, L10n.T("update.title"), L10n.T("update.nextlaunch"));
+    }
+
     private void BtnLang_Click(object sender, RoutedEventArgs e)
     {
         L10n.Toggle();
@@ -2500,6 +2560,7 @@ public partial class MainWindow : Window
         MnuHelp.Header           = L10n.T("menu.help");
         MnuHelpManual.Header     = L10n.T("menu.help.manual");
         MnuHelpShortcuts.Header  = L10n.T("menu.help.shortcuts");
+        MnuHelpUpdates.Header    = L10n.T("menu.help.updates");
 
         // Zoom button tooltips
         BtnZoomOut.ToolTip   = L10n.T("topbar.zoom.out");
